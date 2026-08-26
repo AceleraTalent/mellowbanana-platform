@@ -173,7 +173,11 @@
     background: none; border: 1px solid #EDEAE1; border-radius: 10px; padding: 8px 10px 9px;
   }
   .fase-card[aria-expanded="true"] { border-color: #15120C; }
-  .fase-card .f-l { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #15120C; white-space: nowrap; }
+  /* Sin `nowrap`: el ancho de cada tarjeta es proporcional a sus etapas, así que la de
+     Entrevistas queda angosta y su rótulo —el más largo— se montaba sobre la vecina.
+     Que envuelva a dos líneas; las tres tarjetas igualan alto y nada se pisa. */
+  .fase-card .f-l { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #15120C; }
+  .fase-card .f-l > span { min-width: 0; }
   .fase-card .f-l i { font-style: normal; color: #A8A296; font-weight: 400; letter-spacing: 0; }
   .fase-card .f-b { position: relative; height: 4px; border-radius: 2px; background: #EDEAE1; margin-top: 6px; overflow: hidden; }
   .fase-card .f-b span { position: absolute; inset: 0 auto 0 0; background: #FFD400; }
