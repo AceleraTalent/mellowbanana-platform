@@ -19,6 +19,48 @@ Detalle completo de lo hecho: `valkyria/BITACORA.md` (entrada 2026-08-21).
 
 ## Lo que falta
 
+### 0. Bloqueantes de la sesión 2026-08-27 (rediseño: `#fcf251` + ABC Favorit)
+
+El trabajo está en la rama **`diseno/favorit-fcf251`**, no en `main`. 522 tests en verde y
+`tsc` limpio, pero hay dos cosas que hay que destrabar antes de mergear. Detalle:
+`valkyria/BITACORA.md` (entrada 2026-08-27).
+
+**a. `.env.local` está pisado — el panel da 500 en local.**
+15 claves tienen el valor literal `[SENSITIVE]`, que es lo que escribe `vercel env pull` sobre
+las variables marcadas *Sensitive*. `DATABASE_URL` es una de ellas, y como
+`src/lib/db/client.ts:5` llama a `neon()` a nivel de módulo, el import explota y `/admin` tira
+500 (y `npm run build` muere en "collect page data"). **No es del rediseño**: se verificó con
+`git stash` que pasa igual en el árbol limpio.
+
+- Copiar el connection string real desde la consola de Neon (o Vercel → Storage) a mano.
+  **Volver a correr `vercel env pull` no sirve**: reescribe el mismo placeholder.
+- Están igual de pisadas `OPENROUTER_API_KEY` (normalizador + generación del entregable) y
+  `MCP_PUBLIC_URL` (metadata OAuth del MCP + links del correo).
+- Para reproducir hay que estar autenticado: sin cookie `/admin` devuelve 307 a login y nunca
+  llega al código de la base.
+
+**b. La licencia de ABC Favorit — bloqueante para deployar.**
+Este repo es **público**, así que las OTF quedaron gitignoreadas junto con `docs/design/`: la
+rama **no builda en un clon limpio**. Para trabajarla:
+
+```
+unzip -j "docs/design/ABC Favorit.zip" "ABC Favorit/*.otf" -d src/app/fonts
+```
+
+Aparte del repo, el zip son **OTF de escritorio** y `next/font/local` las republica en
+`/_next/static/media`, o sea que el deploy las expone igual. Hay que preguntarle al estudio qué
+licencia compraron. Si hay licencia web: pedir los **WOFF2** (el Bold baja de 111 KB a un tercio)
+y los **TTF**, que hacen falta aparte para tipografiar los PDF — hoy siguen en Helvetica y Times
+porque react-pdf no carga OTF de forma confiable.
+
+**c. Sin decidir con el estudio.** Los rótulos quedaron en Favorit Mono **Bold** (conservando los
+pesos que ya tenían); falta ver si los quieren en Book, más liviano. Hoja visual para mostrarles,
+con las fuentes reales embebidas:
+<https://claude.ai/code/artifact/9729564a-1150-4b3d-9d86-c4a8d2f8c00b>
+
+**d. Sugerido y no hecho.** Validar `DATABASE_URL` en `client.ts` con un error que diga qué falta:
+el síntoma (500 en el panel) no apunta para nada a la causa.
+
 ### 1. Activar Resend (siguiente sesión)
 
 1. Aceptar términos en el navegador (cuenta Vercel `neuralkaizen`):

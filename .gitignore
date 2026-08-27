@@ -60,3 +60,13 @@ docs/**/mbanana_*/
 docs/**/*.pdf
 docs/**/*.docx
 docs/**/*.zip
+
+# fuentes con licencia (ABC Favorit, Dinamo)
+# Este repo es público: publicar las OTF acá las deja descargables por cualquiera,
+# que es justo lo que la licencia de la fundición no permite. Se instalan a mano:
+#   unzip -j "docs/design/ABC Favorit.zip" "ABC Favorit/*.otf" -d src/app/fonts
+# Ver valkyria/DECISIONES.md — 2026-08-27.
+src/app/fonts/*.otf
+src/app/fonts/*.ttf
+src/app/fonts/*.woff2
+docs/design/

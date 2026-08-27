@@ -8,7 +8,7 @@ export function AdminBar({ wide = false }: { wide?: boolean }) {
       <Link href="/admin" className="text-lg font-medium text-ink">
         <Wordmark />
       </Link>
-      <span className="rounded-full border border-[#b08a1e]/25 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#b08a1e]">
+      <span className="rounded-full border border-[#7d7710]/25 px-3 py-1 text-[10px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710]">
         Panel interno
       </span>
     </header>

@@ -9,11 +9,11 @@ import Link from 'next/link'
  * comportamiento no se comparte, cada pantalla arma el suyo adentro.
  */
 
-/** Rótulo de ubicación en versalitas y título de la etapa en Fraunces. */
+/** Rótulo de ubicación en Favorit Mono y título de la etapa en Favorit Bold. */
 export function CabeceraEtapa({ ubicacion, titulo }: { ubicacion: string; titulo: string }) {
   return (
     <>
-      <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">{ubicacion}</p>
+      <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">{ubicacion}</p>
       <h1 className="mt-2 font-serif text-[30px] font-normal tracking-[-.02em] text-[var(--ink)]">{titulo}</h1>
     </>
   )

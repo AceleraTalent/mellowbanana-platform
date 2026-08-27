@@ -11,7 +11,7 @@ import { estadoBarra, iniciales } from './barra'
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
+    <p className="px-1 pb-1.5 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
       {children}
     </p>
   )
@@ -108,7 +108,7 @@ export async function AdminShell({ activeProjectId, indice, children }: {
         </div>
       )}
 
-      <p className="mt-auto px-1 pt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
+      <p className="mt-auto px-1 pt-5 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
         Panel interno
       </p>
     </aside>
@@ -151,7 +151,7 @@ export async function AdminShell({ activeProjectId, indice, children }: {
           <Link href="/admin" className="text-[15px] font-medium text-white"><Wordmark /></Link>
           {indice
             ? <PanelIndiceMovil>{indice}</PanelIndiceMovil>
-            : <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">Panel interno</span>}
+            : <span className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-white/40">Panel interno</span>}
         </header>
 
         <main className="w-full px-6 py-8 md:px-10 md:py-10">{children}</main>

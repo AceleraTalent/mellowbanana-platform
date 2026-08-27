@@ -1,9 +1,9 @@
 import type { PhaseStatus } from '@/lib/pipeline/phases'
 
 const TONO: Record<PhaseStatus, { chip: string; punto: string; texto: string }> = {
-  completa: { chip: 'bg-[var(--aprobado)] text-[#8a6d10]', punto: 'bg-[var(--banana)]', texto: 'Completa' },
-  en_curso: { chip: 'bg-[var(--aprobado)] text-[#8a6d10]', punto: 'bg-[var(--banana)]', texto: 'En curso' },
-  espera: { chip: 'bg-[#f7f3e6] text-[#8a6d10]', punto: 'bg-[#c9a227]', texto: 'En espera' },
+  completa: { chip: 'bg-[var(--aprobado)] text-[#6b6610]', punto: 'bg-[var(--banana)]', texto: 'Completa' },
+  en_curso: { chip: 'bg-[var(--aprobado)] text-[#6b6610]', punto: 'bg-[var(--banana)]', texto: 'En curso' },
+  espera: { chip: 'bg-[#f7f3e6] text-[#6b6610]', punto: 'bg-[#c9a227]', texto: 'En espera' },
   pendiente: { chip: 'bg-[#f4f1e8] text-[var(--secundario)]', punto: 'bg-[#c9c0ac]', texto: 'Pendiente' },
 }
 

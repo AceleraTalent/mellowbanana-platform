@@ -32,7 +32,7 @@ export function RecorridoPlegable({ fases }: { fases: FaseIndice[] }) {
               }`}
             >
               <span className="flex items-baseline justify-between gap-3">
-                <span className="flex items-center gap-1.5 truncate text-[11px] font-bold uppercase tracking-[.12em] text-[var(--ink)]">
+                <span className="flex items-center gap-1.5 truncate text-[11px] font-bold font-mono uppercase tracking-[.12em] text-[var(--ink)]">
                   {f.label}
                   {espera && (
                     <>

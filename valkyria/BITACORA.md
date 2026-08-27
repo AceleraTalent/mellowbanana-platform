@@ -2,6 +2,57 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-08-27 — El amarillo nuevo y ABC Favorit; y el `.env.local` que estaba pisado
+
+- **Hecho:** el estudio pasó su tipografía (`docs/design/ABC Favorit.zip`) y el amarillo de marca
+  (`#fcf251`) para aplicarlos en la plataforma. Quedó aplicado y verificado: 522 tests en verde,
+  `tsc --noEmit` limpio.
+  - **El amarillo:** `--banana` pasa de `#FFD400` a `#fcf251`. Como casi todo el panel lo consume
+    por el token, alcanzó con tocarlo en `globals.css`; las excepciones eran las dos paletas
+    hardcodeadas de los PDF (`BriefDocument.tsx` en `#E9B949`, `DeckDocument.tsx` en `#ffd400`),
+    que también se movieron. Los derivados (chips, textos sobre chips, rótulo de acento) se
+    recalcularon en vez de heredarse — ver DECISIONES.
+  - **La tipografía:** el zip trae **un solo peso de la sans** (Bold) más las cuatro variantes de
+    la Mono. Favorit Bold ocupa el hueco `font-serif` que tenía Fraunces, así que los ~30 lugares
+    que ya usaban esa clase se movieron sin tocarlos; los 36 rótulos en versalitas de 22 archivos
+    ganaron `font-mono`. El cuerpo sigue en Geist a propósito. Fraunces salió del proyecto.
+  - **Hoja visual del resultado** (compuesta con las fuentes reales embebidas, para mostrarle al
+    estudio): https://claude.ai/code/artifact/9729564a-1150-4b3d-9d86-c4a8d2f8c00b
+
+- **El bug que apareció en el medio — `/admin` daba 500, y no era el rediseño:**
+  - **Causa:** `.env.local` tiene **15 claves cuyo valor es el string literal `[SENSITIVE]`**,
+    firma de un `vercel env pull` — las variables marcadas *Sensitive* no se pueden releer y la
+    CLI escribe ese placeholder encima del valor bueno. Una es `DATABASE_URL`, y
+    `src/lib/db/client.ts:5` llama a `neon(process.env.DATABASE_URL!)` **a nivel de módulo**: el
+    import explota antes de renderizar, así que cualquier página que lo importe da 500 y
+    `npm run build` muere en "collect page data".
+  - **Verificado que es preexistente:** mismo 500 en `/admin` autenticado con el árbol limpio
+    (`git stash`) que con los cambios de diseño puestos, y el build falla igual en las dos ramas.
+  - Ojo con el falso negativo: sin cookie `/admin` devuelve 307 a login y nunca llega al código de
+    la base. Hay que probar autenticado o no se reproduce.
+  - **No está arreglado**: el connection string real hay que copiarlo a mano desde Neon. Volver a
+    correr `vercel env pull` **no** sirve, reescribe el mismo placeholder.
+
+- **Quedó:**
+  - **Restaurar `.env.local`.** Además de `DATABASE_URL`, están pisadas `OPENROUTER_API_KEY`
+    (normalizador y generación del entregable) y `MCP_PUBLIC_URL` (metadata OAuth del MCP y los
+    links del mail). Las otras doce son `VERCEL_GIT_*` y `VERCEL_URL`, metadata de build que en
+    local no molesta.
+  - **La licencia de ABC Favorit, bloqueante para deployar.** El zip son OTF de escritorio y
+    `next/font/local` las republica en `/_next/static/media`, o sea descargables desde el sitio;
+    eso suele necesitar licencia web aparte. Y este repo es **público**, así que los binarios
+    quedaron gitignoreados y el trabajo vive en la rama `diseno/favorit-fcf251`, que **no builda
+    en un clon limpio** hasta resolverlo. Ver DECISIONES. Si aparece la licencia web, pedir los
+    WOFF2 (el Bold baja de 111 KB a un tercio) y los TTF, que hacen falta aparte para tipografiar
+    los PDF: hoy siguen en Helvetica y Times porque react-pdf no carga OTF de forma confiable.
+  - **Sin decidir:** los rótulos quedaron en Mono **Bold**, conservando los pesos que ya tenían.
+    Falta ver con el estudio si van en Book, más liviano.
+  - **Sugerido y no hecho:** validar `DATABASE_URL` en `client.ts` con un error que diga qué falta.
+    El síntoma (500 en el panel) no apunta para nada a la causa (un `.env.local` pisado).
+  - **El checkbox de mission-control sigue sin marcarse**: `~/VALKYRIA/mission-control/` no tiene
+    el plan de este proyecto. Van tres sesiones con lo mismo; hay que crearlo o corregir la ruta
+    que declara CLAUDE.md.
+
 ## 2026-08-25 — El PDF del brief se descargaba roto: texto encimado y media portada en blanco
 
 - **Hecho:** el estudio avisó que el brief de Grupo Heroica salía mal. Confirmado sobre el PDF

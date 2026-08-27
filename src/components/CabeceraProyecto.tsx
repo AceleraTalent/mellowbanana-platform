@@ -65,7 +65,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
     <div className={portada ? 'border-b border-[var(--line)] pb-6' : 'border-b border-[var(--line)] px-3 py-3'}>
       <Link
         href="/admin"
-        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)] transition-colors duration-200 hover:text-ink"
+        className="inline-flex items-center gap-1 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)] transition-colors duration-200 hover:text-ink"
       >
         <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M15 6l-6 6 6 6" />

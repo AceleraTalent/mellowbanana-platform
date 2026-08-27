@@ -166,7 +166,7 @@ export function BarraProyectos({ proyectos, activeProjectId }: {
               <span className="font-serif text-[14px] text-[var(--ink)]">Todos los proyectos</span>
             </Link>
 
-            <p className="mt-3 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
+            <p className="mt-3 px-1 pb-1.5 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
               Proyectos
             </p>
             <ul className="flex flex-col gap-0.5">
@@ -217,7 +217,7 @@ export function PanelIndiceMovil({ children }: { children: React.ReactNode }) {
         aria-expanded={abierto}
         aria-label="Abrir el índice del proyecto"
         onClick={() => setAbierto(a => !a)}
-        className="text-[10px] font-bold uppercase tracking-[.14em] text-[var(--banana)]"
+        className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--banana)]"
       >
         Índice
       </button>

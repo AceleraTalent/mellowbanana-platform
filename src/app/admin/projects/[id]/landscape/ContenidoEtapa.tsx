@@ -54,7 +54,7 @@ function Campos({ objeto }: { objeto: Record<string, unknown> }) {
     <div className="space-y-4">
       {Object.entries(objeto).map(([clave, valor]) => (
         <div key={clave} className="flex flex-col gap-1 sm:flex-row sm:gap-6">
-          <p className="w-[112px] flex-none pt-[3px] text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">
+          <p className="w-[112px] flex-none pt-[3px] text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
             {humanizar(clave)}
           </p>
           <div className="min-w-0 max-w-[60ch] flex-1"><Valor valor={valor} /></div>
@@ -80,7 +80,7 @@ export function ContenidoEtapa({ content }: { content: unknown }) {
           key={clave}
           className="flex flex-col gap-1 border-b border-[var(--line)] pb-4 last:border-b-0 last:pb-0 sm:flex-row sm:gap-6"
         >
-          <p className="w-[112px] flex-none pt-[3px] text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">
+          <p className="w-[112px] flex-none pt-[3px] text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
             {humanizar(clave)}
           </p>
           <div className="min-w-0 max-w-[60ch] flex-1"><Valor valor={valor} /></div>

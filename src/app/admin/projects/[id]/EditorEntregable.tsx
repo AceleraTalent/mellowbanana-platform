@@ -18,7 +18,7 @@ import type { SectionNumber } from './section-parts'
  */
 
 const CAMPO = 'w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[14px] leading-relaxed text-[var(--ink)] outline-none transition focus:border-[var(--banana)]'
-const ROTULO = 'block text-[11px] font-bold uppercase tracking-[.12em] text-[var(--rotulo)]'
+const ROTULO = 'block text-[11px] font-bold font-mono uppercase tracking-[.12em] text-[var(--rotulo)]'
 const QUITAR = 'flex-none self-start rounded-lg border border-black/10 px-2 py-1.5 text-[11px] text-[var(--secundario)] transition-colors hover:border-[var(--ink)]/30 hover:text-ink'
 const AGREGAR = 'mt-2 rounded-lg border border-dashed border-[var(--apagado)] px-3 py-1.5 text-[12px] text-[var(--secundario)] transition-colors hover:border-[var(--ink)]/40 hover:text-ink'
 

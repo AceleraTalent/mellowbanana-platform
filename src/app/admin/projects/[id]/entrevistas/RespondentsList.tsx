@@ -15,7 +15,7 @@ export interface Respondent {
 function Estado({ completa }: { completa: boolean }) {
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium
-      ${completa ? 'bg-[var(--aprobado)] text-[#8a6d10]' : 'bg-[#f4f1e8] text-[var(--secundario)]'}`}>
+      ${completa ? 'bg-[var(--aprobado)] text-[#6b6610]' : 'bg-[#f4f1e8] text-[var(--secundario)]'}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${completa ? 'bg-[var(--banana)]' : 'bg-[#c9c0ac]'}`} aria-hidden="true" />
       {completa ? 'Completa' : 'En curso'}
     </span>

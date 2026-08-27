@@ -26,13 +26,13 @@ export default async function Detail({ params }: { params: Promise<{ sessionId: 
         <header>
           {full.projectId
             ? <a href={`/admin/projects/${full.projectId}/entrevistas`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#b08a1e] transition-colors duration-200 hover:text-ink">
+                className="inline-flex items-center gap-1 text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710] transition-colors duration-200 hover:text-ink">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M15 6l-6 6 6 6" />
                 </svg>
                 Entrevistas
               </a>
-            : <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#b08a1e]">Respondiente</p>}
+            : <p className="text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710]">Respondiente</p>}
           <h1 className="mt-2 font-serif text-3xl font-medium leading-tight text-ink">{full.company} · {full.name}</h1>
         </header>
         <a href={`/api/sessions/${sessionId}/pdf`}
@@ -47,7 +47,7 @@ export default async function Detail({ params }: { params: Promise<{ sessionId: 
         <div className="divide-y divide-[var(--line)]">
           {(fresh!.answers as Answer[]).map(a => (
             <div key={a.id} className="py-3 first:pt-0 last:pb-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--secundario)]">{promptOf(a.questionId)}</p>
+              <p className="text-[11px] font-semibold font-mono uppercase tracking-wide text-[var(--secundario)]">{promptOf(a.questionId)}</p>
               <p className="mt-1 text-[15px] text-ink">{(a.normalizedText ?? a.rawText)}{a.imageChoice ? ` (${a.imageChoice})` : ''}</p>
             </div>
           ))}

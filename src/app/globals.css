@@ -3,9 +3,9 @@
 :root {
   --cream: #fffdf2;        /* sólo la entrevista pública */
   --ink: #15120C;
-  --banana: #FFD400;
+  --banana: #fcf251;
   --line: #EDEAE1;
-  --aprobado: #FFF3B8;
+  --aprobado: #FEFBCE;   /* el mismo amarillo diluido en blanco, para chips y fondos suaves */
   --cuerpo: #2C281F;
   --secundario: #5C5648;
   --rotulo: #A8A296;
@@ -16,7 +16,10 @@
 
 @theme inline {
   --font-sans: var(--font-geist);
-  --font-serif: var(--font-fraunces);
+  /* `font-serif` es el hueco de titulares, hoy ABC Favorit Bold: el nombre quedó
+     de cuando ahí vivía Fraunces y renombrarlo tocaría medio panel sin ganar nada. */
+  --font-serif: var(--font-favorit);
+  --font-mono: var(--font-favorit-mono);
 }
 
 .bg-cream { background: var(--cream); }
@@ -27,6 +30,9 @@ body {
   background: #fff;
   color: var(--cuerpo);
   font-family: var(--font-geist), system-ui, sans-serif;
+  /* De Favorit sans sólo tenemos el Bold: sin esto el navegador falsifica los
+     pesos que le pidan los titulares (`font-medium`, `font-normal`) y engorda. */
+  font-synthesis-weight: none;
 }
 
 @keyframes q-in {

@@ -77,7 +77,7 @@ export function InterviewScreen({ question, index, total, voice, initial, canGoB
             </span>
           </div>
         )}
-        <div className="flex w-full items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#bcb29c]">
+        <div className="flex w-full items-center gap-3 text-[10px] font-semibold font-mono uppercase tracking-[0.18em] text-[#bcb29c]">
           <span className="h-px flex-1 bg-black/10" /> {supported ? 'o escribe' : 'escribe'} <span className="h-px flex-1 bg-black/10" />
         </div>
         <textarea value={text} onChange={(e) => setText(e.target.value)}

@@ -81,7 +81,7 @@ function TendenciaCard({ t, selected, onToggle }: { t: TendenciaCandidata; selec
 function Actividad({ actividad }: { actividad: ActividadVista[] }) {
   return (
     <section className="mt-12 border-t border-[var(--line)] pt-5">
-      <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">Actividad</p>
+      <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">Actividad</p>
       {actividad.length === 0 ? (
         <p className="mt-2 text-[13px] text-[var(--apagado)]">Todavía no pasó nada en este proyecto.</p>
       ) : (
@@ -275,7 +275,7 @@ export function LandscapeWorkspace({
                 if (delEje.length === 0) return null
                 return (
                   <div key={eje} className="mb-8">
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">Eje · {eje}</p>
+                    <p className="mb-1 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">Eje · {eje}</p>
                     <div className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
                       {delEje.map(t => (
                         <TendenciaCard key={t.id} t={t} selected={selected.includes(t.id)} onToggle={() => toggle(t.id)} />

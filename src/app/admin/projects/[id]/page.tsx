@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic'
 function Zona({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="mt-9">
-      <h2 className="text-[11px] font-bold uppercase tracking-[.14em] text-[var(--rotulo)]">{titulo}</h2>
+      <h2 className="text-[11px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">{titulo}</h2>
       <div className="mt-2">{children}</div>
     </section>
   )

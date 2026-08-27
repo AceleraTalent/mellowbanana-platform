@@ -17,7 +17,7 @@ export function AgeGrid({ options, selected, onSelect }: {
               <span className="text-2xl font-medium sm:text-4xl">{num}</span>
               <span className="text-sm font-medium sm:text-lg">s</span>
             </span>
-            <span className={`mt-1 text-[9px] uppercase tracking-[0.14em] sm:text-[10px] ${isSel ? 'text-[#8a8170]' : 'text-[#bcb29c]'}`}>años</span>
+            <span className={`mt-1 text-[9px] font-mono uppercase tracking-[0.14em] sm:text-[10px] ${isSel ? 'text-[#8a8170]' : 'text-[#bcb29c]'}`}>años</span>
             {isSel && (
               <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[var(--banana)] text-[9px] font-bold text-[var(--ink)] sm:h-5 sm:w-5 sm:text-[11px]">✓</span>
             )}

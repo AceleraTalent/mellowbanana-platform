@@ -3,7 +3,7 @@ import type { DeckView, DeckSection, DeckBlock, DeckItem } from './view-model'
 import type { Origen } from '@/lib/deliverable/schema'
 
 const C = {
-  banana: '#ffd400',
+  banana: '#fcf251',
   ink: '#1a1510',
   cream: '#fffdf2',
   gray: '#6b6155',

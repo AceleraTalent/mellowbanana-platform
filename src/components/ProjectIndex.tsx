@@ -52,14 +52,14 @@ export function ProjectIndex({
       {fases.map(fase => (
         <div key={fase.key} className="px-3 py-2.5">
           <div className="flex items-baseline justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--ink)]">{fase.label}</p>
+            <p className="text-[10px] font-bold font-mono uppercase tracking-[.15em] text-[var(--ink)]">{fase.label}</p>
             <p className="text-[10.5px] tabular-nums text-[var(--apagado)]">{fase.avance}</p>
           </div>
           <ul>
             {fase.entradas.map(entrada => (
               <li key={entrada.key}>
                 {entrada.bloque && (
-                  <p className="mt-2.5 px-3 text-[8.5px] font-bold uppercase tracking-[.13em] text-[var(--apagado)]">
+                  <p className="mt-2.5 px-3 text-[8.5px] font-bold font-mono uppercase tracking-[.13em] text-[var(--apagado)]">
                     {entrada.bloque}
                   </p>
                 )}

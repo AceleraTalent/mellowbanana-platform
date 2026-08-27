@@ -49,7 +49,7 @@ export function SectionNav({ sections, currentIndex, answeredIds, onJump }: {
                   <div className="flex items-baseline justify-between gap-2">
                     <p
                       aria-current={isActive ? 'step' : undefined}
-                      className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                      className={`text-[11px] font-semibold font-mono uppercase tracking-[0.12em] ${
                         isActive ? 'text-ink' : 'text-[#bcb29c]'
                       }`}
                     >
@@ -121,10 +121,10 @@ export function SectionNav({ sections, currentIndex, answeredIds, onJump }: {
         {active && (
           <>
             <div className="mt-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold font-mono uppercase tracking-[0.12em] text-ink">
                 <span aria-hidden="true" className="text-sm leading-none">🍌</span> {active.title}
               </span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#bcb29c]">
+              <span className="text-[11px] font-semibold font-mono uppercase tracking-[0.12em] text-[#bcb29c]">
                 {activeLocal} de {active.questions.length}
               </span>
             </div>

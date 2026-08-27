@@ -1,7 +1,7 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { BriefView } from './answers-view'
 
-const C = { ink: '#1F1B14', gray: '#9A917D', cream: '#FAF6EC', banana: '#E9B949', border: '#ECE4D2', secGray: '#B9AF98', foot: '#BCB29C' }
+const C = { ink: '#1F1B14', gray: '#9A917D', cream: '#FAF6EC', banana: '#fcf251', border: '#ECE4D2', secGray: '#B9AF98', foot: '#BCB29C' }
 
 const s = StyleSheet.create({
   page: { paddingTop: 34, paddingBottom: 46, fontFamily: 'Helvetica', color: C.ink, fontSize: 11 },

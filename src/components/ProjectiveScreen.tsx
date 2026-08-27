@@ -53,7 +53,7 @@ export function ProjectiveScreen({ question, index, total, initial, canGoBack, o
           <aside className="md:w-72 md:shrink-0 md:self-stretch md:border-l md:border-black/5 md:pl-8">
             {choice ? (
               <div className="animate-fade text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#bcb29c]">
+                <p className="text-[11px] font-semibold font-mono uppercase tracking-[0.12em] text-[#bcb29c]">
                   Elegiste {selectedLabel}
                 </p>
                 <p className="mt-1.5 font-serif text-[19px] leading-snug text-ink md:text-[21px]">

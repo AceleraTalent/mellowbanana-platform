@@ -56,7 +56,7 @@ function Block({ b, wide = false }: { b: DeckBlock; wide?: boolean }) {
 // Lo separamos para mostrarlo como tag de color y que se pueda escanear pain vs gain de un vistazo.
 const TIPO_TAG: Record<'pain' | 'gain', string> = {
   pain: 'bg-[#f3e7df] text-[#8a5a3d]',   // clay cálido: alivia un dolor
-  gain: 'bg-[#fbeecb] text-[#8a6d0f]',   // banana suave: crea un beneficio
+  gain: 'bg-[#FEF9B1] text-[#6b6610]',   // banana suave: crea un beneficio
 }
 function partirSolucion(s: string): { tipo: 'pain' | 'gain' | null; etiqueta: string; texto: string } {
   const m = s.match(/^\s*(pain reliever|gain creator)\s*:\s*([\s\S]*)$/i)
@@ -74,13 +74,13 @@ function FilaCard({ f, n }: { f: DeckSection['tabla'][number]; n: number }) {
           <h4 className="font-serif text-[17px] font-medium leading-snug text-ink">{f.job}</h4>
           <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             {tipo && (
-              <span className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${TIPO_TAG[tipo]}`}>{etiqueta}</span>
+              <span className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold font-mono uppercase tracking-[0.08em] ${TIPO_TAG[tipo]}`}>{etiqueta}</span>
             )}
             <span className="text-[14px] font-medium leading-relaxed text-[#5a5245]">{texto}</span>
           </div>
           <p className="mt-3 border-t border-[#efe7d6] pt-3 text-[14px] leading-[1.75] text-[#4a4238]">{f.comoSeResuelve}</p>
           {!!ORIGEN_LABEL[f.origen] && (
-            <p className="mt-2.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--rotulo)]">{ORIGEN_LABEL[f.origen]}</p>
+            <p className="mt-2.5 text-[10px] font-medium font-mono uppercase tracking-[0.12em] text-[var(--rotulo)]">{ORIGEN_LABEL[f.origen]}</p>
           )}
         </div>
       </div>
@@ -102,7 +102,7 @@ function Tabla({ filas, error }: { filas: DeckSection['tabla']; error: DeckSecti
     <div className="rounded-xl bg-[#fbf8ee] p-5 md:col-span-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <BlockTitle>Cómo lo resolvemos, trabajo por trabajo</BlockTitle>
-        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--rotulo)]">{filas.length} {filas.length === 1 ? 'trabajo' : 'trabajos'}</span>
+        <span className="text-[11px] font-medium font-mono uppercase tracking-[0.12em] text-[var(--rotulo)]">{filas.length} {filas.length === 1 ? 'trabajo' : 'trabajos'}</span>
       </div>
       <ul className="mt-4 space-y-3">
         {filas.map((f, i) => <FilaCard key={i} f={f} n={i + 1} />)}
@@ -124,7 +124,7 @@ function SectionHeader({ sec, busy, editable, onRegenerate, onEditar }: {
       <span aria-hidden="true" className="pointer-events-none absolute -bottom-5 right-4 select-none font-serif text-7xl font-medium text-[var(--ink)]/10">
         {`0${sec.numero}`}
       </span>
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink)]/60">Taller Propuesta de Valor</p>
+      <p className="text-[10px] font-bold font-mono uppercase tracking-[0.2em] text-[var(--ink)]/60">Taller Propuesta de Valor</p>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-serif text-xl font-medium leading-tight text-ink">{sec.titulo}</h2>
         <div className="flex flex-wrap gap-2">

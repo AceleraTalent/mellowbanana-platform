@@ -2,6 +2,58 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-08-27 — Las fuentes con licencia no entran a un repo público
+
+**Qué:** las OTF de ABC Favorit viven sólo en la copia local (`src/app/fonts/`, gitignoreado
+junto con `docs/design/`). El código que las referencia sí está versionado; los binarios no. Se
+reinstalan con `unzip -j "docs/design/ABC Favorit.zip" "ABC Favorit/*.otf" -d src/app/fonts`.
+
+**Por qué:** `NeuralKaizen/mellowbanana-platform` es público. Commitear una tipografía comercial
+ahí la deja descargable por cualquiera y clonada en cada fork —irreversible, porque el historial
+de git y las cachés de GitHub no se borran—, que es exactamente lo que prohíbe la licencia de la
+fundición. Aparte hay un problema anterior sin resolver: el zip que llegó son **OTF de escritorio**,
+y `next/font/local` las republica en `/_next/static/media`, o sea que el deploy ya las expone
+aunque el repo no. Falta confirmar con el estudio qué licencia se compró.
+
+**Qué se descartó:** commitearlas igual y arreglarlo después (el historial no se limpia sin
+reescribir la rama en un repo con forks); y hacer el repo privado en el momento, que es la salida
+más simple pero es decisión del estudio, no de una sesión de código. Mientras tanto el trabajo
+vive en la rama `diseno/favorit-fcf251`, que **no builda** en un clon limpio hasta que las fuentes
+estén resueltas: `main` queda intacta y deployable a propósito.
+
+## 2026-08-27 — Favorit Bold para titulares, Geist para cuerpo, Mono para rótulos
+
+**Qué:** el hueco `font-serif` de Tailwind —que tenía Fraunces— pasa a ABC Favorit Bold, y
+`font-mono` a ABC Favorit Mono. El cuerpo de texto sigue en Geist. Los 36 rótulos en versalitas
+del panel y la entrevista ganaron `font-mono`.
+
+**Por qué:** la licencia que llegó trae **un solo peso de la sans** (Bold) y las cuatro variantes
+de la Mono. Con un peso no se sostiene texto corrido: las preguntas de la entrevista, las
+respuestas normalizadas y el documento entregable son párrafos largos que necesitan la familia
+completa, y Geist ya la tiene. Reutilizar el nombre `font-serif` en vez de renombrarlo a
+`font-display` evita tocar ~30 archivos para un cambio puramente nominal; queda comentado en
+`globals.css` para que no se lea como un descuido. Va con `font-synthesis-weight: none` en el
+`body`: sin eso el navegador falsifica los pesos que le piden los titulares (`font-medium`,
+`font-normal`) sobre la única cara disponible y los engorda.
+
+**Qué se descartó:** poner el cuerpo en Favorit Mono Book —da el look de estudio pero castiga la
+lectura de párrafos largos, que es el 80% de esta plataforma—, y esperar al peso Regular de la
+sans antes de aplicar nada.
+
+## 2026-08-27 — Los derivados del amarillo se recalculan, no se heredan
+
+**Qué:** al pasar `--banana` de `#FFD400` a `#fcf251` se recalcularon con él `--aprobado`
+(`#FFF3B8` → `#FEFBCE`), el chip de "crea un beneficio" (`#fbeecb` → `#FEF9B1`) y los textos que
+van encima (`#8a6d0f`/`#8a6d10` → `#6b6610`). El rótulo de acento `#b08a1e` pasó a `#7d7710`.
+
+**Por qué:** esos valores eran tintes del amarillo viejo, que era más cálido y anaranjado; al lado
+del lima nuevo quedaban sucios. `--aprobado` se rehízo con la misma receta que lo generó (28% del
+amarillo sobre blanco). El `#b08a1e` además daba 3.17:1 sobre crema a 10-11px, por debajo de AA;
+el reemplazo da 4.56:1, y el `#6b6610` sobre chip da 5.63:1.
+
+**Qué se descartó:** dejar los derivados como estaban —el amarillo nuevo contra los tintes cálidos
+lee como error de impresión, no como paleta—, y rebajar el contraste para conservar el tono dorado.
+
 ## 2026-08-25 — `wrap={false}` solo sobre contenido de alto acotado, nunca sobre texto del LLM
 
 **Qué:** en los documentos de react-pdf, `wrap={false}` queda reservado para bloques cuyo alto

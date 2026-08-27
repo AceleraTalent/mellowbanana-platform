@@ -43,7 +43,7 @@ function Login() {
     <div className="flex min-h-screen w-full justify-center bg-[#ece4d2] md:items-center md:p-8">
       <div className="flex w-full max-w-md flex-col items-center bg-cream px-7 py-10 text-center md:rounded-[2rem] md:px-12 md:py-12 md:shadow-2xl">
         <LogoBlock />
-        <p className="mt-7 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#b08a1e]">
+        <p className="mt-7 text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710]">
           Panel interno
         </p>
         <h1 className="mt-3 font-serif text-3xl font-medium leading-tight text-ink">
