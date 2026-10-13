@@ -60,3 +60,6 @@ docs/**/mbanana_*/
 docs/**/*.pdf
 docs/**/*.docx
 docs/**/*.zip
+
+# guía del equipo compilada: lleva ABC Favorit incrustada
+docs/guia-equipo/out/
