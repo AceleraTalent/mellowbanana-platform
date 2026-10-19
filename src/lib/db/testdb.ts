@@ -50,6 +50,13 @@ const DDL = `
     approved_at timestamptz
   );
   CREATE INDEX landscape_versions_project_stage ON landscape_versions (project_id, stage);
+  CREATE TABLE landscape_pasos (
+    project_id uuid NOT NULL REFERENCES projects(id),
+    paso text NOT NULL,
+    hecho_por text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (project_id, paso)
+  );
   CREATE TABLE strategy_stages (
     project_id uuid NOT NULL REFERENCES projects(id),
     stage text NOT NULL,

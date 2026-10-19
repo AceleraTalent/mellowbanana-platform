@@ -66,6 +66,18 @@ export const landscapeVersions = pgTable('landscape_versions', {
   approvedAt: timestamp('approved_at', { withTimezone: true }),
 }, (t) => [index('landscape_versions_project_stage').on(t.projectId, t.stage)])
 
+/**
+ * Los pasos del Landscape que se resuelven fuera de la plataforma (Dropbox, una reunión, el
+ * chat con Claude) y que el equipo marca como hechos a mano. Una fila es una marca: si el
+ * equipo la desmarca, la fila se borra. Ver src/lib/landscape/pasos.ts
+ */
+export const landscapePasos = pgTable('landscape_pasos', {
+  projectId: uuid('project_id').notNull().references(() => projects.id),
+  paso: text('paso').notNull(),                            // '1.1', '6.2'
+  hechoPor: text('hecho_por'),                             // quién lo marcó, si se sabe
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.projectId, t.paso] })])
+
 // Fase 3 · Estrategia. Ver valkyria/specs/2026-08-11-fase3-pipeline-estrategia-design.md
 // Espejo del patrón del landscape: estado por etapa + versiones append-only.
 /** Una fila por etapa de estrategia de un proyecto. El estado, y nada más. */

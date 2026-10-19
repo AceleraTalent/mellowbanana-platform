@@ -12,16 +12,18 @@ import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { buildStages, haceCuanto, textoActividad, STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
+import { estadoDePasos, pasoInicial, pasoPorId, type PasoConEstado } from '@/lib/landscape/pasos'
+import { pasosMarcados } from '@/lib/db/pasos-store'
 import { LandscapeWorkspace } from './LandscapeWorkspace'
 
 export const dynamic = 'force-dynamic'
 
 export default async function LandscapeView({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ etapa?: string; todas?: string }>
+  searchParams: Promise<{ etapa?: string; paso?: string; todas?: string }>
 }) {
   const { id } = await params
-  const { etapa, todas } = await searchParams
+  const { etapa, paso: pasoQuery, todas } = await searchParams
   const project = await getProjectWithSessions(db, id)
   if (!project) return (
     <AdminShell activeProjectId={id}>
@@ -42,9 +44,34 @@ export default async function LandscapeView({ params, searchParams }: {
 
   const stages = buildStages(estado)
 
-  // La query manda, pero sólo si nombra una etapa real: una `?etapa=` inventada cae a la
-  // primera que se pueda trabajar en vez de romper la página.
-  const etapaActiva: StageKey = resolverEtapaActiva(etapa, STAGE_ORDER, stages)
+  // Los pasos que el equipo marcó a mano. Si la tabla todavía no existe en la base (el
+  // deploy llegó antes que `db:push`), el paso a paso se ve igual, sin esas marcas, en vez
+  // de tumbar la pantalla entera del Landscape.
+  let marcados = new Set<string>()
+  try {
+    marcados = await pasosMarcados(db, id)
+  } catch (e) {
+    console.error('No se pudieron leer los pasos marcados del Landscape:', e)
+  }
+  const pasos = estadoDePasos(
+    estado.map(e => ({
+      stage: e.stage,
+      status: e.status,
+      contenido: e.actual?.content ?? null,
+      cerrada: !!e.actual?.approvedAt && !e.borradorNuevo,
+    })),
+    marcados,
+  )
+
+  // Qué paso se mira. `?paso=` manda si nombra uno real; si no, `?etapa=` abre el primer
+  // paso que falta de esa etapa; sin nada, se aterriza en el primer paso que falta de todo
+  // el Landscape. Una query inventada nunca rompe la página.
+  const pasoPedido = pasoQuery ? pasos.find(p => p.id === pasoPorId(pasoQuery)?.id) : undefined
+  const paso: PasoConEstado = pasoPedido
+    ?? (etapa && (STAGE_ORDER as string[]).includes(etapa)
+      ? pasoInicial(pasos, resolverEtapaActiva(etapa, STAGE_ORDER, stages))!
+      : pasos.find(p => p.estado === 'pendiente' || p.estado === 'revisar') ?? pasos[pasos.length - 1])
+  const etapaActiva: StageKey = paso.etapa
 
   const fases = deriveFases(id, señales)
   const pantallas = derivePantallas(id, señales)
@@ -61,6 +88,17 @@ export default async function LandscapeView({ params, searchParams }: {
     ],
     todas: todas === '1',
   })
+  // El paso a paso de la etapa activa cuelga de su entrada en el índice.
+  for (const fase of indice) for (const entrada of fase.entradas) {
+    if (entrada.key !== `landscape:${etapaActiva}`) continue
+    entrada.pasos = pasos.filter(p => p.etapa === etapaActiva).map(p => ({
+      id: p.id,
+      titulo: p.titulo,
+      href: `/admin/projects/${id}/landscape?paso=${p.id}`,
+      estado: p.estado,
+      actual: p.id === paso.id,
+    }))
+  }
   const actual = pantallaActual(fases, pantallas)
   // Lo que la fase necesita de otra y todavía no llegó. Lo rendía `ProjectHeader`; ahora
   // vive en el área de trabajo, que es donde el equipo se pregunta por qué no puede avanzar.
@@ -129,8 +167,9 @@ export default async function LandscapeView({ params, searchParams }: {
     >
       <LandscapeWorkspace
         projectId={id}
-        etapaActiva={etapaActiva}
-        stages={stages}
+        proyecto={project.name}
+        paso={paso}
+        pasos={pasos}
         tendencias={tendenciasContent?.candidatas ?? []}
         seleccionAprobada={seleccionAprobada}
         tendenciasAprobadas={etapaTendencias.aprobada}

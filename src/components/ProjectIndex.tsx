@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { EntradaIndice, FaseIndice } from '@/lib/pipeline/indice'
+import type { EntradaIndice, FaseIndice, SubPasoIndice } from '@/lib/pipeline/indice'
 import { CabeceraProyecto } from './CabeceraProyecto'
 
 /**
@@ -33,6 +33,46 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
     return <span className="h-[6px] w-[6px] flex-none rounded-full border border-[var(--apagado)]" />
   }
   return <span className="h-[6px] w-[6px] flex-none rounded-full border border-dashed border-[#E0DCD0]" />
+}
+
+/**
+ * El paso a paso de la etapa activa, colgado debajo de ella. El estado se lee por forma:
+ * tilde en amarillo si está hecho, punto amarillo si espera revisión, aro vacío si falta.
+ */
+function PasosDeEtapa({ pasos }: { pasos: SubPasoIndice[] }) {
+  return (
+    <ul className="mb-1 ml-[15px] mt-1 border-l border-[var(--line)] py-0.5">
+      {pasos.map(p => (
+        <li key={p.id}>
+          <Link
+            href={p.href}
+            aria-current={p.actual ? 'step' : undefined}
+            className={`flex items-start gap-2 py-[5px] pl-3 pr-2 text-[12.5px] leading-[1.35] ${
+              p.actual ? 'font-semibold text-[var(--ink)]' : p.estado === 'no_aplica' ? 'text-[var(--apagado)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <span className="mt-[3px] flex h-[11px] w-[11px] flex-none items-center justify-center">
+              {p.estado === 'hecho' ? (
+                <svg viewBox="0 0 10 10" className="h-[11px] w-[11px]" aria-hidden="true">
+                  <circle cx="5" cy="5" r="5" fill="var(--banana)" />
+                  <path d="M2.8 5.2 L4.4 6.8 L7.2 3.4" fill="none" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : p.estado === 'revisar' ? (
+                <span className="h-[8px] w-[8px] rounded-full bg-[var(--banana)] ring-1 ring-[var(--ink)]" />
+              ) : (
+                <span className={`h-[8px] w-[8px] rounded-full border ${p.actual ? 'border-[var(--ink)]' : 'border-[var(--apagado)]'} ${p.estado === 'no_aplica' ? 'border-dashed' : ''}`} />
+              )}
+            </span>
+            <span className="font-mono text-[10.5px] tabular-nums text-[var(--rotulo)]">{p.id}</span>
+            <span className="min-w-0">{p.titulo}</span>
+            <span className="sr-only">
+              {p.estado === 'hecho' ? ' (listo)' : p.estado === 'revisar' ? ' (por revisar)' : p.estado === 'no_aplica' ? ' (no aplica)' : ' (pendiente)'}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export function ProjectIndex({
@@ -86,6 +126,7 @@ export function ProjectIndex({
                     </>
                   )}
                 </Link>
+                {entrada.pasos && <PasosDeEtapa pasos={entrada.pasos} />}
               </li>
             ))}
           </ul>
