@@ -242,6 +242,8 @@ export async function listProjectsWithCounts(db: AnyDb) {
       sessionsTotal: Number(r.sessionsTotal ?? 0),
       sessionsCompleted: Number(r.sessionsCompleted ?? 0),
       tieneEntregable: Boolean(r.tieneEntregable),
+      /** Cuándo se creó el proyecto: el inicio, en el seguimiento del inicio del panel. */
+      creadoEl: new Date(r.createdAt as string | Date),
       /** Lo último que se movió en el proyecto, de donde sea que haya venido. */
       ultimaActividad: fechas.length ? new Date(Math.max(...fechas)) : null,
     }

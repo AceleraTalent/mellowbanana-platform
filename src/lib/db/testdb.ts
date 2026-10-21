@@ -57,6 +57,15 @@ const DDL = `
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (project_id, paso)
   );
+  CREATE TABLE project_seguimiento (
+    project_id uuid PRIMARY KEY REFERENCES projects(id),
+    encargado text,
+    notas text,
+    fecha_entrega text,
+    estado_manual text,
+    fases jsonb NOT NULL DEFAULT '{}',
+    updated_at timestamptz NOT NULL DEFAULT now()
+  );
   CREATE TABLE strategy_stages (
     project_id uuid NOT NULL REFERENCES projects(id),
     stage text NOT NULL,

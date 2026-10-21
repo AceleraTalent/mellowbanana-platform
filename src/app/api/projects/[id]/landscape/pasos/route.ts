@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
+import { esAdminRequest } from '@/lib/admin/auth'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
 import { marcarPaso } from '@/lib/db/pasos-store'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 /** El equipo marca o desmarca un paso que se resuelve fuera de la plataforma. */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id } = await params
   if (!esUuidValido(id))
     return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })

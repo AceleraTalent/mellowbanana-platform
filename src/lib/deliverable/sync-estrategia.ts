@@ -27,6 +27,9 @@ function estable(valor: unknown): string {
  * appendea otra versión igual — el historial es del equipo, no del botón "Regenerar".
  * Devuelve la versión creada, o `null` si no había nada nuevo que escribir.
  */
+/** La firma de la versión que escribe esta sincronización, no un humano ni Claude por MCP. */
+export const AUTOR_SINCRONIZADO = 'Generada de las entrevistas'
+
 export async function sincronizarPersonalidadEnEstrategia(
   db: AnyDb, projectId: string, personalidad: Personalidad,
 ): Promise<StrategyVersionRow | null> {
@@ -35,6 +38,6 @@ export async function sincronizarPersonalidadEnEstrategia(
   return saveStrategyVersion(db, projectId, 'personalidad', {
     content: personalidad,
     author: 'claude',
-    authorLabel: 'Generada de las entrevistas',
+    authorLabel: AUTOR_SINCRONIZADO,
   })
 }

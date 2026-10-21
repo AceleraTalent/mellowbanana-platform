@@ -78,6 +78,22 @@ export const landscapePasos = pgTable('landscape_pasos', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.projectId, t.paso] })])
 
+/**
+ * El seguimiento del proyecto que el estudio llevaba en Notion (Sistema M&B): lo que la
+ * plataforma no puede saber sola. Encargado, notas, fecha de entrega, si está frenado y en
+ * qué van las fases que pasan afuera (Naming, Diseño, el cierre del Taller). Lo demás de la
+ * tabla —fase, qué sigue, último movimiento— se calcula. Ver src/lib/seguimiento/sistema.ts
+ */
+export const projectSeguimiento = pgTable('project_seguimiento', {
+  projectId: uuid('project_id').primaryKey().references(() => projects.id),
+  encargado: text('encargado'),
+  notas: text('notas'),
+  fechaEntrega: text('fecha_entrega'),                     // 'AAAA-MM-DD'
+  estadoManual: text('estado_manual'),                     // 'pausa' | 'cliente' | null
+  fases: jsonb('fases').notNull().default({}),             // { naming: 'en_curso', ... }
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // Fase 3 · Estrategia. Ver valkyria/specs/2026-08-11-fase3-pipeline-estrategia-design.md
 // Espejo del patrón del landscape: estado por etapa + versiones append-only.
 /** Una fila por etapa de estrategia de un proyecto. El estado, y nada más. */

@@ -1,10 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db/client'
-import { listProjectsWithCounts, landscapeState, summarizeLandscape } from '@/lib/db/store'
-import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
-import { deriveFases, faseActual, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
-import { projectSignals } from '@/lib/pipeline/signals'
-import { attentionItems } from '@/lib/pipeline/attention'
+import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { Wordmark } from './Brand'
 import { AvatarProyecto, BarraProyectos, PanelIndiceMovil, type ProyectoBarra } from './BarraProyectos'
 import { estadoBarra, iniciales } from './barra'
@@ -27,34 +23,26 @@ function Rotulo({ children }: { children: React.ReactNode }) {
  * El índice llega armado por la prop `indice`: las páginas de proyecto ya consultaron sus
  * etapas, así que el shell no vuelve a la base por eso.
  */
-export async function AdminShell({ activeProjectId, indice, children }: {
+export async function AdminShell({ activeProjectId, indice, sistema, children }: {
   activeProjectId?: string
   indice?: React.ReactNode
+  /** Las filas del Sistema M&B, si la página ya las cargó (el inicio): así no se leen dos veces. */
+  sistema?: FilaSistema[]
   children: React.ReactNode
 }) {
-  const rows = await listProjectsWithCounts(db)
-  // Igual que en el listado de /admin: una lectura de landscapeState y de strategyState
-  // por proyecto, porque acá tampoco hay un conteo agregado. La lateral se pinta en cada
-  // pantalla, así que ya paga ese costo en cada navegación — aceptable para un puñado de
-  // proyectos.
-  const landscapeByProject = await Promise.all(rows.map(r => landscapeState(db, r.id)))
-  const estrategiaByProject = await Promise.all(rows.map(r => strategyState(db, r.id)))
-  const proyectos = rows.map((r, idx) => {
-    const señales = projectSignals({
-      sessions: Array.from({ length: r.sessionsTotal }, (_, i) => ({
-        status: i < r.sessionsCompleted ? 'completed' : 'in_progress',
-      })),
-      tieneEntregable: r.tieneEntregable,
-      landscape: summarizeLandscape(landscapeByProject[idx]),
-      estrategia: summarizeStrategy(estrategiaByProject[idx]),
-    })
-    const fases = deriveFases(r.id, señales)
-    const pantallas = derivePantallas(r.id, señales)
-    return { ...r, fases, actual: faseActual(fases), pantallaFina: pantallaActual(fases, pantallas), pantallas }
-  })
+  // La barra y el inicio leen el mismo Sistema M&B: lo que “nos toca” acá es exactamente
+  // lo que la tabla del inicio marca como del equipo.
+  const proyectos = sistema ?? await cargarSistema(db)
 
   // La cola del equipo: lo que se puede destrabar hoy sin depender de nadie de afuera.
-  const cola = attentionItems(proyectos).filter(i => i.bloqueo === 'equipo')
+  const cola = proyectos
+    .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
+    .map(p => ({
+      projectId: p.id,
+      projectName: p.nombre,
+      accion: p.sigue.detalle ? `${p.sigue.texto}: ${p.sigue.detalle}` : p.sigue.texto,
+      href: p.sigue.href ?? p.href,
+    }))
   const esperan = new Set(cola.map(i => i.projectId))
 
   const barraAncha = (
@@ -89,7 +77,7 @@ export async function AdminShell({ activeProjectId, indice, children }: {
             </p>
             <ul className="mt-2.5 flex flex-col gap-2.5">
               {cola.slice(0, 3).map(item => (
-                <li key={`${item.projectId}-${item.fase}`}>
+                <li key={item.projectId}>
                   <Link href={item.href} className="flex items-center gap-2.5">
                     <AvatarProyecto iniciales={iniciales(item.projectName)} />
                     <span className="min-w-0 flex-1">
@@ -115,11 +103,11 @@ export async function AdminShell({ activeProjectId, indice, children }: {
   )
 
   const paraLaBarra: ProyectoBarra[] = proyectos.map(p => {
-    const { label, detalle } = p.pantallaFina
+    const { label, detalle } = p.fases.find(f => f.key === p.actual)!
     return {
       id: p.id,
-      name: p.name,
-      iniciales: iniciales(p.name),
+      name: p.nombre,
+      iniciales: iniciales(p.nombre),
       // El avance en números sí entra en un renglón de 230px; la explicación en prosa no,
       // y además ya está en el índice del proyecto.
       faseActual: /^\d/.test(detalle) ? `${label} · ${detalle}` : label,
