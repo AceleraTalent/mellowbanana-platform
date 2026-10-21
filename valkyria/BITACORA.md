@@ -2,6 +2,39 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-10-19/21 — El panel para trabajar a la par con Claude: inicio, menú y Landscape en una página
+
+- **Hecho:** el estudio no entendía cómo seguir el proceso entre las dos pantallas (claude.ai y
+  el panel). Se rehízo en incrementos chicos, mostrados en vivo sobre la demo local de Heroica:
+  - El inicio es el Sistema M&B (las cinco fases por cliente, como la tabla de Notion), con
+    dirección visual "Papel" y buscador; un solo menú por cliente, de dos niveles.
+  - El Landscape es **una página**: las seis etapas son secciones plegables (abierta la que
+    tiene trabajo) y arriba va "Lo que sigue" con un solo botón. Los 15 pasos del documento
+    del estudio son la receta de Claude, no renglones para el equipo: quedan 13 (Dropbox y
+    template son uno; "entregas anteriores" pasa a ser insumo de la lista larga) y lo de
+    afuera es una casilla en su sección que no frena lo que sigue. "Setup" pasa a "Enfoque".
+  - **Un solo chat por cliente:** `estado_landscape` devuelve `sigue` (qué toca y dónde
+    guardarlo), así que basta con "sigamos con <marca>"; `guardar_etapa` devuelve
+    `verEnElPanel`. "Seguir en Claude" copia el mensaje y abre claude.ai.
+  - Producción: titulares y rótulos en Geist mientras se aclara la licencia web de Favorit
+    (ver DECISIONES). Borrar un proyecto ahora limpia `landscape_pasos` y
+    `project_seguimiento`. Deploy `7420bb9`.
+- **Aprendido:** el build de producción en Vercel tiene un comando propio que corre
+  `drizzle-kit migrate` antes de `next build`. Un cambio de esquema llega con
+  `npx drizzle-kit generate` + commit (así llegó `drizzle/0004`); no hace falta `db:push` ni el
+  link de la base. El script `asegurar-tablas.mjs` que se agregó creyendo lo contrario nunca
+  corrió y se quitó.
+- **Quedó:**
+  - Nadie tiene acceso a Neon (se perdió el link de la base): sin eso no hay respaldos ni
+    cambios a mano. Recuperarlo en console.neon.tech.
+  - La clave del panel en producción es débil; cambiarla por una larga.
+  - Estrategia sigue con el formato viejo (una página por etapa, sin "Seguir en Claude").
+  - Pegar en el proyecto de claude.ai el párrafo nuevo de `docs/fase2/instrucciones-claude-ai.md`
+    (opcional: la indicación ya viaja en las herramientas).
+  - Sin responder: proteger con sesión `landscape/[stage]`, `estrategia/[stage]` y `deck`;
+    Naming antes o después de Estrategia; si el equipo aprueba «Personalidad».
+  - El checkbox de mission-control no se marcó: el `plan.md` de este proyecto no existe.
+
 ## 2026-10-13 — Guía de uso del equipo (plataforma + Claude) y revisión del flujo con el MCP
 
 - **Hecho:** el estudio se perdía al llegar al Taller: el panel dice "Taller · Se trabaja en
@@ -31,6 +64,7 @@ Entradas nuevas arriba. Formato: ver CONVENCION.md.
     link al panel desde `guardar_etapa`, mandar el texto de la pregunta junto con cada
     respuesta de entrevista.
   - Confirmar con el estudio los nombres de menú de claude.ai en la sección "Conectar".
+
 ## 2026-08-27 — El amarillo nuevo y ABC Favorit; y el `.env.local` que estaba pisado
 
 - **Hecho:** el estudio pasó su tipografía (`docs/design/ABC Favorit.zip`) y el amarillo de marca

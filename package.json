@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/asegurar-tablas.mjs && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
