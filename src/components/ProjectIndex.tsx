@@ -230,15 +230,15 @@ export function ProjectIndex({
   const abierta = menu.find(f => f.indice?.entradas.some(e => e.estado === 'actual'))?.key
     ?? (enResumen ? sistema?.actual : undefined)
 
-  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla. El Landscape
-  // es una sola página que abre con lo que sigue: estar en cualquiera de sus secciones es
-  // estar ahí. En el resumen tampoco va: “Nos toca” arranca con eso mismo.
+  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla. El Landscape y
+  // la Estrategia son una página cada uno, que abre con lo que sigue: estar en cualquiera
+  // de sus secciones es estar ahí. En el resumen tampoco va: “Nos toca” arranca con eso mismo.
   const sinQuery = (href: string) => href.replace(/[?#].*$/, '')
   const hrefsActuales = new Set(activas.map(e => e.href))
   const sigue = sistema?.sigue
   const yaAhi = !!sigue?.href && (
     hrefsActuales.has(sigue.href)
-    || (sinQuery(sigue.href).endsWith('/landscape') && activas.some(e => sinQuery(e.href) === sinQuery(sigue.href!)))
+    || (/\/(landscape|estrategia)$/.test(sinQuery(sigue.href)) && activas.some(e => sinQuery(e.href) === sinQuery(sigue.href!)))
   )
   const mostrarSigue = sigue && !enResumen && !yaAhi
 

@@ -10,7 +10,7 @@ import { pasoQueSigue, tieneContenido, type PasoConEstado } from '@/lib/landscap
 import { PIEZAS, PIEZA_LABEL, type PiezaKey } from '@/lib/landscape/piezas'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
 import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
-import { BotonCopiar, BOTON_PRIMARIO, LoQueSigue, PorFuera } from '@/components/paso/piezas'
+import { BarraDeRevision, LoQueSigue, PorFuera } from '@/components/paso/piezas'
 import { FuentesEnLinea } from '@/components/documento/bloques'
 import {
   VistaBenchmarking, VistaBrandAssets, VistaCasos, VistaCirculo, VistaContexto, VistaDesarrollo, VistaDiagnostico,
@@ -155,34 +155,6 @@ function estadoDeSeccion(deLaEtapa: PasoConEstado[], despuesDeLoQueSigue: boolea
   if (aplicables.some(p => p.estado === 'revisar')) return 'revisar'
   if (despuesDeLoQueSigue && !aplicables.some(p => p.estado === 'hecho')) return 'despues'
   return aplicables.find(p => p.estado === 'pendiente')!.turno === 'equipo' ? 'equipo' : 'claude'
-}
-
-/**
- * La barra donde se aprueba lo que Claude entregó. Queda pegada abajo mientras se lee la
- * sección: se decide al terminar de leer, sin volver a subir.
- */
-function BarraDeRevision({ procedencia, instruccionCambios, onAprobar, guardando, error }: {
-  procedencia: string
-  instruccionCambios: string
-  onAprobar: () => void
-  guardando: boolean
-  error: string | null
-}) {
-  return (
-    <div className="sticky bottom-4 z-10 mt-10 flex flex-col gap-3 rounded-[14px] border border-[var(--ink)] bg-white/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(21,18,12,.12)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="text-[14px] font-semibold text-[var(--ink)]">Por revisar</p>
-        <p className="text-[12.5px] leading-snug text-[var(--secundario)]">{procedencia}</p>
-        {error && <p className="mt-1 text-[13px] text-[var(--error)]">{error}</p>}
-      </div>
-      <div className="flex flex-none flex-wrap items-center gap-2">
-        <BotonCopiar texto={instruccionCambios} etiqueta="Pedir cambios" />
-        <button type="button" onClick={onAprobar} disabled={guardando} className={`${BOTON_PRIMARIO} px-4 py-2`}>
-          {guardando ? 'Aprobando…' : 'Aprobar'}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 /**

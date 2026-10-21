@@ -62,9 +62,10 @@ const handler = createMcpHandler(
     server.registerTool('estado_estrategia', {
       title: 'Estado de la estrategia',
       description:
-        'Qué etapa del Proceso de Estrategia está en curso, cuál está aprobada, si hay un borrador ' +
-        'esperando aprobación y qué bloquea el avance. Llamá a esto cuando pregunten en qué va la ' +
-        'estrategia o qué falta.',
+        'Qué toca ahora en el Proceso de Estrategia (`sigue`), qué etapa está en curso, cuál está ' +
+        'aprobada, si hay un borrador esperando aprobación y qué bloquea el avance. Llamá a esto ' +
+        'cuando te digan “sigamos con la estrategia” de una marca, o pregunten en qué va o qué ' +
+        'falta, y hacé lo que dice `sigue`.',
       inputSchema: z.object({
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
       }),

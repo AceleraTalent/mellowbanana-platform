@@ -10,6 +10,7 @@ import { ETAPA_LABEL, ETAPA_ORDER, ESENCIA, type EstrategiaKey } from '@/lib/est
 import { estadoDePasos, queSigueParaClaude } from '@/lib/landscape/pasos'
 import { pasosMarcados } from '@/lib/db/pasos-store'
 import { actualizarSeguimiento, conclusionesDelTaller } from '@/lib/db/seguimiento-store'
+import { queSigueEstrategia, queSigueEstrategiaParaClaude } from '@/lib/estrategia/sigue'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
 import { validarContenidoEtapa, validarPieza } from './validar'
@@ -202,8 +203,13 @@ function bloqueoDe(stage: StageKey, status: string, versiones: number): string |
 export async function estadoEstrategia(db: AnyDb, ref: string) {
   const { id, name } = await resolverProyecto(db, ref)
   const estado = await strategyState(db, id)
+  const esperando = (e: (typeof estado)[number]) => e.versiones > 0 && (!e.aprobada || e.borradorNuevo !== null)
+  const sigue = queSigueEstrategia(estado.map(e => ({ key: e.stage, status: e.status, esperando: esperando(e) })))
+  const faltanDeEsencia = estado.filter(e => ESENCIA.includes(e.stage) && e.status !== 'aprobada' && e.status !== 'no_aplica').length
   return {
     marca: name,
+    // Lo primero que Claude lee cuando le dicen “sigamos con la estrategia”.
+    sigue: queSigueEstrategiaParaClaude(sigue, faltanDeEsencia),
     resumen: summarizeStrategy(estado),
     etapas: estado.map(e => ({
       etapa: e.stage,

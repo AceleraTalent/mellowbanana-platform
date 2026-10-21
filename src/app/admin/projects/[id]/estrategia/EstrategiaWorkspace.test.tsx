@@ -1,157 +1,164 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { buildEtapasEstrategia, ETAPA_LABEL, ETAPA_ORDER } from '@/lib/estrategia/stages'
-import { EstrategiaWorkspace } from './EstrategiaWorkspace'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { buildEtapasEstrategia, ETAPA_LABEL, ETAPA_ORDER, type EstrategiaKey } from '@/lib/estrategia/stages'
+import { queSigueEstrategia } from '@/lib/estrategia/sigue'
+import { EstrategiaWorkspace, type ContenidoEstrategiaVista } from './EstrategiaWorkspace'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
+const scrollIntoView = vi.fn()
+beforeEach(() => {
+  Element.prototype.scrollIntoView = scrollIntoView
+  scrollIntoView.mockClear()
+})
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/**
- * Mismo caso que en landscape, espejado: Claude escribe sobre una etapa que el equipo
- * ya aprobó por `guardar_etapa`. Lo aprobado no se pisa y lo nuevo tampoco se esconde:
- * se ven las dos y el equipo elige.
- */
-function props({ conBorrador }: { conBorrador: boolean }) {
+function version(id: string, texto: string, aprobada: boolean, borrador?: string): ContenidoEstrategiaVista {
   return {
-    projectId: 'p1',
-    etapas: buildEtapasEstrategia([{ stage: 'consumidor' as const, status: 'aprobada' as const }]),
-    contenidoPorEtapa: {
-      consumidor: {
-        id: 'v1',
-        content: { hallazgo: 'lo aprobado' },
-        aprobada: true,
-        procedencia: 'Escrito por Claude · hace 3 días · aprobada',
-        cuando: 'hace 3 días',
-        borradorNuevo: conBorrador
-          ? { id: 'v2', content: { hallazgo: 'lo nuevo' }, cuando: 'hace 2 h', autor: 'Claude' }
-          : null,
-      },
-    },
+    id,
+    content: { hallazgo: texto },
+    aprobada,
+    procedencia: aprobada ? 'Escrito por Claude · hace 3 días · aprobada' : 'Escrito por Claude · hace 2 h · sin aprobar',
+    cuando: 'hace 3 días',
+    borradorNuevo: borrador ? { id: `${id}-nuevo`, content: { hallazgo: borrador }, cuando: 'hace 2 h', autor: 'Claude' } : null,
   }
 }
 
-describe('EstrategiaWorkspace · la etapa sale de la query, no de un estado interno', () => {
-  // Reemplaza al test del carril de 14 etapas, que ahora vive en el índice del proyecto
-  // (ver `indice.test.ts` y `ProjectIndex.test.tsx`): lo que le queda al workspace es
-  // saber rendir cualquiera de las 14 con su label.
-  it('rinde cualquiera de las 14 etapas con su label, según la prop', () => {
-    for (const key of ETAPA_ORDER) {
-      const { unmount } = render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva={key} />)
-      expect(screen.getByRole('heading', { name: ETAPA_LABEL[key] })).toBeTruthy()
-      unmount()
-    }
+/**
+ * Un proyecto con el Diagnóstico aprobado, el Consumidor esperando revisión y el resto sin
+ * empezar, salvo lo que pida cada prueba.
+ */
+function montar(opciones: { irA?: EstrategiaKey; contenido?: Partial<Record<EstrategiaKey, ContenidoEstrategiaVista>>; aprobadas?: EstrategiaKey[] } = {}) {
+  const contenido: Partial<Record<EstrategiaKey, ContenidoEstrategiaVista>> = {
+    diagnostico: version('vd', 'el diagnóstico', true),
+    consumidor: version('vc', 'el consumidor', false),
+    ...opciones.contenido,
+  }
+  const aprobadas = new Set<EstrategiaKey>(['diagnostico', ...(opciones.aprobadas ?? [])])
+  const estado = ETAPA_ORDER.map(stage => ({
+    stage,
+    status: aprobadas.has(stage) ? 'aprobada' as const : contenido[stage] ? 'en_curso' as const : 'pendiente' as const,
+  }))
+  const sigue = queSigueEstrategia(estado.map(e => {
+    const c = contenido[e.stage]
+    return { key: e.stage, status: e.status, esperando: !!c && (!c.aprobada || !!c.borradorNuevo) }
+  }))
+  render(
+    <EstrategiaWorkspace
+      projectId="p1"
+      proyecto="Grupo Heroica"
+      irA={opciones.irA}
+      etapas={buildEtapasEstrategia(estado)}
+      contenidoPorEtapa={contenido as Record<string, ContenidoEstrategiaVista>}
+      sigue={sigue}
+    />,
+  )
+}
+
+const seccion = (k: EstrategiaKey) => within(document.getElementById(k)!)
+const encabezado = (k: EstrategiaKey) => seccion(k).getByRole('button', { name: new RegExp(`^\\d+${ETAPA_LABEL[k]}`) })
+
+describe('EstrategiaWorkspace · toda la Estrategia en una página', () => {
+  it('las catorce etapas son secciones, agrupadas en los bloques del proceso', () => {
+    montar()
+    expect(screen.getByRole('heading', { level: 1, name: 'Estrategia' })).toBeTruthy()
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(14)
+    expect(screen.getByText('Esencia de marca')).toBeTruthy()
   })
 
-  it('la etapa sin versión guardada lo dice, sin caja', () => {
-    render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva="territorio" />)
-    expect(screen.getByText(/todavía no tiene una versión guardada/)).toBeTruthy()
+  it('abre sólo lo que sigue; lo aprobado se abre con un clic y no tiene botón de aprobar', () => {
+    montar()
+    expect(encabezado('consumidor').getAttribute('aria-expanded')).toBe('true')
+    expect(encabezado('diagnostico').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(encabezado('diagnostico'))
+    expect(seccion('diagnostico').getByText('el diagnóstico')).toBeTruthy()
+    expect(seccion('diagnostico').queryByRole('button', { name: 'Aprobar' })).toBeNull()
   })
 
-  it('rinde la etapa aprobada como documento, con su procedencia', () => {
-    render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva="consumidor" />)
-    expect(screen.getByText('lo aprobado')).toBeTruthy()
-    expect(screen.getByText(/Escrito por Claude/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Aprobar etapa' })).toBeNull()
+  it('el link que nombra una etapa la abre y baja hasta ella', () => {
+    montar({ irA: 'territorio' })
+    expect(encabezado('territorio').getAttribute('aria-expanded')).toBe('true')
+    expect(seccion('territorio').getByText(/Claude escribe acá Territorio/)).toBeTruthy()
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('EstrategiaWorkspace · borrador nuevo sobre etapa aprobada', () => {
-  it('muestra las dos versiones a la vez y dice que lo aprobado sigue vigente', () => {
-    render(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-    expect(screen.getByText('lo aprobado')).toBeTruthy()
-    expect(screen.getByText('lo nuevo')).toBeTruthy()
-    expect(screen.getByText(/sigue vigente hasta que decidas/)).toBeTruthy()
-  })
-
-  it('el botón de aprobar manda el versionId de la versión nueva al endpoint de estrategia', async () => {
+describe('EstrategiaWorkspace · lo que sigue', () => {
+  it('lo que espera revisión va primero, y se aprueba en su sección', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
+    montar()
 
-    render(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Aprobar la nueva' }))
+    expect(screen.getByText(/Lo que sigue · Te toca revisar/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Revisar/ }).getAttribute('href')).toBe('#consumidor')
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Aprobar' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/p1/estrategia/consumidor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'aprobar', versionId: 'v2' }),
+      body: JSON.stringify({ accion: 'aprobar', versionId: 'vc' }),
     })
   })
 
-  it('“Mantener esta versión” ratifica la aprobada contra el endpoint de estrategia', async () => {
+  it('sin nada por revisar, le toca a Claude la primera sin aprobar, y el botón lleva al chat', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const open = vi.fn()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    vi.stubGlobal('open', open)
+    montar({ contenido: { consumidor: version('vc', 'el consumidor', true) }, aprobadas: ['consumidor'] })
+
+    expect(screen.getByText(/Lo que sigue · Le toca a Claude/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Seguir en Claude/ }))
+    await waitFor(() => expect(open).toHaveBeenCalled())
+    expect(writeText.mock.calls[0][0]).toMatch(/^Sigamos con la Estrategia de Grupo Heroica\. Lo que sigue: rtbs\./)
+  })
+
+  it('pedir cambios copia un pedido que nombra la etapa', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    montar()
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Pedir cambios' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(writeText.mock.calls[0][0]).toMatch(/^Ajustemos Consumidor, de la Estrategia de Grupo Heroica\./)
+  })
+})
+
+describe('EstrategiaWorkspace · borrador nuevo sobre una etapa aprobada', () => {
+  const conConflicto = () => montar({ contenido: { consumidor: version('vc', 'lo aprobado', true, 'lo nuevo') }, aprobadas: ['consumidor'] })
+
+  it('muestra las dos versiones y “Aprobar la nueva” manda el borrador', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
-
-    render(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Mantener esta versión' }))
-
-    // A diferencia de “Ver sólo la aprobada”, esto decide: se escribe, y por eso el
-    // conflicto no reaparece cuando se vuelve a la etapa.
+    conConflicto()
+    expect(seccion('consumidor').getByText('lo aprobado')).toBeTruthy()
+    expect(seccion('consumidor').getByText('lo nuevo')).toBeTruthy()
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Aprobar la nueva' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-    expect(fetchMock).toHaveBeenCalledWith('/api/projects/p1/estrategia/consumidor', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'reafirmar' }),
-    })
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'aprobar', versionId: 'vc-nuevo' }))
   })
 
-  it('“Ver sólo la aprobada” deja el documento aprobado y no toca el servidor', () => {
+  it('“Mantener esta versión” ratifica la aprobada, y si falla lo dice', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: 'No existe el proyecto' }) })
+    vi.stubGlobal('fetch', fetchMock)
+    conConflicto()
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Mantener esta versión' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'reafirmar' }))
+    expect(await screen.findByText('No existe el proyecto')).toBeTruthy()
+  })
+
+  it('mirar sólo la aprobada no toca el servidor y se vuelve a un clic', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-
-    render(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Ver sólo la aprobada' }))
-
-    expect(screen.getByText('lo aprobado')).toBeTruthy()
-    expect(screen.queryByText('lo nuevo')).toBeNull()
+    conConflicto()
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Ver sólo la aprobada' }))
+    expect(seccion('consumidor').queryByText('lo nuevo')).toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('mirar sólo la aprobada se vuelve: el borrador sigue a un clic', () => {
-    render(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-    fireEvent.click(screen.getByRole('button', { name: 'Ver sólo la aprobada' }))
-
-    expect(screen.getByText(/Claude escribió una versión nueva hace 2 h/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Ver la versión nueva' }))
-
-    expect(screen.getByText('lo aprobado')).toBeTruthy()
-    expect(screen.getByText('lo nuevo')).toBeTruthy()
-  })
-
-  it('cambiar de etapa no deja pegada la vista de una sola versión', () => {
-    const { rerender } = render(
-      <EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />,
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Ver sólo la aprobada' }))
-    rerender(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="rtbs" />)
-    rerender(<EstrategiaWorkspace {...props({ conBorrador: true })} etapaActiva="consumidor" />)
-
-    expect(screen.getByRole('button', { name: 'Ver sólo la aprobada' })).toBeTruthy()
-  })
-})
-
-describe('EstrategiaWorkspace · anterior y siguiente', () => {
-  it('una etapa del medio lleva a sus dos vecinas por la query', () => {
-    render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva="consumidor" />)
-
-    expect(screen.getByRole('link', { name: /Diagnóstico/ }).getAttribute('href'))
-      .toBe('/admin/projects/p1/estrategia?etapa=diagnostico')
-    expect(screen.getByRole('link', { name: /RTBs/ }).getAttribute('href'))
-      .toBe('/admin/projects/p1/estrategia?etapa=rtbs')
-  })
-
-  it('en diagnóstico (primera) no hay anterior; en cuadros (última) no hay siguiente', () => {
-    const { unmount } = render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva="diagnostico" />)
-    expect(screen.queryByText(/‹/)).toBeNull()
-    expect(screen.getByRole('link', { name: /Consumidor/ })).toBeTruthy()
-    unmount()
-
-    render(<EstrategiaWorkspace {...props({ conBorrador: false })} etapaActiva="cuadros" />)
-    expect(screen.getByRole('link', { name: /Manifiesto/ })).toBeTruthy()
-    expect(screen.queryByText(/›/)).toBeNull()
+    fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Ver la versión nueva' }))
+    expect(seccion('consumidor').getByText('lo nuevo')).toBeTruthy()
   })
 })

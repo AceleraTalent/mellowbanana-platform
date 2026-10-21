@@ -10,6 +10,7 @@ import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { buildStages, haceCuanto } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia, ETAPA_ORDER, type EstrategiaKey } from '@/lib/estrategia/stages'
+import { queSigueEstrategia } from '@/lib/estrategia/sigue'
 import { EstrategiaWorkspace } from './EstrategiaWorkspace'
 
 export const dynamic = 'force-dynamic'
@@ -41,9 +42,13 @@ export default async function EstrategiaView({ params, searchParams }: {
     estrategia: resumen,
   })
 
-  // La query manda, pero sólo si nombra una etapa real: una `?etapa=` inventada cae a la
-  // primera que se pueda trabajar en vez de romper la página.
-  const etapaActiva: EstrategiaKey = resolverEtapaActiva(etapa, ETAPA_ORDER, etapas)
+  // Toda la fase es una página. `?etapa=` (el menú, el buscador, lo que sigue) baja hasta
+  // esa sección; una inventada no rompe nada. Sin query, el menú marca lo que sigue.
+  const sigue = queSigueEstrategia(estado.map(e => ({
+    key: e.stage, status: e.status, esperando: e.versiones > 0 && (!e.aprobada || e.borradorNuevo !== null),
+  })))
+  const pedida = etapa && (ETAPA_ORDER as string[]).includes(etapa) ? etapa as EstrategiaKey : undefined
+  const etapaActiva: EstrategiaKey = pedida ?? sigue?.key ?? resolverEtapaActiva(undefined, ETAPA_ORDER, etapas)
 
   const fases = deriveFases(id, señales)
   const pantallas = derivePantallas(id, señales)
@@ -108,7 +113,9 @@ export default async function EstrategiaView({ params, searchParams }: {
     >
       <EstrategiaWorkspace
         projectId={id}
-        etapaActiva={etapaActiva}
+        proyecto={project.name}
+        irA={pedida}
+        sigue={sigue}
         etapas={etapas}
         contenidoPorEtapa={contenidoPorEtapa}
         dependencia={dependencia}

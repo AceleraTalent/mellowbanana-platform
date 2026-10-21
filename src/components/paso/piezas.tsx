@@ -48,9 +48,11 @@ export function BotonCopiar({ texto, etiqueta, principal }: { texto: string; eti
  * Copia el mensaje para seguir y abre claude.ai, en un clic. Primero copia y después abre:
  * la pestaña nueva se lleva el foco, y sin foco el portapapeles no deja escribir.
  */
-function SeguirEnClaude({ mensaje, proyecto, junto }: {
+export function SeguirEnClaude({ mensaje, proyecto, fase = 'el Landscape', junto }: {
   mensaje: string
   proyecto: string
+  /** Qué se trabaja en ese chat: "el Landscape", "la Estrategia". */
+  fase?: string
   /** Otra acción que va al lado del botón. */
   junto?: React.ReactNode
 }) {
@@ -73,9 +75,69 @@ function SeguirEnClaude({ mensaje, proyecto, junto }: {
       <p role="status" className="basis-full text-[13px] leading-[1.5] text-[var(--secundario)]">
         {copiado
           ? <>✓ Mensaje copiado. Pégalo en el chat de {proyecto}: Claude lo guarda acá y esta página se actualiza sola.</>
-          : <>Copia el mensaje y abre claude.ai. Todo el Landscape va en el mismo chat: Claude sabe en qué va.</>}
+          : <>Copia el mensaje y abre claude.ai. Todo {fase} va en el mismo chat: Claude sabe en qué va.</>}
       </p>
     </>
+  )
+}
+
+/**
+ * La franja de arriba de cada fase: qué sigue, de quién es y el botón que lo mueve. Sin
+ * `de`, es la franja de una fase terminada.
+ */
+export function Franja({ de, quien, titulo, texto, children }: {
+  de?: 'claude' | 'equipo'
+  quien?: string
+  titulo: string
+  texto?: string
+  children?: React.ReactNode
+}) {
+  if (!de) {
+    return (
+      <div className="mt-8 rounded-[14px] border border-[var(--line)] bg-white px-6 py-5">
+        <p className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">Lo que sigue</p>
+        <p className="mt-1.5 font-serif text-[22px] leading-[1.25] text-[var(--ink)]">{titulo}</p>
+      </div>
+    )
+  }
+  return (
+    <div className="mt-8 rounded-[14px] border border-[var(--ink)] bg-white px-6 py-5 shadow-[0_1px_0_var(--ink)]">
+      <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">
+        <span className={`h-[7px] w-[7px] rounded-full ${de === 'claude' ? 'border border-[var(--ink)]' : 'bg-[var(--banana)] ring-1 ring-[var(--ink)]'}`} aria-hidden="true" />
+        Lo que sigue · {quien}
+      </p>
+      <p className="mt-1.5 font-serif text-[22px] leading-[1.25] text-[var(--ink)]">{titulo}</p>
+      {texto && <p className="mt-1 max-w-[62ch] text-[14px] leading-[1.55] text-[var(--secundario)]">{texto}</p>}
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2.5">{children}</div>
+    </div>
+  )
+}
+
+/**
+ * La barra donde se aprueba lo que Claude entregó. Queda pegada abajo mientras se lee:
+ * se decide al terminar de leer, sin volver a subir.
+ */
+export function BarraDeRevision({ procedencia, instruccionCambios, onAprobar, guardando, error }: {
+  procedencia: string
+  instruccionCambios: string
+  onAprobar: () => void
+  guardando: boolean
+  error: string | null
+}) {
+  return (
+    <div className="sticky bottom-4 z-10 mt-10 flex flex-col gap-3 rounded-[14px] border border-[var(--ink)] bg-white/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(21,18,12,.12)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-[14px] font-semibold text-[var(--ink)]">Por revisar</p>
+        <p className="text-[12.5px] leading-snug text-[var(--secundario)]">{procedencia}</p>
+        {error && <p className="mt-1 text-[13px] text-[var(--error)]">{error}</p>}
+      </div>
+      <div className="flex flex-none flex-wrap items-center gap-2">
+        <BotonCopiar texto={instruccionCambios} etiqueta="Pedir cambios" />
+        <button type="button" onClick={onAprobar} disabled={guardando} className={`${BOTON_PRIMARIO} px-4 py-2`}>
+          {guardando ? 'Aprobando…' : 'Aprobar'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -90,14 +152,7 @@ export function LoQueSigue({ paso, proyecto, guardando, onMarcar }: {
   guardando: boolean
   onMarcar: (id: string, hecho: boolean) => void
 }) {
-  if (!paso) {
-    return (
-      <div className="mt-8 rounded-[14px] border border-[var(--line)] bg-white px-6 py-5">
-        <p className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">Lo que sigue</p>
-        <p className="mt-1.5 font-serif text-[22px] leading-[1.25] text-[var(--ink)]">El Landscape está completo.</p>
-      </div>
-    )
-  }
+  if (!paso) return <Franja titulo="El Landscape está completo." />
 
   const quien = paso.turno === 'claude' ? 'Le toca a Claude' : paso.turno === 'revisar' ? 'Te toca revisar' : 'Te toca'
   // Una pieza (los casos, el brand assets) se nombra a sí misma; una etapa, por su sección.
@@ -132,17 +187,7 @@ export function LoQueSigue({ paso, proyecto, guardando, onMarcar }: {
     acciones = paso.donde === 'plataforma' ? irALaSeccion('Elegir') : marcarHecho('Marcar hecho', true)
   }
 
-  return (
-    <div className="mt-8 rounded-[14px] border border-[var(--ink)] bg-white px-6 py-5 shadow-[0_1px_0_var(--ink)]">
-      <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">
-        <span className={`h-[7px] w-[7px] rounded-full ${paso.turno === 'claude' ? 'border border-[var(--ink)]' : 'bg-[var(--banana)] ring-1 ring-[var(--ink)]'}`} aria-hidden="true" />
-        Lo que sigue · {quien}
-      </p>
-      <p className="mt-1.5 font-serif text-[22px] leading-[1.25] text-[var(--ink)]">{titulo}</p>
-      <p className="mt-1 max-w-[62ch] text-[14px] leading-[1.55] text-[var(--secundario)]">{texto}</p>
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2.5">{acciones}</div>
-    </div>
-  )
+  return <Franja de={paso.turno === 'claude' ? 'claude' : 'equipo'} quien={quien} titulo={titulo} texto={texto}>{acciones}</Franja>
 }
 
 /**

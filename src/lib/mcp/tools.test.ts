@@ -321,3 +321,13 @@ describe('piezas del deck', () => {
     await expect(guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'casos', contenido: casos })).rejects.toThrow(/tendencias-casos/)
   })
 })
+
+describe('estado_estrategia dice qué sigue', () => {
+  it('con nada hecho, el diagnóstico; con un borrador, que el equipo lo revise', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    expect((await estadoEstrategia(db, 'Fruta Viva')).sigue).toMatch(/^Diagnóstico: .*etapa "diagnostico"/)
+    await guardarEtapa(db, { proyecto: 'Fruta Viva', fase: 'estrategia', etapa: 'concepto', contenido: { concepto: 'c', racional: 'r' } })
+    expect((await estadoEstrategia(db, 'Fruta Viva')).sigue).toMatch(/^El equipo tiene que revisar y aprobar Concepto estratégico/)
+  })
+})
