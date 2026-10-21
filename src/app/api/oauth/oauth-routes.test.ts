@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { nuevoToken } from '@/lib/oauth/crypto'
 
@@ -11,7 +11,7 @@ vi.mock('@/lib/db/client', async () => {
   return { db }
 })
 
-// `/authorize` lee la cookie `admin` con `cookies()` de `next/headers`, que fuera del
+// `/authorize` lee la cookie de sesión con `cookies()` de `next/headers`, que fuera del
 // runtime de un pedido real de Next explota con "called outside a request scope".
 // La reemplazamos por un mapa que los tests controlan directamente.
 const cookieJar = vi.hoisted(() => new Map<string, string>())
@@ -24,12 +24,13 @@ vi.mock('next/headers', () => ({
   }),
 }))
 
+import { COOKIE_SESION } from '@/lib/admin/sesion'
+import { valorDeSesion } from '@/lib/admin/sesion-de-prueba'
 import { POST as registerPOST } from './register/route'
 import { GET as authorizeGET, POST as authorizePOST } from './authorize/route'
 import { POST as tokenPOST } from './token/route'
 
 const CALLBACK = 'https://claude.ai/api/mcp/auth_callback'
-const ADMIN_PW = 'contraseña-de-prueba'
 
 function pkce() {
   const verifier = nuevoToken()
@@ -51,8 +52,6 @@ async function registrarViaRuta(redirectUris: string[] = [CALLBACK]) {
   return { res, body }
 }
 
-beforeAll(() => { process.env.ADMIN_PASSWORD = ADMIN_PW })
-afterAll(() => { delete process.env.ADMIN_PASSWORD })
 
 describe('POST /api/oauth/register', () => {
   it('con redirect_uris válido devuelve 201 y un client_id', async () => {
@@ -182,7 +181,7 @@ describe('GET/POST /api/oauth/authorize — validaciones', () => {
     '(CSRF: una página ajena no puede autoenviar el formulario de consentimiento)', async () => {
     const { body: cliente } = await registrarViaRuta()
     const { challenge } = pkce()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=${challenge}` +
@@ -196,7 +195,7 @@ describe('GET/POST /api/oauth/authorize — validaciones', () => {
     'su ausencia no es el formulario de consentimiento)', async () => {
     const { body: cliente } = await registrarViaRuta()
     const { challenge } = pkce()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=${challenge}` +
@@ -208,7 +207,7 @@ describe('GET/POST /api/oauth/authorize — validaciones', () => {
   it('con scope=landscape%20admin otorga solo landscape (no rechaza, filtra)', async () => {
     const { body: cliente } = await registrarViaRuta()
     const { verifier, challenge } = pkce()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=${challenge}` +
@@ -234,7 +233,7 @@ describe('GET/POST /api/oauth/authorize — validaciones', () => {
 describe('GET /api/oauth/authorize — pantalla de consentimiento', () => {
   it('muestra el nombre del cliente registrado y el host del redirect_uri', async () => {
     const { body: cliente } = await registrarViaRuta()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=xyz&code_challenge_method=S256`
@@ -253,7 +252,7 @@ describe('GET /api/oauth/authorize — pantalla de consentimiento', () => {
       body: JSON.stringify({ redirect_uris: [CALLBACK] }),
     }))
     const cliente = await res.json()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=xyz&code_challenge_method=S256`
@@ -270,7 +269,7 @@ describe('GET /api/oauth/authorize — pantalla de consentimiento', () => {
       body: JSON.stringify({ redirect_uris: [CALLBACK], client_name: '<script>alert(1)</script>' }),
     }))
     const cliente = await res.json()
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
 
     const url = `http://localhost/api/oauth/authorize?client_id=${cliente.client_id}` +
       `&redirect_uri=${encodeURIComponent(CALLBACK)}&code_challenge=xyz&code_challenge_method=S256`
@@ -297,7 +296,7 @@ describe('flujo completo: registrar → autorizar → canjear', () => {
     expect(sinSesion.status).toBe(401)
 
     // Con la cookie admin puesta, consiente y emite el código.
-    cookieJar.set('admin', ADMIN_PW)
+    cookieJar.set(COOKIE_SESION, valorDeSesion())
     const autorizado = await authorizePOST(req(urlAutorizar, { method: 'POST', headers: { origin: 'http://localhost' } }))
     expect(autorizado.status).toBe(303)
     const location = autorizado.headers.get('location')

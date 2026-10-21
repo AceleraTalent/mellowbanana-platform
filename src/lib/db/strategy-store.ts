@@ -85,10 +85,10 @@ export async function listStrategyVersions(db: AnyDb, projectId: string, stage?:
  * como la habría con un SELECT previo.
  */
 export async function approveStrategyVersion(
-  db: AnyDb, versionId: string, scope: { projectId: string; stage: EstrategiaKey },
+  db: AnyDb, versionId: string, scope: { projectId: string; stage: EstrategiaKey }, quien?: string,
 ): Promise<StrategyVersionRow> {
   const [row] = await db.update(strategyVersions)
-    .set({ approvedAt: new Date() })
+    .set({ approvedAt: new Date(), approvedBy: quien ?? null })
     .where(and(
       eq(strategyVersions.id, versionId),
       eq(strategyVersions.projectId, scope.projectId),
@@ -176,7 +176,7 @@ export async function reafirmarAprobadaEstrategia(
     author: 'humano',
     authorLabel: autor,
   })
-  return approveStrategyVersion(db, version.id, { projectId, stage })
+  return approveStrategyVersion(db, version.id, { projectId, stage }, autor)
 }
 
 /**
@@ -219,6 +219,7 @@ export async function listStrategyActivity(db: AnyDb, projectId: string, limit =
         tipo: 'aprobado',
         stage: v.stage as EstrategiaKey,
         autor: 'humano',
+        quien: v.approvedBy ?? undefined,
         cuando: new Date(v.approvedAt),
       })
     }

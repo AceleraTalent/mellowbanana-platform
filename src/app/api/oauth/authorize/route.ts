@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { oauthClients } from '@/lib/db/schema'
-import { isValidAdminToken } from '@/lib/admin/auth'
+import { quienEntro } from '@/lib/admin/auth'
 import { crearCodigo } from '@/lib/oauth/store'
 
 interface Pedido {
@@ -102,8 +101,7 @@ export async function GET(req: Request) {
   const pedido = await leerPedido(url)
   if ('error' in pedido) return NextResponse.json({ error: pedido.error }, { status: 400 })
 
-  const cookie = (await cookies()).get('admin')?.value
-  if (!isValidAdminToken(cookie)) {
+  if (!(await quienEntro())) {
     // Sin sesión: al login de siempre, y de vuelta acá con los mismos parámetros.
     const destino = new URL('/admin/login', url.origin)
     destino.searchParams.set('next', url.pathname + url.search)
@@ -117,13 +115,12 @@ export async function POST(req: Request) {
   const pedido = await leerPedido(url)
   if ('error' in pedido) return NextResponse.json({ error: pedido.error }, { status: 400 })
 
-  const cookie = (await cookies()).get('admin')?.value
-  if (!isValidAdminToken(cookie)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!(await quienEntro())) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   // Este POST solo puede venir del formulario de consentimiento de arriba, y los
   // navegadores mandan siempre `Origin` en los POST. Un Origin ajeno o ausente es una
   // página de terceros autoenviando el formulario para llevarse el código (CSRF) —
-  // segunda capa detrás del SameSite=Lax de la cookie admin. Se comparan hosts y no
+  // segunda capa detrás del SameSite=Lax de la cookie de sesión. Se comparan hosts y no
   // origins completos porque detrás del proxy el protocolo de `req.url` no es de fiar.
   const origin = req.headers.get('origin')
   const originHost = origin ? URL.parse(origin)?.host ?? null : null

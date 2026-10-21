@@ -47,9 +47,20 @@ const DDL = `
     author text NOT NULL,
     author_label text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    approved_at timestamptz
+    approved_at timestamptz,
+    approved_by text
   );
   CREATE INDEX landscape_versions_project_stage ON landscape_versions (project_id, stage);
+  CREATE TABLE usuarios (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre text NOT NULL,
+    usuario text NOT NULL CONSTRAINT usuarios_usuario UNIQUE,
+    clave_hash text NOT NULL,
+    es_admin boolean NOT NULL DEFAULT false,
+    activo boolean NOT NULL DEFAULT true,
+    avisos_vistos_hasta timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
   CREATE TABLE landscape_pasos (
     project_id uuid NOT NULL REFERENCES projects(id),
     paso text NOT NULL,
@@ -81,7 +92,8 @@ const DDL = `
     author text NOT NULL,
     author_label text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    approved_at timestamptz
+    approved_at timestamptz,
+    approved_by text
   );
   CREATE INDEX strategy_versions_project_stage ON strategy_versions (project_id, stage);
   CREATE TABLE oauth_clients (

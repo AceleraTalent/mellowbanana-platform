@@ -1,17 +1,47 @@
-/** Edge-safe shared-password check. The cookie stores the password (httpOnly), compared here. */
-export function isValidAdminToken(token?: string): boolean {
-  const pw = process.env.ADMIN_PASSWORD ?? ''
-  return !!pw && token === pw
+import { cookies } from 'next/headers'
+import { db } from '@/lib/db/client'
+import { usuarioPorId } from '@/lib/db/usuarios-store'
+import { COOKIE_SESION, MAESTRA, leerSesion } from './sesion'
+
+/** Quién está del otro lado de un pedido del panel. */
+export interface Quien {
+  id: string
+  nombre: string
+  /** Puede manejar el equipo: crear cuentas, cambiar claves ajenas, desactivar. */
+  esAdmin: boolean
+  /** Entró con la llave maestra, no con una cuenta: no hay a quién atribuirle nada. */
+  maestra: boolean
 }
 
+const LLAVE_MAESTRA: Quien = { id: MAESTRA, nombre: 'Llave maestra', esAdmin: true, maestra: true }
+
 /**
- * La cookie de admin, leída de un `Request` pelado (sin `NextRequest`), para que las
- * rutas que la exigen se puedan testear construyendo el Request a mano. La usan las
- * rutas de API con efectos que no deben quedar a merced de la oscuridad de la URL
- * (borrar proyectos, editar el entregable); el proxy solo protege las páginas.
+ * La cookie firmada dice quién entró; acá se confirma que esa persona sigue activa. Así,
+ * desactivar a alguien le cierra la puerta en la próxima acción, no cuando venza la cookie.
  */
-export function esAdminRequest(req: Request): boolean {
-  const cookie = req.headers.get('cookie') ?? ''
-  const token = cookie.split(/;\s*/).find(c => c.startsWith('admin='))?.slice('admin='.length)
-  return isValidAdminToken(token === undefined ? undefined : decodeURIComponent(token))
+async function quienEs(valor?: string): Promise<Quien | null> {
+  const s = await leerSesion(valor)
+  if (!s) return null
+  if (s.uid === MAESTRA) return LLAVE_MAESTRA
+  const u = await usuarioPorId(db, s.uid)
+  return u?.activo ? { id: u.id, nombre: u.nombre, esAdmin: u.esAdmin, maestra: false } : null
 }
+
+/** Una cookie leída de un `Request` pelado, para que las rutas se puedan testear a mano. */
+export function cookieDe(req: Request, nombre: string): string | undefined {
+  const par = (req.headers.get('cookie') ?? '').split(/;\s*/).find(c => c.startsWith(`${nombre}=`))
+  return par === undefined ? undefined : decodeURIComponent(par.slice(nombre.length + 1))
+}
+
+/** La sesión de un pedido a la API. Sin sesión válida, `null`: la ruta responde 401. */
+export function sesionDe(req: Request): Promise<Quien | null> {
+  return quienEs(cookieDe(req, COOKIE_SESION))
+}
+
+/** La sesión de quien mira una página del panel (componentes de servidor). */
+export async function quienEntro(): Promise<Quien | null> {
+  return quienEs((await cookies()).get(COOKIE_SESION)?.value)
+}
+
+/** El nombre que se guarda como autor de una decisión: nadie, si entró con la llave maestra. */
+export const firmaDe = (q: Quien): string | undefined => (q.maestra ? undefined : q.nombre)

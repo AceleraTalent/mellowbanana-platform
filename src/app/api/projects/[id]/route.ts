@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import { renameProject, deleteProject, ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
-import { esAdminRequest } from '@/lib/admin/auth'
+import { sesionDe } from '@/lib/admin/auth'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 function conErrores(e: unknown): NextResponse {
@@ -12,7 +12,7 @@ function conErrores(e: unknown): NextResponse {
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
+  if (!(await sesionDe(req))) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
   if (!esUuidValido(id)) return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
   const body = await req.json().catch(() => ({}))
   if (typeof body?.name !== 'string')
@@ -26,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
+  if (!(await sesionDe(req))) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
   if (!esUuidValido(id)) return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
   try {
     const { sesionesBorradas } = await deleteProject(db, id)

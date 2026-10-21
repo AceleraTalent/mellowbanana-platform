@@ -381,10 +381,10 @@ export async function listLandscapeVersions(db: AnyDb, projectId: string, stage?
  * como la habría con un SELECT previo.
  */
 export async function approveLandscapeVersion(
-  db: AnyDb, versionId: string, scope: { projectId: string; stage: StageKey },
+  db: AnyDb, versionId: string, scope: { projectId: string; stage: StageKey }, quien?: string,
 ): Promise<LandscapeVersionRow> {
   const [row] = await db.update(landscapeVersions)
-    .set({ approvedAt: new Date() })
+    .set({ approvedAt: new Date(), approvedBy: quien ?? null })
     .where(and(
       eq(landscapeVersions.id, versionId),
       eq(landscapeVersions.projectId, scope.projectId),
@@ -451,7 +451,7 @@ export async function selectTendencias(
     author: 'humano',
     authorLabel,
   })
-  return approveLandscapeVersion(db, version.id, { projectId, stage: 'tendencias' })
+  return approveLandscapeVersion(db, version.id, { projectId, stage: 'tendencias' }, authorLabel)
 }
 
 /**
@@ -582,7 +582,7 @@ export async function reafirmarAprobada(
     author: 'humano',
     authorLabel: autor,
   })
-  return approveLandscapeVersion(db, version.id, { projectId, stage })
+  return approveLandscapeVersion(db, version.id, { projectId, stage }, autor)
 }
 
 /**
@@ -615,9 +615,9 @@ export interface ActivityEntry<S extends string = StageKey> {
  * La actividad no tiene tabla propia: se deriva de las versiones. Cada versión es
  * un guardado, y cada versión sellada es además una aprobación. Aprobar siempre es
  * humano, así que esas entradas van con autor 'humano'. La tabla no guarda quién
- * aprobó (solo quién guardó el borrador), así que las entradas 'aprobado' van sin
- * `quien` — el panel cae a "Equipo" en vez de atribuirle la aprobación a quien
- * escribió el borrador.
+ * aprobó desde que hay cuentas por persona (`approvedBy`); lo aprobado antes, o con la
+ * llave maestra, va sin `quien` — el panel cae a "Equipo" en vez de atribuirle la
+ * aprobación a quien escribió el borrador.
  */
 export async function listLandscapeActivity(db: AnyDb, projectId: string, limit = 8): Promise<ActivityEntry[]> {
   const versiones = await listLandscapeVersions(db, projectId)
@@ -638,6 +638,7 @@ export async function listLandscapeActivity(db: AnyDb, projectId: string, limit 
         tipo: 'aprobado',
         stage: v.stage as StageKey,
         autor: 'humano',
+        quien: v.approvedBy ?? undefined,
         cuando: new Date(v.approvedAt),
       })
     }

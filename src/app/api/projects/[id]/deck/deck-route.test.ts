@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 
+vi.mock('@/lib/db/client', async () => {
+  const { makeTestDb } = await import('@/lib/db/testdb')
+  return { db: await makeTestDb() }
+})
+
 const { buildProjectDeckView } = vi.hoisted(() => ({ buildProjectDeckView: vi.fn(async () => null) }))
 vi.mock('@/lib/deck/service', () => ({ buildProjectDeckView }))
 

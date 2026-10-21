@@ -6,7 +6,7 @@ import { validateProblema } from '@/lib/deliverable/steps/problema'
 import { validateCompetencia } from '@/lib/deliverable/steps/competencia'
 import { validatePerfil } from '@/lib/deliverable/steps/perfil'
 import { validatePropuestaValor } from '@/lib/deliverable/steps/propuesta-valor'
-import { esAdminRequest } from '@/lib/admin/auth'
+import { sesionDe } from '@/lib/admin/auth'
 import type { Deliverable, PartKey } from '@/lib/deliverable/schema'
 
 const PARTS: PartKey[] = ['personalidad', 'problema', 'competencia', 'perfil', 'propuestaValor']
@@ -31,7 +31,7 @@ export const maxDuration = 300
 /** Edición a mano de una parte del entregable. El insumo de la exportación que viene. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
+  if (!(await sesionDe(req))) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
 
   const body = await req.json().catch(() => ({}))
   const part = body?.part as PartKey | undefined
@@ -64,6 +64,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Generar gasta créditos del modelo: sólo lo dispara el equipo.
+  if (!(await sesionDe(req))) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
   const { id } = await params
   const partParam = new URL(req.url).searchParams.get('part')
   if (partParam && !PARTS.includes(partParam as PartKey))

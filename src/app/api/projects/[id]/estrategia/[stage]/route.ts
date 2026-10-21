@@ -4,11 +4,12 @@ import { saveStrategyVersion, approveStrategyVersion, reafirmarAprobadaEstrategi
 import { ETAPA_ORDER, type EstrategiaKey } from '@/lib/estrategia/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
-import { esAdminRequest } from '@/lib/admin/auth'
+import { firmaDe, sesionDe } from '@/lib/admin/auth'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; stage: string }> }) {
   // Aprobar y guardar son decisiones del equipo: sin sesión no pasa nada.
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const quien = await sesionDe(req)
+  if (!quien) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id, stage } = await params
   if (!ETAPA_ORDER.includes(stage as EstrategiaKey))
     return NextResponse.json({ error: `Etapa desconocida: ${stage}` }, { status: 400 })
@@ -38,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const version = await saveStrategyVersion(db, id, stage as EstrategiaKey, {
           content: body.content,
           author: 'humano',
-          authorLabel: typeof body.autor === 'string' ? body.autor : undefined,
+          authorLabel: firmaDe(quien),
         })
         return NextResponse.json(version)
       }
@@ -49,7 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           return NextResponse.json({ error: `versionId inválido: ${body.versionId}` }, { status: 400 })
         // El scope (proyecto + etapa de la URL) va atado al UPDATE: aprobar no confía
         // en que el versionId del body pertenezca a este proyecto y esta etapa, lo verifica.
-        return NextResponse.json(await approveStrategyVersion(db, body.versionId, { projectId: id, stage: stage as EstrategiaKey }))
+        return NextResponse.json(await approveStrategyVersion(db, body.versionId, { projectId: id, stage: stage as EstrategiaKey }, firmaDe(quien)))
       }
       case 'reafirmar': {
         // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
@@ -57,7 +58,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // esta etapa, que la deriva el store. Como 'guardar', la firma quien decidió.
         const version = await reafirmarAprobadaEstrategia(
           db, id, stage as EstrategiaKey,
-          typeof body.autor === 'string' ? body.autor : undefined,
+          firmaDe(quien),
         )
         // Sin conflicto no se appendeó nada, y el pedido no falló: no había nada que
         // ratificar. `reafirmada` lo dice sin obligar a adivinarlo desde un body vacío.

@@ -9,6 +9,7 @@ vi.mock('@/lib/db/client', async () => {
 import { POST } from './[stage]/route'
 import { db } from '@/lib/db/client'
 import { cookieDeSesion } from '@/lib/admin/sesion-de-prueba'
+import { crearUsuario } from '@/lib/db/usuarios-store'
 import {
   findOrCreateProject, saveLandscapeVersion, approveLandscapeVersion, landscapeState, listLandscapeVersions,
 } from '@/lib/db/store'
@@ -45,15 +46,25 @@ describe('POST /api/projects/[id]/landscape/[stage] — reafirmar', () => {
     await saveLandscapeVersion(db, projectId, 'contexto', { content: { v: 2 }, author: 'claude' })
   }
 
-  it('ratifica la vigente y la etapa deja de tener borrador pendiente', async () => {
+  it('ratifica la vigente y la etapa deja de tener borrador pendiente, firmada por quien decidió', async () => {
     await conConflicto()
-    const res = await post(projectId, 'contexto', { accion: 'reafirmar', autor: 'Flor' })
+    const flor = await crearUsuario(db, { nombre: 'Flor', usuario: `flor${contador}`, clave: 'una-clave-larga' })
+    const res = await POST(
+      new Request(`http://localhost/api/projects/${projectId}/landscape/contexto`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...cookieDeSesion(flor.id) },
+        // Lo que diga el body como autor no cuenta: la firma sale de la sesión.
+        body: JSON.stringify({ accion: 'reafirmar', autor: 'Otra persona' }),
+      }),
+      { params: Promise.resolve({ id: projectId, stage: 'contexto' }) },
+    )
     expect(res.status).toBe(200)
 
     const { reafirmada, version } = await res.json()
     expect(reafirmada).toBe(true)
     expect(version.approvedAt).not.toBeNull()
     expect(version.authorLabel).toBe('Flor')
+    expect(version.approvedBy).toBe('Flor')
 
     const etapa = (await landscapeState(db, projectId)).find(e => e.stage === 'contexto')!
     expect(etapa.borradorNuevo).toBeNull()

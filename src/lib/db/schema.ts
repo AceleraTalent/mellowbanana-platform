@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, unique, primaryKey, index } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, timestamp, jsonb, unique, primaryKey, index, boolean } from 'drizzle-orm/pg-core'
 
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -64,6 +64,7 @@ export const landscapeVersions = pgTable('landscape_versions', {
   authorLabel: text('author_label'),                       // quién, si se sabe
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
+  approvedBy: text('approved_by'),                         // quién aprobó, si se sabe
 }, (t) => [index('landscape_versions_project_stage').on(t.projectId, t.stage)])
 
 /**
@@ -114,6 +115,7 @@ export const strategyVersions = pgTable('strategy_versions', {
   authorLabel: text('author_label'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
+  approvedBy: text('approved_by'),                         // quién aprobó, si se sabe
 }, (t) => [index('strategy_versions_project_stage').on(t.projectId, t.stage)])
 
 // Fase 2 · OAuth. La app es su propio servidor de autorización para el conector de
@@ -150,3 +152,19 @@ export const oauthTokens = pgTable('oauth_tokens', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+/**
+ * Las personas del equipo que entran al panel, cada una con su usuario y su clave. La
+ * clave se guarda derivada con scrypt, nunca tal cual. La llave maestra (ADMIN_PASSWORD)
+ * no vive acá: es la de recuperar el acceso y crear las primeras cuentas.
+ */
+export const usuarios = pgTable('usuarios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nombre: text('nombre').notNull(),                        // cómo se muestra: "Ana"
+  usuario: text('usuario').notNull(),                      // con qué entra, en minúsculas
+  claveHash: text('clave_hash').notNull(),
+  esAdmin: boolean('es_admin').notNull().default(false),   // puede manejar el equipo
+  activo: boolean('activo').notNull().default(true),
+  avisosVistosHasta: timestamp('avisos_vistos_hasta', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique('usuarios_usuario').on(t.usuario)])

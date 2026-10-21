@@ -4,14 +4,15 @@ import {
   saveLandscapeVersion, approveLandscapeVersion, selectTendencias, reafirmarAprobada, marcarNoAplica,
   ErrorDeValidacion, ErrorNoEncontrado,
 } from '@/lib/db/store'
-import { esAdminRequest } from '@/lib/admin/auth'
+import { firmaDe, sesionDe } from '@/lib/admin/auth'
 import { STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; stage: string }> }) {
   // Aprobar y guardar son decisiones del equipo: sin sesión no pasa nada. Claude escribe
   // por MCP, con su propio token, no por acá.
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const quien = await sesionDe(req)
+  if (!quien) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id, stage } = await params
   if (!STAGE_ORDER.includes(stage as StageKey))
     return NextResponse.json({ error: `Etapa desconocida: ${stage}` }, { status: 400 })
@@ -41,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const version = await saveLandscapeVersion(db, id, stage as StageKey, {
           content: body.content,
           author: 'humano',
-          authorLabel: typeof body.autor === 'string' ? body.autor : undefined,
+          authorLabel: firmaDe(quien),
         })
         return NextResponse.json(version)
       }
@@ -52,7 +53,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           return NextResponse.json({ error: `versionId inválido: ${body.versionId}` }, { status: 400 })
         // El scope (proyecto + etapa de la URL) va atado al UPDATE: aprobar no confía
         // en que el versionId del body pertenezca a este proyecto y esta etapa, lo verifica.
-        return NextResponse.json(await approveLandscapeVersion(db, body.versionId, { projectId: id, stage: stage as StageKey }))
+        return NextResponse.json(await approveLandscapeVersion(db, body.versionId, { projectId: id, stage: stage as StageKey }, firmaDe(quien)))
       }
       case 'reafirmar': {
         // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
@@ -60,7 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // esta etapa, que la deriva el store. Como 'guardar', la firma quien decidió.
         const version = await reafirmarAprobada(
           db, id, stage as StageKey,
-          typeof body.autor === 'string' ? body.autor : undefined,
+          firmaDe(quien),
         )
         // Sin conflicto no se appendeó nada, y el pedido no falló: no había nada que
         // ratificar. `reafirmada` lo dice sin obligar a adivinarlo desde un body vacío.
@@ -73,7 +74,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           return NextResponse.json({ error: 'seleccionadas tiene que ser una lista de ids' }, { status: 400 })
         const version = await selectTendencias(
           db, id, body.seleccionadas as string[],
-          typeof body.autor === 'string' ? body.autor : undefined,
+          firmaDe(quien),
         )
         return NextResponse.json(version)
       }

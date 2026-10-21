@@ -2,6 +2,24 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-10-21 — Una cuenta por persona, sin correo, y la llave maestra de respaldo
+
+**Qué:** cada persona del equipo entra con usuario y clave (tabla `usuarios`, clave derivada
+con scrypt). Las cuentas las crea quien administra desde `/admin/equipo` y le pasa a cada uno
+su usuario y su clave por donde quiera; cada quien cambia la suya. `ADMIN_PASSWORD` queda como
+llave maestra: recupera el acceso y crea las primeras cuentas. La sesión es una cookie firmada
+(HMAC con `SESSION_SECRET` o, si no está, la llave maestra) que dice quién entró; cada acción
+confirma contra la base que la cuenta siga activa. Las aprobaciones guardan quién las hizo
+(`approved_by`), tomado de la sesión y nunca del body.
+
+**Por qué:** el estudio pidió "una llave por persona" y nada de correos ("lo complica
+demasiado"). Antes la cookie guardaba la clave compartida tal cual y el historial decía
+"Equipo" para todo.
+
+**Qué se descartó:** entrar con Google o con link al correo (dependen de configurar servicios
+externos); sesiones en tabla (una consulta por página en el proxy, sin ganar nada a esta
+escala). Cambiar la llave maestra cierra todas las sesiones: es a propósito.
+
 ## 2026-10-21 — A producción con Geist mientras se aclara la licencia de Favorit
 
 **Qué:** titulares y rótulos salen en Geist (Bold) y Geist Mono, cargadas desde Google con

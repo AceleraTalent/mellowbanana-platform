@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
-import { esAdminRequest } from '@/lib/admin/auth'
+import { sesionDe } from '@/lib/admin/auth'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
 import { actualizarSeguimiento, validarCambios } from '@/lib/db/seguimiento-store'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 /** El equipo edita el seguimiento de un proyecto desde la tabla del inicio. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  if (!(await sesionDe(req))) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id } = await params
   if (!esUuidValido(id)) return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
 

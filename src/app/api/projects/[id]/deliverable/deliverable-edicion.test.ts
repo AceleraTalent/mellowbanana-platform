@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/db/client', async () => {
   const { makeTestDb } = await import('@/lib/db/testdb')
@@ -8,10 +8,10 @@ vi.mock('@/lib/db/client', async () => {
 
 import { PATCH } from './route'
 import { db } from '@/lib/db/client'
+import { cookieDeSesion } from '@/lib/admin/sesion-de-prueba'
 import { findOrCreateProject, saveDeliverable, getDeliverable } from '@/lib/db/store'
 import type { Deliverable } from '@/lib/deliverable/schema'
 
-beforeEach(() => { process.env.ADMIN_PASSWORD = 'secreta' })
 
 const PROBLEMA = {
   problemaMundo: 'mundo', problemaMarca: 'marca',
@@ -22,7 +22,7 @@ const PROBLEMA = {
 function patch(id: string, body: unknown, conCookie = true) {
   return PATCH(new Request(`http://localhost/api/projects/${id}/deliverable`, {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json', ...(conCookie ? { cookie: 'admin=secreta' } : {}) },
+    headers: { 'content-type': 'application/json', ...(conCookie ? cookieDeSesion() : {}) },
     body: JSON.stringify(body),
   }), { params: Promise.resolve({ id }) })
 }

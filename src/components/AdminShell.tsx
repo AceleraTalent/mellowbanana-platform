@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cloneElement, isValidElement } from 'react'
 import { db } from '@/lib/db/client'
+import { quienEntro } from '@/lib/admin/auth'
 import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { Wordmark } from './Brand'
 import { PanelMovil } from './PanelMovil'
@@ -60,6 +61,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
   // La barra y el inicio leen el mismo Sistema M&B: lo que espera al equipo acá es
   // exactamente lo que la tabla del inicio marca como del equipo.
   const proyectos = sistema ?? await cargarSistema(db)
+  const quien = await quienEntro()
   const esperan = new Set(proyectos
     .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
     .map(p => p.id))
@@ -125,7 +127,18 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
         </>
       )}
 
-      <p className="mt-auto pt-4 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">Panel interno</p>
+      {/* Quién está adentro, el equipo y salir. Salir es un formulario: un POST, para que
+          un link ajeno no te cierre la sesión. */}
+      <div className="mt-auto border-t border-[var(--line)] pt-4">
+        <p className="font-mono text-[10.5px] uppercase tracking-[.12em] text-[var(--rotulo)]">Panel interno</p>
+        {quien && <p className="mt-1.5 truncate text-[14px] font-medium text-[var(--ink)]">{quien.nombre}</p>}
+        <div className="mt-1 flex items-center gap-4 text-[13px] text-[var(--secundario)]">
+          <Link href="/admin/equipo" className="hover:text-[var(--ink)] hover:underline">Equipo</Link>
+          <form action="/api/admin/logout" method="post">
+            <button type="submit" className="hover:text-[var(--ink)] hover:underline">Salir</button>
+          </form>
+        </div>
+      </div>
     </div>
   )
 

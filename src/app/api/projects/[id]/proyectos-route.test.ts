@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/db/client', async () => {
   const { makeTestDb } = await import('@/lib/db/testdb')
@@ -8,9 +8,9 @@ vi.mock('@/lib/db/client', async () => {
 
 import { PATCH, DELETE } from './route'
 import { db } from '@/lib/db/client'
+import { cookieDeSesion } from '@/lib/admin/sesion-de-prueba'
 import { findOrCreateProject, getProject, createSession, assignSessionToProject } from '@/lib/db/store'
 
-beforeEach(() => { process.env.ADMIN_PASSWORD = 'secreta' })
 
 function pedido(id: string, init: RequestInit & { conCookie?: boolean } = {}) {
   const { conCookie = true, ...resto } = init
@@ -18,7 +18,7 @@ function pedido(id: string, init: RequestInit & { conCookie?: boolean } = {}) {
     ...resto,
     headers: {
       'content-type': 'application/json',
-      ...(conCookie ? { cookie: 'admin=secreta' } : {}),
+      ...(conCookie ? cookieDeSesion() : {}),
       ...resto.headers,
     },
   })
