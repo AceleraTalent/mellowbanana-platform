@@ -41,12 +41,12 @@ describe('estadoDeFases', () => {
   })
 
   it('el landscape cuenta pasos listos', () => {
-    const s = senales({ pasos: pasos({}, ['1.1', '1.2']) })
-    expect(fase(s, 'landscape')).toMatchObject({ estado: 'en_curso', detalle: '2 de 15 pasos' })
+    const s = senales({ pasos: pasos({}, ['1.1', '3.4']) })
+    expect(fase(s, 'landscape')).toMatchObject({ estado: 'en_curso', detalle: '2 de 13 pasos' })
   })
 
   it('las fases que se cuentan traen su avance corto, el mismo para el inicio y el menú', () => {
-    expect(fase(senales({ pasos: pasos({}, ['1.1', '1.2']) }), 'landscape').avance).toBe('2/15')
+    expect(fase(senales({ pasos: pasos({}, ['1.1', '3.4']) }), 'landscape').avance).toBe('2/13')
     expect(fase(senales({ estrategia: estrategia(3) }), 'estrategia').avance).toBe('3/14')
     // Las que no se cuentan no inventan un número.
     expect(fase(senales(), 'taller').avance).toBeUndefined()
@@ -97,13 +97,13 @@ describe('queSigue', () => {
       pasos: pasos({ contexto: { status: 'en_curso', contenido: { fuentes: [{ url: 'x' }], resumen: 'r' } } }, ['1.1']),
     })
     expect(queSigue(s, estadoDeFases(s))).toMatchObject({
-      quien: 'revisar', detalle: '2.1 Fuentes del sector', href: '/admin/projects/p1/landscape?paso=2.1',
+      quien: 'revisar', detalle: 'Fuentes del sector', href: '/admin/projects/p1/landscape?paso=2.1',
     })
   })
 
   it('en el landscape sin nada por revisar, dice de quién es el primer paso pendiente', () => {
-    const s = senales({ pasos: pasos({}, ['1.1', '1.2']) })
-    expect(queSigue(s, estadoDeFases(s))).toMatchObject({ quien: 'claude', detalle: '1.0 Enfoque del estudio' })
+    const s = senales({ pasos: pasos({}, ['1.1']) })
+    expect(queSigue(s, estadoDeFases(s))).toMatchObject({ quien: 'claude', detalle: 'Enfoque del estudio' })
   })
 
   it('en estrategia, un borrador esperando decisión es lo primero', () => {

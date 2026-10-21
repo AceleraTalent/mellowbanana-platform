@@ -5,14 +5,14 @@ import {
 } from '@/lib/db/store'
 import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
-import { construirIndice, esperanDecision, resolverEtapaActiva } from '@/lib/pipeline/indice'
+import { construirIndice, esperanDecision } from '@/lib/pipeline/indice'
 import { procedenciaDeVersion, autorDeVersion } from '@/lib/pipeline/procedencia'
 import { projectSignals } from '@/lib/pipeline/signals'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { buildStages, haceCuanto, textoActividad, STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
-import { estadoDePasos, pasoPorId, type PasoConEstado } from '@/lib/landscape/pasos'
+import { estadoDePasos, pasoPorId, pasoQueSigue } from '@/lib/landscape/pasos'
 import { pasosMarcados } from '@/lib/db/pasos-store'
 import { LandscapeWorkspace } from './LandscapeWorkspace'
 
@@ -63,16 +63,14 @@ export default async function LandscapeView({ params, searchParams }: {
     marcados,
   )
 
-  // Qué etapa se mira. `?paso=` manda si nombra uno real (el buscador y “lo que sigue”
-  // apuntan a un paso): se abre su etapa con ese paso resaltado. Si no, `?etapa=`; sin
-  // nada, la etapa del primer paso que falta. Una query inventada nunca rompe la página.
-  const pendiente = (p: PasoConEstado) => p.estado === 'pendiente' || p.estado === 'revisar'
-  const pasoPedido = pasoQuery ? pasos.find(p => p.id === pasoPorId(pasoQuery)?.id) : undefined
-  const etapaActiva: StageKey = pasoPedido?.etapa
-    ?? (etapa && (STAGE_ORDER as string[]).includes(etapa)
-      ? resolverEtapaActiva(etapa, STAGE_ORDER, stages)
-      : (pasos.find(pendiente) ?? pasos[pasos.length - 1]).etapa)
-  const foco = pasoPedido?.id ?? pasos.find(p => p.etapa === etapaActiva && pendiente(p))?.id
+  // Toda la fase es una página; el link puede nombrar una sección (`?etapa=`) o un paso
+  // (`?paso=`, lo que usan el buscador y “lo que sigue”), y la página baja hasta ella. Una
+  // query inventada no rompe nada: se queda arriba. Sin query, el menú marca la sección
+  // donde está lo que sigue.
+  const pedida: StageKey | undefined = pasoQuery
+    ? pasoPorId(pasoQuery)?.etapa
+    : etapa && (STAGE_ORDER as string[]).includes(etapa) ? etapa as StageKey : undefined
+  const etapaActiva: StageKey = pedida ?? pasoQueSigue(pasos)?.etapa ?? STAGE_ORDER[STAGE_ORDER.length - 1]
 
   const fases = deriveFases(id, señales)
   const pantallas = derivePantallas(id, señales)
@@ -157,8 +155,7 @@ export default async function LandscapeView({ params, searchParams }: {
       <LandscapeWorkspace
         projectId={id}
         proyecto={project.name}
-        etapa={etapaActiva}
-        foco={foco}
+        irA={pedida}
         pasos={pasos}
         tendencias={tendenciasContent?.candidatas ?? []}
         seleccionAprobada={seleccionAprobada}

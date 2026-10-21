@@ -53,6 +53,8 @@ describe('mcp · herramientas', () => {
 
     expect(r.mensaje).toContain('Guardé un borrador de Contexto del sector')
     expect(r.mensaje).toContain('la aprueba desde el panel')
+    // El puente de vuelta: Claude le pasa al equipo el link a la sección donde quedó.
+    expect(r).toMatchObject({ verEnElPanel: `/admin/projects/${p.id}/landscape?etapa=contexto` })
   })
 
   it('sobre una etapa aprobada, no la pisa ni la reabre', async () => {
@@ -96,6 +98,16 @@ describe('mcp · herramientas', () => {
       proyecto: 'Fruta Viva', etapa: 'tendencias', contenido: { candidatas: [{ titulo: 'sin id' }] },
     })).rejects.toThrow(ErrorDeHerramienta)
     expect(await listLandscapeVersions(db, p.id, 'tendencias')).toHaveLength(0)
+  })
+
+  it('estado_landscape dice qué sigue: basta con “sigamos” para que Claude sepa qué hacer', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    expect((await estadoLandscape(db, 'Fruta Viva')).sigue).toMatch(/^Enfoque del estudio: .*guardar_etapa en la etapa "setup"/)
+
+    // Con un borrador esperando, lo que sigue es que el equipo lo apruebe: Claude espera.
+    await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'setup', contenido: { nombre: 'x' } })
+    expect((await estadoLandscape(db, 'Fruta Viva')).sigue).toMatch(/^El equipo tiene que revisar y aprobar Enfoque/)
   })
 
   it('estado_landscape marca las seis etapas', async () => {

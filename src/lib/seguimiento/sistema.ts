@@ -9,7 +9,7 @@
  * equipo lo marca como hecho.
  */
 
-import type { PasoConEstado } from '@/lib/landscape/pasos'
+import { pasoQueSigue, type PasoConEstado } from '@/lib/landscape/pasos'
 
 export type FaseSistema = 'taller' | 'landscape' | 'naming' | 'estrategia' | 'diseno'
 
@@ -157,15 +157,15 @@ export function queSigue(s: SenalesProyecto, fases: FaseConEstado[]): QueSigue {
       return { quien: 'equipo', texto: 'Te toca', detalle: 'Hacer el taller y marcarlo hecho', href: `${base}/taller` }
     }
     case 'landscape': {
-      const href = (id: string) => `${base}/landscape?paso=${id}`
-      const revisar = s.pasos.find(p => p.estado === 'revisar')
-      if (revisar) return { quien: 'revisar', texto: 'Por revisar', detalle: `${revisar.id} ${revisar.titulo}`, href: href(revisar.id) }
-      const pendiente = s.pasos.find(p => p.estado === 'pendiente')
-      if (pendiente)
-        return pendiente.turno === 'claude'
-          ? { quien: 'claude', texto: 'Le toca a Claude', detalle: `${pendiente.id} ${pendiente.titulo}`, href: href(pendiente.id) }
-          : { quien: 'equipo', texto: 'Te toca', detalle: `${pendiente.id} ${pendiente.titulo}`, href: href(pendiente.id) }
-      return { quien: 'listo', texto: 'Terminado' }
+      // El link nombra el paso: la página abre su sección. El número no va en el texto:
+      // es la numeración del documento del estudio y el equipo no la necesita para trabajar.
+      const paso = pasoQueSigue(s.pasos)
+      if (!paso) return { quien: 'listo', texto: 'Terminado' }
+      const href = `${base}/landscape?paso=${paso.id}`
+      if (paso.turno === 'revisar') return { quien: 'revisar', texto: 'Por revisar', detalle: paso.titulo, href }
+      return paso.turno === 'claude'
+        ? { quien: 'claude', texto: 'Le toca a Claude', detalle: paso.titulo, href }
+        : { quien: 'equipo', texto: 'Te toca', detalle: paso.titulo, href }
     }
     case 'estrategia': {
       const href = (key: string) => `${base}/estrategia?etapa=${key}`

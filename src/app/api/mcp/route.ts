@@ -45,8 +45,10 @@ const handler = createMcpHandler(
     server.registerTool('estado_landscape', {
       title: 'Estado del landscape',
       description:
-        'Qué etapa está en curso, cuál está aprobada, si hay un borrador esperando aprobación y ' +
-        'qué bloquea el avance. Llamá a esto cuando pregunten en qué va el landscape o qué falta.',
+        'Qué toca ahora en el landscape (`sigue`), qué etapa está en curso, cuál está aprobada, ' +
+        'si hay un borrador esperando aprobación y qué bloquea el avance. Llamá a esto cuando te ' +
+        'digan “sigamos” con una marca, o pregunten en qué va el landscape o qué falta, y hacé lo ' +
+        'que dice `sigue`: el equipo trabaja todo el landscape en una sola conversación.',
       inputSchema: z.object({
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
       }),
@@ -69,7 +71,8 @@ const handler = createMcpHandler(
         'Guarda el resultado de una etapa en la plataforma. **Llamá a esto cada vez que termines ' +
         'de redactar una etapa**, sin esperar a que te lo pidan: si no la guardás, el trabajo se ' +
         'queda solo en este chat y no llega al panel del estudio. Siempre entra como borrador — ' +
-        'vos nunca aprobás, el equipo aprueba desde el panel. Para la etapa "tendencias" mandá ' +
+        'vos nunca aprobás, el equipo aprueba desde el panel: al terminar, dales el link ' +
+        '`verEnElPanel` para que lo revisen. Para la etapa "tendencias" mandá ' +
         'la long list completa en "candidatas", cada una con id, eje (Marca, Estrategia o ' +
         'Comunicación), titulo, descripcion y fuentes; no mandes "seleccionadas", que elegir las ' +
         '4 o 5 principales es decisión del equipo. Para las etapas de estrategia mandá fase: ' +

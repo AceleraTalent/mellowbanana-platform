@@ -188,7 +188,7 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
 
       {secciones.length > 1 && (
         <nav aria-label="Secciones del contexto" className="border-y border-[var(--line)] py-5">
-          <Rotulo>En este paso</Rotulo>
+          <Rotulo>Contenido</Rotulo>
           <ol className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {secciones.map((s, i) => {
               const { titulo } = sinNumero(txt(s.titulo) || `Sección ${i + 1}`)
@@ -225,8 +225,8 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
 
       {nFuentes > 0 && (
         <p className="text-[14px] text-[var(--secundario)]">
-          Las {nFuentes} fuentes de este contexto están en el paso{' '}
-          <Link href={hrefFuentes} className="font-medium text-[var(--ink)] underline underline-offset-2">2.1 · Fuentes del sector</Link>.
+          Cita {nFuentes} fuentes:{' '}
+          <Link href={hrefFuentes} className="font-medium text-[var(--ink)] underline underline-offset-2">están al final de la sección</Link>.
         </p>
       )}
 
@@ -237,13 +237,18 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
 
 // ─── 3.1 · Lista larga de tendencias ──────────────────────────────────────────────────
 
-export function VistaListaLarga({ candidatas, elegidas }: { candidatas: TendenciaCandidata[]; elegidas: string[] }) {
+export function VistaListaLarga({ candidatas, elegidas, conResumen = true }: {
+  candidatas: TendenciaCandidata[]
+  elegidas: string[]
+  /** La línea de “n tendencias en tres ejes”: se calla cuando quien la usa ya lo dijo. */
+  conResumen?: boolean
+}) {
   return (
     <Documento>
-      <p className="text-[15px] text-[var(--secundario)]">
+      {conResumen && <p className="text-[15px] text-[var(--secundario)]">
         <span className="font-semibold text-[var(--ink)]">{candidatas.length} tendencias</span> en tres ejes
         {elegidas.length > 0 ? <>, <span className="font-semibold text-[var(--ink)]">{elegidas.length} elegidas</span>.</> : '.'}
-      </p>
+      </p>}
       {EJES.map(eje => {
         const delEje = candidatas.filter(t => t.eje === eje)
         if (!delEje.length) return null

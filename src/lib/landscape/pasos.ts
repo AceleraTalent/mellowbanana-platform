@@ -1,14 +1,15 @@
 /**
  * El paso a paso del Landscape, tal como lo escribió el estudio en
- * docs/fase2/fase-2-investigacion-landscape.md. Las seis etapas siguen siendo donde se
- * guarda el trabajo; los pasos son lo que el equipo ve y sigue, uno por uno.
+ * docs/fase2/fase-2-investigacion-landscape.md. Las seis etapas son donde se guarda el
+ * trabajo y son también las secciones de la pantalla; los pasos son la receta: lo que
+ * Claude sigue en el chat y lo que el equipo marca cuando lo hace por fuera.
  *
  * Cada paso dice tres cosas que la pantalla necesita para no hacer pensar a nadie: quién
  * lo hace, dónde se resuelve y cuándo está listo. El estado no se guarda aparte: se deduce
  * de lo que ya hay en la etapa (o de la marca que pone el equipo, si el paso es de afuera).
  */
 
-import type { StageKey } from './stages'
+import { STAGE_LABEL, type StageKey } from './stages'
 
 export type Quien = 'claude' | 'equipo' | 'juntos'
 
@@ -46,19 +47,11 @@ export const PASOS: Paso[] = [
     donde: 'plataforma',
   },
   {
-    id: '1.1', etapa: 'setup', titulo: 'Carpeta en Dropbox',
-    queEs: 'Crear la carpeta “Fase 01 Landscape” del proyecto, donde va todo el material de la investigación.',
+    id: '1.1', etapa: 'setup', titulo: 'Carpeta y deck en Dropbox',
+    queEs: 'Crear la carpeta “Fase 01 Landscape” del proyecto y copiar ahí el template del Landscape de M&B, con el nombre del proyecto.',
     quien: 'equipo', quienTexto: 'Lo hace el equipo en Dropbox.',
     necesita: 'El nombre del proyecto.',
-    listoCuando: 'La carpeta existe y todo el equipo la puede abrir.',
-    donde: 'afuera',
-  },
-  {
-    id: '1.2', etapa: 'setup', titulo: 'Copia del template',
-    queEs: 'Duplicar el template del Landscape de M&B dentro de la carpeta y ponerle el nombre del proyecto.',
-    quien: 'equipo', quienTexto: 'Lo hace el equipo en Dropbox.',
-    necesita: 'La carpeta del paso 1.1.',
-    listoCuando: 'El deck de trabajo está en la carpeta, con el nombre del proyecto.',
+    listoCuando: 'El deck de trabajo está en su carpeta y todo el equipo lo puede abrir.',
     donde: 'afuera',
   },
   {
@@ -79,19 +72,11 @@ export const PASOS: Paso[] = [
   },
   {
     id: '3.1', etapa: 'tendencias', titulo: 'Lista larga de tendencias',
-    queEs: 'Encontrar las tendencias que afectan al sector, ordenadas en tres ejes: marca, estrategia y comunicación.',
-    quien: 'claude', quienTexto: 'Claude arma la lista desde el contexto y los informes.',
+    queEs: 'Encontrar las tendencias que afectan al sector, ordenadas en tres ejes: marca, estrategia y comunicación. Sumar lo que sirva de los landscapes que el estudio ya hizo en categorías parecidas.',
+    quien: 'claude', quienTexto: 'Claude arma la lista desde el contexto, los informes y los landscapes anteriores del estudio.',
     necesita: 'El contexto aprobado (2.2).',
     listoCuando: 'Hay una lista larga de donde elegir.',
     donde: 'plataforma',
-  },
-  {
-    id: '3.2', etapa: 'tendencias', titulo: 'Entregas anteriores',
-    queEs: 'Revisar landscapes de otros proyectos del estudio que sirvan de insumo para las tendencias.',
-    quien: 'equipo', quienTexto: 'Lo hace el equipo con los landscapes anteriores.',
-    necesita: 'Los landscapes de proyectos de categorías parecidas.',
-    listoCuando: 'Se revisaron los proyectos de categorías parecidas.',
-    donde: 'afuera',
   },
   {
     id: '3.3', etapa: 'tendencias', titulo: 'Elegir 4 o 5 tendencias',
@@ -251,33 +236,43 @@ function turnoDe(paso: Paso, estado: EstadoPaso): Turno {
 }
 
 /**
- * El paso que se abre al entrar a una etapa: el primero que falta, o el último si ya
- * está todo. Uno que no aplica no es destino de nadie.
+ * Lo que sigue en todo el Landscape: primero lo que espera revisión (el equipo es el
+ * cuello de botella), si no, el primer paso que falta. Un trámite de afuera (la carpeta en
+ * Dropbox) no frena el trabajo: queda marcado en su sección y sólo pasa adelante cuando no
+ * queda otra cosa. Es lo mismo que dice el Sistema M&B.
  */
-export function pasoInicial(pasos: PasoConEstado[], etapa: StageKey): PasoConEstado | undefined {
-  const deLaEtapa = pasos.filter(p => p.etapa === etapa)
-  return deLaEtapa.find(p => p.estado === 'pendiente' || p.estado === 'revisar') ?? deLaEtapa.at(-1)
-}
-
-/** El siguiente paso que todavía falta, después de `id`, en todo el Landscape. */
-export function siguientePendiente(pasos: PasoConEstado[], id: string): PasoConEstado | undefined {
-  const i = pasos.findIndex(p => p.id === id)
-  return pasos.slice(i + 1).find(p => p.estado === 'pendiente' || p.estado === 'revisar')
+export function pasoQueSigue(pasos: PasoConEstado[]): PasoConEstado | undefined {
+  const pendientes = pasos.filter(p => p.estado === 'pendiente')
+  return pasos.find(p => p.estado === 'revisar')
+    ?? pendientes.find(p => p.donde !== 'afuera')
+    ?? pendientes[0]
 }
 
 /**
- * Lo que el equipo copia y pega en claude.ai. La primera línea es para el humano que la
- * lee; el resto es para Claude, que necesita saber dónde guardar.
+ * Lo que el equipo pega en el chat del proyecto en claude.ai. Una sola conversación sirve
+ * para todo el Landscape: Claude lee en qué va con `estado_landscape`, así que el mensaje
+ * sólo dice qué toca ahora y dónde dejarlo.
  */
-export function instruccionParaClaude(paso: Paso, proyecto: string): string {
-  const lineas = [
-    `Trabajemos el paso ${paso.id} · ${paso.titulo}, del Landscape de ${proyecto}.`,
-    `Qué hay que hacer: ${paso.queEs}`,
-    `Está listo cuando: ${paso.listoCuando}`,
-  ]
-  if (paso.donde === 'plataforma')
-    lineas.push(`Cuando termines, guárdalo con guardar_etapa en la etapa "${paso.etapa}", sin borrar lo que esa etapa ya tenga.`)
-  else
-    lineas.push('Este paso todavía no se guarda en la plataforma: entrégalo acá en el chat, ordenado para pasarlo al deck.')
-  return lineas.join('\n')
+export function mensajeParaSeguir(paso: Paso, proyecto: string): string {
+  const donde = paso.donde === 'plataforma'
+    ? 'Cuando termines, guárdalo en la plataforma.'
+    : 'Este va acá en el chat, ordenado para pasarlo al deck.'
+  return `Sigamos con el Landscape de ${proyecto}. Lo que sigue: ${paso.titulo.toLowerCase()}. ${paso.queEs} ${donde}`
+}
+
+/**
+ * Lo mismo, dicho para Claude: lo devuelve `estado_landscape`, así que basta con escribirle
+ * “sigamos con Heroica” para que sepa qué hacer y dónde guardarlo.
+ */
+export function queSigueParaClaude(pasos: PasoConEstado[]): string {
+  const paso = pasoQueSigue(pasos)
+  if (!paso) return 'El Landscape está completo: no queda nada pendiente.'
+  if (paso.turno === 'revisar')
+    return `El equipo tiene que revisar y aprobar ${STAGE_LABEL[paso.etapa]} en el panel. No sigas con lo próximo hasta que lo aprueben; si piden cambios, ajusta ese borrador.`
+  if (paso.turno === 'equipo')
+    return `Le toca al equipo: ${paso.titulo}. ${paso.queEs} Avísales que se hace desde el panel o por fuera, y espera.`
+  const guardar = paso.donde === 'plataforma'
+    ? `Cuando termines, guárdalo con guardar_etapa en la etapa "${paso.etapa}", sin borrar lo que esa etapa ya tenga.`
+    : 'Esto no se guarda en la plataforma: entrégalo en el chat, ordenado para pasarlo al deck, y el equipo lo marca hecho en el panel.'
+  return `${paso.titulo}: ${paso.queEs} ${guardar}`
 }

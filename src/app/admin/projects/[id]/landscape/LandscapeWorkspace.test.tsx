@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MIN_TENDENCIAS, MAX_TENDENCIAS, STAGE_ORDER, type StageKey, type TendenciaCandidata } from '@/lib/landscape/stages'
 import { estadoDePasos, type EtapaParaPasos } from '@/lib/landscape/pasos'
@@ -7,15 +7,25 @@ import { LandscapeWorkspace, type ContenidoEtapaVista } from './LandscapeWorkspa
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
+// jsdom no hace scroll: basta con saber que se pidió.
+const scrollIntoView = vi.fn()
+beforeEach(() => {
+  Element.prototype.scrollIntoView = scrollIntoView
+  scrollIntoView.mockClear()
+})
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
+
+/** El contexto con sus fuentes: así sus dos pasos están hechos cuando se aprueba. */
+const CONTENIDO_CONTEXTO = { hallazgo: 'lo aprobado', fuentes: [{ titulo: 'Informe del sector', url: 'https://informe.example.com' }] }
 
 /** El contexto aprobado y, si se pide, un borrador que Claude escribió después. */
 function contexto({ conBorrador, aprobada = true }: { conBorrador: boolean; aprobada?: boolean }): ContenidoEtapaVista {
   return {
     id: 'v1',
-    content: { hallazgo: 'lo aprobado' },
+    content: CONTENIDO_CONTEXTO,
     aprobada,
     procedencia: aprobada ? 'Escrito por Claude · hace 3 días · aprobada' : 'Escrito por Claude · hace 2 h · sin aprobar',
     cuando: 'hace 3 días',
@@ -26,8 +36,10 @@ function contexto({ conBorrador, aprobada = true }: { conBorrador: boolean; apro
 }
 
 function montar(opciones: {
-  etapa: StageKey
-  foco?: string
+  /** La sección que pide el link. */
+  irA?: StageKey
+  /** El enfoque ya aprobado: así lo que sigue deja de ser de Claude en el Enfoque. */
+  conEnfoque?: boolean
   conBorrador?: boolean
   aprobada?: boolean
   tendencias?: TendenciaCandidata[]
@@ -37,8 +49,10 @@ function montar(opciones: {
 }) {
   const { conBorrador = false, aprobada = true, tendencias = [], seleccion = [], marcados = [] } = opciones
   const etapas: EtapaParaPasos[] = STAGE_ORDER.map(stage => ({ stage, status: 'pendiente', contenido: null, cerrada: false }))
+  if (opciones.conEnfoque)
+    Object.assign(etapas.find(e => e.stage === 'setup')!, { status: 'aprobada', contenido: { nombre: 'el enfoque' }, cerrada: true })
   const ctx = etapas.find(e => e.stage === 'contexto')!
-  Object.assign(ctx, { status: aprobada ? 'aprobada' : 'en_curso', contenido: { hallazgo: 'lo aprobado' }, cerrada: aprobada && !conBorrador })
+  Object.assign(ctx, { status: aprobada ? 'aprobada' : 'en_curso', contenido: CONTENIDO_CONTEXTO, cerrada: aprobada && !conBorrador })
   if (tendencias.length)
     Object.assign(etapas.find(e => e.stage === 'tendencias')!, {
       status: seleccion.length ? 'aprobada' : 'en_curso',
@@ -54,6 +68,9 @@ function montar(opciones: {
     seleccionAprobada: seleccion,
     tendenciasAprobadas: seleccion.length > 0,
     contenidoPorEtapa: {
+      setup: opciones.conEnfoque
+        ? { id: 've', content: { nombre: 'el enfoque' }, aprobada: true, procedencia: 'Escrito por Claude · hace 6 días · aprobada', cuando: 'hace 6 días', borradorNuevo: null }
+        : null,
       contexto: contexto({ conBorrador, aprobada }),
       tendencias: seleccion.length
         ? { id: 'vt', content: { candidatas: tendencias, seleccionadas: seleccion }, aprobada: true, procedencia: 'Escrito por Claude · hace 1 día · aprobada', cuando: 'hace 1 día', borradorNuevo: null }
@@ -62,109 +79,130 @@ function montar(opciones: {
     actividad: [],
     dependencia: opciones.dependencia,
   }
-  const r = render(<LandscapeWorkspace {...props} etapa={opciones.etapa} foco={opciones.foco} />)
+  const r = render(<LandscapeWorkspace {...props} irA={opciones.irA} />)
   return { ...r, props, pasos }
 }
 
-/** El renglón de un paso en la lista de la etapa. */
-const renglon = (id: string) => within(document.getElementById(`paso-${id}`)!)
+/** Una sección de la página, por su etapa. */
+const seccion = (etapa: StageKey) => within(document.getElementById(etapa)!)
+const encabezado = (etapa: StageKey) => seccion(etapa).getByRole('button', { expanded: undefined, name: new RegExp(`^0\\d`) })
 
-describe('LandscapeWorkspace · la etapa es la pantalla', () => {
-  it('el título es el de la etapa, y sus pasos van en una lista', () => {
-    montar({ etapa: 'contexto' })
-    expect(screen.getByRole('heading', { level: 1, name: 'Contexto del sector' })).toBeTruthy()
-    const lista = screen.getByRole('list', { name: 'Pasos de la etapa' })
-    expect(within(lista).getAllByRole('listitem').map(li => li.id)).toEqual(['paso-2.1', 'paso-2.2'])
+describe('LandscapeWorkspace · todo el Landscape en una página', () => {
+  it('las seis etapas son secciones de la misma página, en orden', () => {
+    montar({})
+    expect(screen.getByRole('heading', { level: 1, name: 'Landscape' })).toBeTruthy()
+    const secciones = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent)
+    expect(secciones.map(t => t!.replace(/^\d+/, '').replace(/(Listo|Por revisar|Te toca|Le toca a Claude|Más adelante|No aplica)▾$/, '')))
+      .toEqual(['Enfoque', 'Contexto del sector', 'Tendencias', 'Panorama de categoría', 'Diagnóstico', 'Entrega'])
   })
 
-  it('rinde lo aprobado como documento, con su procedencia, y sin botón de aprobar', () => {
-    montar({ etapa: 'contexto' })
+  it('abre sólo la sección donde hay trabajo; las demás se leen por su estado', () => {
+    montar({})
+    // Lo que sigue es el enfoque (le toca a Claude): esa sección está abierta.
+    expect(encabezado('setup').getAttribute('aria-expanded')).toBe('true')
+    expect(encabezado('contexto').getAttribute('aria-expanded')).toBe('false')
+    expect(seccion('contexto').getByText('Listo')).toBeTruthy()
+    expect(seccion('panorama').getByText('Más adelante')).toBeTruthy()
+    expect(screen.queryByText('lo aprobado')).toBeNull()
+  })
+
+  it('una sección cerrada se abre con un clic, y se lee lo aprobado sin botón de aprobar', () => {
+    montar({})
+    fireEvent.click(encabezado('contexto'))
+    expect(encabezado('contexto').getAttribute('aria-expanded')).toBe('true')
     expect(screen.getByText('lo aprobado')).toBeTruthy()
     expect(screen.getByText(/Escrito por Claude/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Aprobar' })).toBeNull()
   })
 
-  it('el pie lleva a la etapa anterior y a la siguiente', () => {
-    montar({ etapa: 'contexto' })
-    expect(screen.getByRole('link', { name: /Setup/ }).getAttribute('href')).toBe('/admin/projects/p1/landscape?etapa=setup')
-    expect(screen.getByRole('link', { name: /Tendencias/ }).getAttribute('href')).toBe('/admin/projects/p1/landscape?etapa=tendencias')
+  it('el link que nombra una sección la abre y baja hasta ella', () => {
+    montar({ irA: 'contexto' })
+    expect(encabezado('contexto').getAttribute('aria-expanded')).toBe('true')
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
   })
 
-  it('resalta el paso en foco, y sólo ese', () => {
-    montar({ etapa: 'setup', foco: '1.1' })
-    const enFoco = document.querySelectorAll('[aria-current="step"]')
-    expect(enFoco).toHaveLength(1)
-    expect(enFoco[0].id).toBe('paso-1.1')
-  })
-
-  it('una etapa sin pasos de la plataforma no tiene documento', () => {
-    montar({ etapa: 'entrega' })
-    expect(document.getElementById('documento')).toBeNull()
-  })
-})
-
-describe('LandscapeWorkspace · cada paso trae su acción en el renglón', () => {
-  it('si le toca a Claude, copia una instrucción que nombra el paso y el proyecto', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { clipboard: { writeText } })
-    montar({ etapa: 'tendencias' })
-
-    fireEvent.click(renglon('3.1').getByRole('button', { name: 'Copiar instrucción' }))
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
-    expect(writeText.mock.calls[0][0]).toMatch(/^Trabajemos el paso 3\.1 · Lista larga de tendencias, del Landscape de Grupo Heroica\./)
-    expect(await renglon('3.1').findByRole('button', { name: '✓ Copiada' })).toBeTruthy()
-    // Después de copiar, queda a mano adónde pegarla.
-    expect(renglon('3.1').getByRole('link', { name: /claude\.ai/ }).getAttribute('href')).toBe('https://claude.ai/projects')
-  })
-
-  it('un paso de afuera se marca como hecho desde su renglón', async () => {
+  it('lo de afuera se marca con una casilla dentro de su sección', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'setup' })
+    montar({ irA: 'entrega' })
 
-    fireEvent.click(renglon('1.1').getByRole('button', { name: 'Marcar hecho' }))
+    fireEvent.click(seccion('entrega').getByRole('checkbox', { name: /Presentación al cliente/ }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/p1/landscape/pasos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paso: '1.1', hecho: true }),
+      body: JSON.stringify({ paso: '6.1', hecho: true }),
     })
   })
 
-  it('un paso de afuera ya hecho se puede deshacer', async () => {
+  it('una casilla marcada se desmarca igual', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'setup', marcados: ['1.1'] })
+    montar({ irA: 'setup', marcados: ['1.1'] })
 
-    fireEvent.click(renglon('1.1').getByRole('button', { name: 'Deshacer' }))
+    const casilla = seccion('setup').getByRole('checkbox', { name: /Carpeta y deck en Dropbox/ }) as HTMLInputElement
+    expect(casilla.checked).toBe(true)
+    fireEvent.click(casilla)
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ paso: '1.1', hecho: false }))
   })
+})
 
-  it('un paso de chat se copia para Claude y se marca hecho cuando está en el deck', () => {
-    montar({ etapa: 'tendencias' })
-    expect(renglon('3.4').getByRole('button', { name: 'Copiar instrucción' })).toBeTruthy()
-    expect(renglon('3.4').getByRole('button', { name: 'Marcar hecho' })).toBeTruthy()
+describe('LandscapeWorkspace · lo que sigue, arriba', () => {
+  it('si le toca a Claude, un botón copia el mensaje para el chat y abre claude.ai', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const open = vi.fn()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    vi.stubGlobal('open', open)
+    montar({})
+
+    expect(screen.getByText(/Lo que sigue · Le toca a Claude/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Seguir en Claude/ }))
+
+    await waitFor(() => expect(open).toHaveBeenCalledWith('https://claude.ai/projects', '_blank', 'noopener'))
+    expect(writeText.mock.calls[0][0]).toMatch(/^Sigamos con el Landscape de Grupo Heroica\. Lo que sigue: enfoque del estudio\./)
+    expect(await screen.findByText(/Mensaje copiado/)).toBeTruthy()
   })
 
-  it('un paso hecho en la plataforma lleva a su parte del documento', () => {
-    montar({ etapa: 'contexto' })
-    expect(renglon('2.2').getByRole('link', { name: /Ver/ }).getAttribute('href')).toBe('#paso-doc-2.2')
-    expect(document.getElementById('paso-doc-2.2')).toBeTruthy()
+  it('un trámite de afuera no tapa el trabajo: sigue lo de Claude y el trámite queda en su sección', () => {
+    montar({ conEnfoque: true, aprobada: false })
+    // El enfoque está aprobado y falta la carpeta: lo que sigue es revisar el contexto.
+    expect(screen.getByText(/Lo que sigue · Te toca revisar/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Revisar/ }).getAttribute('href')).toBe('#contexto')
+    expect(seccion('setup').getByText('Te toca')).toBeTruthy()
+  })
+
+  it('lo que va al deck se pide a Claude y se marca cuando ya está', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    montar({ conEnfoque: true, marcados: ['1.1'], tendencias: candidatas(6), seleccion: ['t1', 't2', 't3', 't4'] })
+
+    expect(screen.getByText('Casos por tendencia', { selector: 'p' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Seguir en Claude/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Ya está en el deck' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ paso: '3.4', hecho: true }))
+  })
+
+  it('elegir tendencias lleva a la sección, no a otra página', () => {
+    montar({ conEnfoque: true, marcados: ['1.1'], tendencias: candidatas(6) })
+    expect(screen.getByText(/Lo que sigue · Te toca/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Elegir/ }).getAttribute('href')).toBe('#tendencias')
+    expect(encabezado('tendencias').getAttribute('aria-expanded')).toBe('true')
   })
 })
 
-describe('LandscapeWorkspace · lo que Claude entregó se aprueba junto al documento', () => {
-  it('el renglón por revisar apunta al documento, y “Aprobar” manda su versionId', async () => {
+describe('LandscapeWorkspace · lo que Claude entregó se aprueba en su sección', () => {
+  it('la sección por revisar está abierta, y “Aprobar” manda su versionId', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'contexto', aprobada: false })
+    montar({ aprobada: false })
 
-    expect(renglon('2.2').getByRole('link', { name: /Por revisar/ }).getAttribute('href')).toBe('#documento')
-    fireEvent.click(screen.getByRole('button', { name: 'Aprobar' }))
+    expect(seccion('contexto').getByText('Por revisar', { selector: 'span' })).toBeTruthy()
+    fireEvent.click(seccion('contexto').getByRole('button', { name: 'Aprobar' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(fetchMock).toHaveBeenCalledWith('/api/projects/p1/landscape/contexto', {
@@ -174,26 +212,26 @@ describe('LandscapeWorkspace · lo que Claude entregó se aprueba junto al docum
     })
   })
 
-  it('pedir cambios copia un pedido que nombra la etapa', async () => {
+  it('pedir cambios copia un pedido que nombra la sección', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
-    montar({ etapa: 'contexto', aprobada: false })
+    montar({ aprobada: false })
 
     fireEvent.click(screen.getByRole('button', { name: 'Pedir cambios' }))
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
-    expect(writeText.mock.calls[0][0]).toMatch(/^Ajustemos la etapa Contexto del sector \(pasos 2\.2\), del Landscape de Grupo Heroica\./)
+    expect(writeText.mock.calls[0][0]).toMatch(/^Ajustemos Contexto del sector, del Landscape de Grupo Heroica\./)
   })
 })
 
 describe('LandscapeWorkspace · borrador nuevo sobre una etapa aprobada', () => {
   it('sin borrador nuevo no aparece el comparador', () => {
-    montar({ etapa: 'contexto' })
+    montar({ irA: 'contexto' })
     expect(screen.queryByRole('button', { name: 'Ver sólo la aprobada' })).toBeNull()
   })
 
   it('muestra las dos versiones a la vez y dice que lo aprobado sigue vigente', () => {
-    montar({ etapa: 'contexto', conBorrador: true })
+    montar({ conBorrador: true })
     expect(screen.getByText('lo aprobado')).toBeTruthy()
     expect(screen.getByText('lo nuevo')).toBeTruthy()
     expect(screen.getByText(/sigue vigente hasta que decidas/)).toBeTruthy()
@@ -202,7 +240,7 @@ describe('LandscapeWorkspace · borrador nuevo sobre una etapa aprobada', () => 
   it('“Aprobar la nueva” manda el versionId del borrador', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'contexto', conBorrador: true })
+    montar({ conBorrador: true })
     fireEvent.click(screen.getByRole('button', { name: 'Aprobar la nueva' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
@@ -216,7 +254,7 @@ describe('LandscapeWorkspace · borrador nuevo sobre una etapa aprobada', () => 
   it('“Mantener esta versión” ratifica la aprobada, y si falla lo dice', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: 'No existe el proyecto' }) })
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'contexto', conBorrador: true })
+    montar({ conBorrador: true })
     fireEvent.click(screen.getByRole('button', { name: 'Mantener esta versión' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
@@ -227,22 +265,12 @@ describe('LandscapeWorkspace · borrador nuevo sobre una etapa aprobada', () => 
   it('mirar sólo la aprobada no toca el servidor y se vuelve a un clic', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-    montar({ etapa: 'contexto', conBorrador: true })
+    montar({ conBorrador: true })
     fireEvent.click(screen.getByRole('button', { name: 'Ver sólo la aprobada' }))
 
     expect(screen.queryByText('lo nuevo')).toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Ver la versión nueva' }))
-    expect(screen.getByText('lo nuevo')).toBeTruthy()
-  })
-
-  it('cambiar de etapa no deja pegada la vista de una sola versión', () => {
-    const { rerender, props } = montar({ etapa: 'contexto', conBorrador: true })
-    fireEvent.click(screen.getByRole('button', { name: 'Ver sólo la aprobada' }))
-    rerender(<LandscapeWorkspace {...props} etapa="setup" />)
-    rerender(<LandscapeWorkspace {...props} etapa="contexto" />)
-
-    expect(screen.getByRole('button', { name: 'Ver sólo la aprobada' })).toBeTruthy()
     expect(screen.getByText('lo nuevo')).toBeTruthy()
   })
 })
@@ -251,12 +279,12 @@ describe('LandscapeWorkspace · dependencia de la fase', () => {
   const texto = 'El panorama de categoría necesita los competidores del taller'
 
   it('se explica en el Panorama', () => {
-    montar({ etapa: 'panorama', dependencia: texto })
-    expect(screen.getByText(texto)).toBeTruthy()
+    montar({ irA: 'panorama', dependencia: texto })
+    expect(seccion('panorama').getByText(texto)).toBeTruthy()
   })
 
-  it('no se muestra en otras etapas, donde confunde', () => {
-    montar({ etapa: 'contexto', dependencia: texto })
+  it('no se muestra mientras el Panorama está cerrado', () => {
+    montar({ dependencia: texto })
     expect(screen.queryByText(texto)).toBeNull()
   })
 })
@@ -276,7 +304,7 @@ function candidata(id: string): TendenciaCandidata {
 }
 
 const candidatas = (cuantas: number) => Array.from({ length: cuantas }, (_, i) => candidata(`t${i + 1}`))
-const elegir = (cuantas: number) => montar({ etapa: 'tendencias', tendencias: candidatas(cuantas) })
+const elegir = (cuantas: number) => montar({ irA: 'tendencias', tendencias: candidatas(cuantas) })
 
 describe('LandscapeWorkspace · gate de tendencias', () => {
   it('no deja confirmar con menos del mínimo', () => {
@@ -315,10 +343,11 @@ describe('LandscapeWorkspace · gate de tendencias', () => {
 })
 
 describe('LandscapeWorkspace · con la selección ya confirmada', () => {
-  it('se lee la lista con las elegidas marcadas, y cambiarla es pedirlo', () => {
-    montar({ etapa: 'tendencias', tendencias: candidatas(6), seleccion: ['t1', 't2', 't3', 't4'] })
+  it('se leen las elegidas, la lista entera queda a un clic, y cambiarla es pedirlo', () => {
+    montar({ irA: 'tendencias', tendencias: candidatas(6), seleccion: ['t1', 't2', 't3', 't4'] })
     expect(screen.queryByRole('button', { name: 'Actualizar selección' })).toBeNull()
-    expect(screen.getAllByText('Elegida')).toHaveLength(4)
+    expect(screen.getByText('Las 4 elegidas')).toBeTruthy()
+    expect(screen.getByText(/Ver las otras 2 de la lista larga/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar la selección' }))
     expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(4)

@@ -7,6 +7,8 @@ import { strategyState, summarizeStrategy, saveStrategyVersion } from '@/lib/db/
 import { sessions, answers } from '@/lib/db/schema'
 import { STAGE_LABEL, STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { ETAPA_LABEL, ETAPA_ORDER, ESENCIA, type EstrategiaKey } from '@/lib/estrategia/stages'
+import { estadoDePasos, queSigueParaClaude } from '@/lib/landscape/pasos'
+import { pasosMarcados } from '@/lib/db/pasos-store'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
 import { validarContenidoEtapa } from './validar'
@@ -87,11 +89,35 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
   }
 }
 
+/**
+ * Dónde ve el equipo lo que Claude guardó. Va absoluto para que Claude lo pueda dar como
+ * link en el chat: es el puente entre las dos pantallas. Sin dominio conocido (local), va
+ * la ruta sola.
+ */
+export function linkAlPanel(projectId: string, etapa: StageKey): string {
+  const dominio = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  return `${dominio ? `https://${dominio}` : ''}/admin/projects/${projectId}/landscape?etapa=${etapa}`
+}
+
 export async function estadoLandscape(db: AnyDb, ref: string) {
   const { id, name } = await resolverProyecto(db, ref)
   const estado = await landscapeState(db, id)
+  // Las marcas del equipo (Dropbox, casos en el deck). Si la tabla no existe todavía, lo
+  // que sigue se calcula sin ellas en vez de tumbar la herramienta.
+  const marcados = await pasosMarcados(db, id).catch(() => new Set<string>())
+  const pasos = estadoDePasos(
+    estado.map(e => ({
+      stage: e.stage,
+      status: e.status,
+      contenido: e.actual?.content ?? null,
+      cerrada: !!e.actual?.approvedAt && !e.borradorNuevo,
+    })),
+    marcados,
+  )
   return {
     marca: name,
+    // Lo primero que Claude lee cuando le dicen “sigamos”: qué toca ahora y dónde guardarlo.
+    sigue: queSigueParaClaude(pasos),
     resumen: summarizeLandscape(estado),
     etapas: estado.map(e => ({
       etapa: e.stage,
@@ -184,6 +210,7 @@ export async function guardarEtapa(db: AnyDb, d: {
     marca: name,
     etapa,
     esperandoAprobacion: true,
+    verEnElPanel: linkAlPanel(id, etapa),
     mensaje: yaEstabaAprobada
       ? `Guardé un borrador nuevo de ${STAGE_LABEL[etapa]}. La etapa sigue aprobada con la ` +
         'versión anterior: el borrador queda visible en el panel para que el equipo decida ' +

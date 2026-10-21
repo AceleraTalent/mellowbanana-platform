@@ -44,7 +44,7 @@ export const MAX_TENDENCIAS = 5
 export const EJES: Eje[] = ['Marca', 'Estrategia', 'Comunicación']
 
 export const STAGE_LABEL: Record<StageKey, string> = {
-  setup: 'Setup',
+  setup: 'Enfoque',
   contexto: 'Contexto del sector',
   tendencias: 'Tendencias',
   panorama: 'Panorama de categoría',

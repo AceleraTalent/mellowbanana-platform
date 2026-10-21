@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { EntradaIndice, FaseIndice } from '@/lib/pipeline/indice'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import type { EstadoFase, FaseConEstado, FaseSistema } from '@/lib/seguimiento/sistema'
-import { PASOS, hrefDeSuEtapa } from '@/lib/landscape/pasos'
+import { PASOS } from '@/lib/landscape/pasos'
 import { CabeceraProyecto } from './CabeceraProyecto'
 import { FaseManual } from './FaseManual'
 import { CHIP, MARCA } from './sistema/chips'
@@ -121,9 +121,9 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
 }
 
 /**
- * Cuántos pasos de una etapa del Landscape están listos. El estado de la etapa sale de sus
- * pasos y no de la aprobación de la etapa: si no, “Setup” se veía terminado con dos pasos
- * por hacer.
+ * Si una sección del Landscape está lista. Sale de sus pasos y no de la aprobación de la
+ * etapa: si no, “Enfoque” se veía terminado con la carpeta en Dropbox por hacer. No se
+ * muestra la cuenta: las secciones son partes de una página, no listas de pasos.
  */
 function avanceDeEtapa(entrada: EntradaIndice, pasos: SistemaDelProyecto['pasos']) {
   const etapa = entrada.key.replace('landscape:', '')
@@ -142,10 +142,8 @@ function Entradas({ fase, sistema }: { fase: FaseMenu; sistema?: SistemaDelProye
     <ul className="mb-2 ml-[8.5px] mt-1 border-l border-[var(--line)] pl-[17px]">
       {entradas.map(entrada => {
         let estado = entrada.estado
-        let cuenta: string | undefined
         if (fase.key === 'landscape' && sistema) {
           const { hechos, total } = avanceDeEtapa(entrada, sistema.pasos)
-          cuenta = total ? `${hechos}/${total}` : undefined
           if (estado !== 'actual') estado = total && hechos === total ? 'aprobada' : 'pendiente'
         }
         // El taller en Miro se cierra a mano: lo que el equipo marcó manda.
@@ -172,7 +170,6 @@ function Entradas({ fase, sistema }: { fase: FaseMenu; sistema?: SistemaDelProye
                   <span className="sr-only">Espera al equipo</span>
                 </>
               )}
-              {cuenta && <span className="flex-none font-mono text-[11px] font-normal tabular-nums text-[var(--rotulo)]">{cuenta}</span>}
             </Link>
           </li>
         )
@@ -233,12 +230,16 @@ export function ProjectIndex({
   const abierta = menu.find(f => f.indice?.entradas.some(e => e.estado === 'actual'))?.key
     ?? (enResumen ? sistema?.actual : undefined)
 
-  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla: un paso del
-  // Landscape es un renglón de su etapa, así que estar en la etapa es estar ahí. En el
-  // resumen tampoco va: “Nos toca” arranca con eso mismo.
+  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla. El Landscape
+  // es una sola página que abre con lo que sigue: estar en cualquiera de sus secciones es
+  // estar ahí. En el resumen tampoco va: “Nos toca” arranca con eso mismo.
+  const sinQuery = (href: string) => href.replace(/[?#].*$/, '')
   const hrefsActuales = new Set(activas.map(e => e.href))
   const sigue = sistema?.sigue
-  const yaAhi = !!sigue?.href && (hrefsActuales.has(sigue.href) || hrefsActuales.has(hrefDeSuEtapa(sigue.href) ?? ''))
+  const yaAhi = !!sigue?.href && (
+    hrefsActuales.has(sigue.href)
+    || (sinQuery(sigue.href).endsWith('/landscape') && activas.some(e => sinQuery(e.href) === sinQuery(sigue.href!)))
+  )
   const mostrarSigue = sigue && !enResumen && !yaAhi
 
   return (

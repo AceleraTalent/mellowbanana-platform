@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  PASOS, estadoDePasos, instruccionParaClaude, pasoInicial, pasoPorId, siguientePendiente,
+  PASOS, estadoDePasos, mensajeParaSeguir, pasoPorId, pasoQueSigue, queSigueParaClaude,
   type EtapaParaPasos,
 } from './pasos'
 import { STAGE_ORDER } from './stages'
@@ -16,9 +16,14 @@ const estado = (etapas: EtapaParaPasos[], id: string, marcados: string[] = []) =
   estadoDePasos(etapas, new Set(marcados)).find(p => p.id === id)!
 
 describe('PASOS', () => {
-  it('sigue el documento del estudio: 15 pasos, ids únicos, en orden de etapa', () => {
-    expect(PASOS).toHaveLength(15)
-    expect(new Set(PASOS.map(p => p.id)).size).toBe(15)
+  it('sigue el documento del estudio, sin los trámites que no son un paso: 13, ids únicos, en orden de etapa', () => {
+    expect(PASOS).toHaveLength(13)
+    expect(new Set(PASOS.map(p => p.id)).size).toBe(13)
+    // Las entregas anteriores son insumo de la lista larga, no un paso aparte; la carpeta y
+    // el template son un solo trámite.
+    expect(pasoPorId('3.2')).toBeUndefined()
+    expect(pasoPorId('1.2')).toBeUndefined()
+    expect(pasoPorId('3.1')!.queEs).toContain('landscapes que el estudio ya hizo')
     const ordenEtapas = PASOS.map(p => STAGE_ORDER.indexOf(p.etapa))
     expect(ordenEtapas).toEqual([...ordenEtapas].sort((a, b) => a - b))
   })
@@ -69,35 +74,50 @@ describe('estadoDePasos', () => {
   })
 })
 
-describe('pasoInicial y siguientePendiente', () => {
-  it('al entrar a una etapa se abre el primer paso que falta', () => {
-    const etapas = con({ setup: { status: 'aprobada', contenido: { nombre: 'x' }, cerrada: true } })
-    const pasos = estadoDePasos(etapas, new Set(['1.1']))
-    expect(pasoInicial(pasos, 'setup')!.id).toBe('1.2')
+describe('pasoQueSigue', () => {
+  it('lo que espera revisión va antes que lo pendiente', () => {
+    const etapas = con({ contexto: { status: 'en_curso', contenido: { fuentes: [{ url: 'x' }], resumen: 'r' } } })
+    expect(pasoQueSigue(estadoDePasos(etapas, new Set()))!.id).toBe('2.1')
   })
 
-  it('con todo hecho, se abre el último paso de la etapa', () => {
+  it('un trámite de afuera no frena el trabajo: sigue lo de Claude', () => {
     const etapas = con({ setup: { status: 'aprobada', contenido: { nombre: 'x' }, cerrada: true } })
-    const pasos = estadoDePasos(etapas, new Set(['1.1', '1.2']))
-    expect(pasoInicial(pasos, 'setup')!.id).toBe('1.2')
+    expect(pasoQueSigue(estadoDePasos(etapas, new Set()))!.id).toBe('2.1')
   })
 
-  it('lo que sigue salta los pasos que ya están hechos', () => {
-    const pasos = estadoDePasos(vacias(), new Set(['1.2']))
-    expect(siguientePendiente(pasos, '1.1')!.id).toBe('2.1')
+  it('cuando sólo quedan trámites de afuera, son lo que sigue', () => {
+    const todas = vacias().map(e => ({ ...e, status: 'aprobada', contenido: { x: 1, fuentes: [1], candidatas: [1], seleccionadas: [1] }, cerrada: true }))
+    const pasos = estadoDePasos(todas, new Set(['3.4', '4.2', '4.3']))
+    expect(pasoQueSigue(pasos)!.id).toBe('1.1')
+  })
+
+  it('con todo hecho no sigue nada', () => {
+    const todas = vacias().map(e => ({ ...e, status: 'aprobada', contenido: { x: 1, fuentes: [1], candidatas: [1], seleccionadas: [1] }, cerrada: true }))
+    expect(pasoQueSigue(estadoDePasos(todas, new Set(PASOS.map(p => p.id))))).toBeUndefined()
   })
 })
 
-describe('instruccionParaClaude', () => {
-  it('nombra el paso y el proyecto, y le dice a Claude dónde guardar', () => {
-    const texto = instruccionParaClaude(pasoPorId('2.2')!, 'Grupo Heroica')
-    expect(texto.split('\n')[0]).toBe('Trabajemos el paso 2.2 · Contexto del sector, del Landscape de Grupo Heroica.')
-    expect(texto).toContain('guardar_etapa en la etapa "contexto"')
+describe('mensajeParaSeguir', () => {
+  it('es un mensaje para el chat de siempre: el proyecto, qué toca y dónde dejarlo', () => {
+    const texto = mensajeParaSeguir(pasoPorId('2.2')!, 'Grupo Heroica')
+    expect(texto).toMatch(/^Sigamos con el Landscape de Grupo Heroica\. Lo que sigue: contexto del sector\./)
+    expect(texto).toContain('guárdalo en la plataforma')
   })
 
-  it('en un paso de chat no le pide guardar en la plataforma', () => {
-    const texto = instruccionParaClaude(pasoPorId('3.4')!, 'Grupo Heroica')
-    expect(texto).not.toContain('guardar_etapa')
-    expect(texto).toContain('entrégalo acá en el chat')
+  it('lo que va al deck se queda en el chat', () => {
+    const texto = mensajeParaSeguir(pasoPorId('3.4')!, 'Grupo Heroica')
+    expect(texto).not.toContain('guárdalo en la plataforma')
+    expect(texto).toContain('acá en el chat')
+  })
+})
+
+describe('queSigueParaClaude', () => {
+  it('le dice a Claude qué hacer y en qué etapa guardarlo', () => {
+    expect(queSigueParaClaude(estadoDePasos(vacias(), new Set()))).toContain('guardar_etapa en la etapa "setup"')
+  })
+
+  it('si el equipo tiene que revisar, Claude espera', () => {
+    const etapas = con({ contexto: { status: 'en_curso', contenido: { fuentes: [{ url: 'x' }], resumen: 'r' } } })
+    expect(queSigueParaClaude(estadoDePasos(etapas, new Set()))).toMatch(/^El equipo tiene que revisar y aprobar Contexto del sector/)
   })
 })
