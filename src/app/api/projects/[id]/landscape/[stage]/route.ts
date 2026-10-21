@@ -7,6 +7,7 @@ import {
 import { firmaDe, sesionDe } from '@/lib/admin/auth'
 import { STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
+import { esPieza, type PiezaKey } from '@/lib/landscape/piezas'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; stage: string }> }) {
   // Aprobar y guardar son decisiones del equipo: sin sesión no pasa nada. Claude escribe
@@ -14,7 +15,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const quien = await sesionDe(req)
   if (!quien) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id, stage } = await params
-  if (!STAGE_ORDER.includes(stage as StageKey))
+  // Una etapa, o una pieza que se guarda aparte (los casos, el brand assets…): se aprueban igual.
+  if (!STAGE_ORDER.includes(stage as StageKey) && !esPieza(stage))
     return NextResponse.json({ error: `Etapa desconocida: ${stage}` }, { status: 400 })
   if (!esUuidValido(id))
     return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
@@ -39,7 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (body.content === undefined || body.content === null)
           return NextResponse.json({ error: 'Falta content' }, { status: 400 })
         // Desde el panel el autor siempre es humano. Claude escribe por MCP, no por acá.
-        const version = await saveLandscapeVersion(db, id, stage as StageKey, {
+        const version = await saveLandscapeVersion(db, id, stage as StageKey | PiezaKey, {
           content: body.content,
           author: 'humano',
           authorLabel: firmaDe(quien),
@@ -53,14 +55,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           return NextResponse.json({ error: `versionId inválido: ${body.versionId}` }, { status: 400 })
         // El scope (proyecto + etapa de la URL) va atado al UPDATE: aprobar no confía
         // en que el versionId del body pertenezca a este proyecto y esta etapa, lo verifica.
-        return NextResponse.json(await approveLandscapeVersion(db, body.versionId, { projectId: id, stage: stage as StageKey }, firmaDe(quien)))
+        return NextResponse.json(await approveLandscapeVersion(db, body.versionId, { projectId: id, stage: stage as StageKey | PiezaKey }, firmaDe(quien)))
       }
       case 'reafirmar': {
         // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
         // No lleva versionId — no se elige una fila cualquiera, se ratifica la vigente de
         // esta etapa, que la deriva el store. Como 'guardar', la firma quien decidió.
         const version = await reafirmarAprobada(
-          db, id, stage as StageKey,
+          db, id, stage as StageKey | PiezaKey,
           firmaDe(quien),
         )
         // Sin conflicto no se appendeó nada, y el pedido no falló: no había nada que

@@ -10,6 +10,7 @@
  */
 
 import { STAGE_LABEL, type StageKey } from './stages'
+import type { PiezaKey } from './piezas'
 
 export type Quien = 'claude' | 'equipo' | 'juntos'
 
@@ -40,6 +41,11 @@ export interface Paso {
    * es lo que sigue. Es el caso de la Entrega, donde Claude a veces deja material.
    */
   opcional?: boolean
+  /**
+   * Si lo que produce se guarda aparte de la etapa (ver piezas.ts): el desarrollo de las
+   * tendencias, los casos, el brand assets, el círculo cromático. Se aprueba por separado.
+   */
+  pieza?: PiezaKey
 }
 
 export const PASOS: Paso[] = [
@@ -92,12 +98,22 @@ export const PASOS: Paso[] = [
     donde: 'plataforma',
   },
   {
+    id: '3.5', etapa: 'tendencias', titulo: 'Desarrollo de las tendencias',
+    queEs: 'Desarrollar cada tendencia elegida en tres diapositivas: explicación general, profundización y los enfoques que puede tomar la marca.',
+    quien: 'claude', quienTexto: 'Claude las desarrolla y el equipo las aprueba.',
+    necesita: 'Las tendencias elegidas (3.3).',
+    listoCuando: 'Cada tendencia elegida tiene sus tres partes y el equipo las aprobó.',
+    donde: 'plataforma',
+    pieza: 'tendencias-desarrollo',
+  },
+  {
     id: '3.4', etapa: 'tendencias', titulo: 'Casos por tendencia',
     queEs: 'Buscar marcas que ya apliquen cada tendencia: marca, mercado, descripción corta, link e imagen.',
-    quien: 'claude', quienTexto: 'Claude busca los casos y el equipo los lleva al deck.',
+    quien: 'claude', quienTexto: 'Claude busca los casos y el equipo los aprueba.',
     necesita: 'Las tendencias elegidas (3.3).',
     listoCuando: 'Cada tendencia tiene sus casos de referencia.',
-    donde: 'chat',
+    donde: 'plataforma',
+    pieza: 'tendencias-casos',
   },
   {
     id: '4.1', etapa: 'panorama', titulo: 'Benchmarking',
@@ -113,15 +129,17 @@ export const PASOS: Paso[] = [
     quien: 'juntos', quienTexto: 'Claude arma el cuadro y el equipo lo revisa.',
     necesita: 'Los 4 competidores del Taller de propuesta de valor.',
     listoCuando: 'El cuadro de 4 competidores por 3 campos está completo.',
-    donde: 'chat',
+    donde: 'plataforma',
+    pieza: 'panorama-brand-assets',
   },
   {
     id: '4.3', etapa: 'panorama', titulo: 'Círculo cromático',
     queEs: 'Ubicar los colores de competidores y referentes para ver qué espacios de color quedan libres.',
     quien: 'juntos', quienTexto: 'Claude saca los colores de los logos y el equipo lee los espacios libres.',
     necesita: 'Los logos del benchmarking (4.1).',
-    listoCuando: 'El mapa está armado y el equipo escribió su lectura.',
-    donde: 'chat',
+    listoCuando: 'Los colores de cada marca están ubicados y hay una lectura de los espacios libres.',
+    donde: 'plataforma',
+    pieza: 'panorama-circulo',
   },
   {
     id: '5.1', etapa: 'diagnostico', titulo: 'Assets actuales',
@@ -178,6 +196,14 @@ export type EstadoPaso = 'hecho' | 'revisar' | 'pendiente' | 'no_aplica'
 /** De quién es la pelota. Es lo primero que dice el panel. */
 export type Turno = 'claude' | 'equipo' | 'revisar' | 'listo' | 'no_aplica'
 
+/** Lo que el paso a paso necesita saber de una pieza. Sale de `piezasState`. */
+export interface PiezaParaPasos {
+  pieza: PiezaKey
+  contenido: unknown
+  /** Hay una aprobada y no llegó nada después. */
+  cerrada: boolean
+}
+
 /** Lo que el paso a paso necesita saber de una etapa. Sale de `landscapeState`. */
 export interface EtapaParaPasos {
   stage: StageKey
@@ -227,12 +253,19 @@ export interface PasoConEstado extends Paso {
  * - Si la etapa no aplica (diagnóstico en una marca nueva), sus pasos tampoco.
  * - Un paso opcional sin contenido no aplica: no se cuenta ni se espera.
  */
-export function estadoDePasos(etapas: EtapaParaPasos[], marcados: ReadonlySet<string>): PasoConEstado[] {
+export function estadoDePasos(
+  etapas: EtapaParaPasos[], marcados: ReadonlySet<string>, piezas: PiezaParaPasos[] = [],
+): PasoConEstado[] {
   const porEtapa = new Map(etapas.map(e => [e.stage, e]))
+  const porPieza = new Map(piezas.map(p => [p.pieza, p]))
   return PASOS.map(paso => {
     const etapa = porEtapa.get(paso.etapa)
+    const pieza = paso.pieza ? porPieza.get(paso.pieza) : undefined
     let estado: EstadoPaso
     if (etapa?.status === 'no_aplica') estado = 'no_aplica'
+    // Una pieza se cierra aprobando lo que guardó Claude. La marca a mano de antes (cuando
+    // estas partes vivían en el chat y el equipo decía "ya está en el deck") sigue valiendo.
+    else if (paso.pieza) estado = pieza && lleno(pieza.contenido) ? (pieza.cerrada ? 'hecho' : 'revisar') : marcados.has(paso.id) ? 'hecho' : 'pendiente'
     else if (paso.opcional && !(etapa && tieneContenido(paso, etapa.contenido))) estado = 'no_aplica'
     else if (paso.donde !== 'plataforma') estado = marcados.has(paso.id) ? 'hecho' : 'pendiente'
     else if (!etapa || !tieneContenido(paso, etapa.contenido)) estado = 'pendiente'
@@ -288,12 +321,15 @@ export function queSigueParaClaude(pasos: PasoConEstado[], contexto: { conclusio
   if (paso.turno === 'equipo')
     return `Le toca al equipo: ${paso.titulo}. ${paso.queEs} Avísales que se hace desde el panel o por fuera, y espera.`
   const guardar = paso.donde === 'plataforma'
-    ? `Cuando termines, guárdalo con guardar_etapa en la etapa "${paso.etapa}", sin borrar lo que esa etapa ya tenga.`
+    ? `Cuando termines, guárdalo con guardar_etapa en la etapa "${paso.pieza ?? paso.etapa}"${paso.pieza ? '' : ', sin borrar lo que esa etapa ya tenga'}.`
     : 'Esto no se guarda en la plataforma: entrégalo en el chat, ordenado para pasarlo al deck, y el equipo lo marca hecho en el panel.'
   // El brand assets sale de los 4 competidores del taller. Si nadie cargó las conclusiones,
   // no se frena: se piden o se parte del Enfoque.
   const insumo = paso.id === '4.2' && !contexto.conclusionesTaller
     ? ' Las conclusiones del taller no están cargadas: pregúntale al equipo cuáles son los 4 competidores principales (o pídeles el documento del taller y guárdalo con guardar_conclusiones_taller); si no los tienen, parte del set competitivo del Enfoque y dilo.'
     : ''
-  return `${paso.titulo}: ${paso.queEs}${insumo} ${guardar}`
+  const elegidas = paso.etapa === 'tendencias' && paso.pieza
+    ? ' Trabaja sólo las tendencias elegidas: las de `seleccionadas` en la etapa Tendencias aprobada.'
+    : ''
+  return `${paso.titulo}: ${paso.queEs}${elegidas}${insumo} ${guardar}`
 }

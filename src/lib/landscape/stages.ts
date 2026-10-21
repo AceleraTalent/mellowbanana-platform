@@ -6,6 +6,8 @@
  * por MCP (`guardar_etapa`). Los tipos ya son los definitivos.
  */
 
+import { PIEZA_LABEL, type PiezaKey } from './piezas'
+
 export type StageKey = 'setup' | 'contexto' | 'tendencias' | 'panorama' | 'diagnostico' | 'entrega'
 
 export type StageStatus = 'pendiente' | 'en_curso' | 'aprobada' | 'no_aplica'
@@ -52,6 +54,11 @@ export const STAGE_LABEL: Record<StageKey, string> = {
   entrega: 'Entrega',
 }
 
+/** El nombre de una etapa o de una pieza guardada aparte (ver piezas.ts). */
+export function etiquetaDe(clave: string): string {
+  return STAGE_LABEL[clave as StageKey] ?? PIEZA_LABEL[clave as PiezaKey] ?? clave
+}
+
 export const STAGE_HINT: Partial<Record<StageKey, string>> = {
   diagnostico: 'solo rebranding',
 }
@@ -70,10 +77,10 @@ export function buildStages(estado: { stage: StageKey; status: StageStatus }[]):
   }))
 }
 
-export function textoActividad(e: { tipo: 'guardado' | 'aprobado'; stage: StageKey }): string {
+export function textoActividad(e: { tipo: 'guardado' | 'aprobado'; stage: string }): string {
   return e.tipo === 'aprobado'
-    ? `Aprobó ${STAGE_LABEL[e.stage]}`
-    : `Guardó un borrador de ${STAGE_LABEL[e.stage]}`
+    ? `Aprobó ${etiquetaDe(e.stage)}`
+    : `Guardó un borrador de ${etiquetaDe(e.stage)}`
 }
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']

@@ -6,6 +6,7 @@ import {
 } from './schema'
 import type { StageKey, StageStatus, TendenciaCandidata } from '@/lib/landscape/stages'
 import { MIN_TENDENCIAS, MAX_TENDENCIAS, PUEDEN_NO_APLICAR, STAGE_ORDER } from '@/lib/landscape/stages'
+import { PIEZA_KEYS, esPieza, type PiezaKey } from '@/lib/landscape/piezas'
 
 export type AnyDb = any // drizzle db (neon-http or pglite); kept loose for the adapter seam
 
@@ -324,7 +325,7 @@ export async function marcarNoAplica(db: AnyDb, projectId: string, stage: StageK
  * La etapa arranca a moverse con la primera versión, pero una etapa ya aprobada
  * o marcada como no aplica no se degrada sola.
  */
-export async function saveLandscapeVersion(db: AnyDb, projectId: string, stage: StageKey, v: {
+export async function saveLandscapeVersion(db: AnyDb, projectId: string, stage: StageKey | PiezaKey, v: {
   content: unknown; author: 'claude' | 'humano'; authorLabel?: string
 }): Promise<LandscapeVersionRow> {
   let row: LandscapeVersionRow
@@ -381,7 +382,7 @@ export async function listLandscapeVersions(db: AnyDb, projectId: string, stage?
  * como la habría con un SELECT previo.
  */
 export async function approveLandscapeVersion(
-  db: AnyDb, versionId: string, scope: { projectId: string; stage: StageKey }, quien?: string,
+  db: AnyDb, versionId: string, scope: { projectId: string; stage: StageKey | PiezaKey }, quien?: string,
 ): Promise<LandscapeVersionRow> {
   const [row] = await db.update(landscapeVersions)
     .set({ approvedAt: new Date(), approvedBy: quien ?? null })
@@ -568,13 +569,15 @@ export async function landscapeState(db: AnyDb, projectId: string): Promise<Stag
  * anterior — antes no había forma de distinguir eso de que nadie lo hubiera mirado.
  */
 export async function reafirmarAprobada(
-  db: AnyDb, projectId: string, stage: StageKey, autor?: string,
+  db: AnyDb, projectId: string, stage: StageKey | PiezaKey, autor?: string,
 ): Promise<LandscapeVersionRow | null> {
   // Igual que en `selectTendencias`: sin este chequeo, un proyecto inexistente sale por
   // el mismo camino que “no hay nada que reafirmar”, y son dos cosas distintas.
   if (!(await existeProyecto(db, projectId))) throw new ErrorNoEncontrado(`No existe el proyecto ${projectId}`)
 
-  const etapa = (await landscapeState(db, projectId)).find(e => e.stage === stage)
+  const etapa = esPieza(stage)
+    ? (await piezasState(db, projectId)).find(p => p.pieza === stage)
+    : (await landscapeState(db, projectId)).find(e => e.stage === stage)
   if (!etapa?.borradorNuevo || !etapa.actual) return null
 
   const version = await saveLandscapeVersion(db, projectId, stage, {
@@ -583,6 +586,51 @@ export async function reafirmarAprobada(
     authorLabel: autor,
   })
   return approveLandscapeVersion(db, version.id, { projectId, stage }, autor)
+}
+
+export interface PiezaState {
+  pieza: PiezaKey
+  versiones: number
+  /** La aprobada más nueva o, si no hay, el borrador. */
+  actual: LandscapeVersionRow | null
+  /** Tiene una versión aprobada. */
+  aprobada: boolean
+  origen: LandscapeVersionRow | null
+  /** Lo que llegó después de lo aprobado y espera decisión. */
+  borradorNuevo: LandscapeVersionRow | null
+}
+
+/**
+ * El estado de las piezas del Landscape (ver piezas.ts). Se guardan como versiones con la
+ * pieza en `stage`, así que comparten historial y aprobación con las etapas; lo que no
+ * tienen es estado propio en `landscape_stages`: una pieza está aprobada si tiene una
+ * versión aprobada.
+ */
+export async function piezasState(db: AnyDb, projectId: string): Promise<PiezaState[]> {
+  const versiones = await listLandscapeVersions(db, projectId)
+  return PIEZA_KEYS.map(pieza => {
+    const deLaPieza = versiones.filter(v => v.stage === pieza)
+    const aprobadaMasNueva = deLaPieza.find(v => v.approvedAt) ?? null
+    const masNueva = deLaPieza[0] ?? null
+    const actual = aprobadaMasNueva ?? masNueva
+    return {
+      pieza,
+      versiones: deLaPieza.length,
+      actual,
+      aprobada: !!aprobadaMasNueva,
+      origen: versionDeOrigen(actual, deLaPieza),
+      borradorNuevo: aprobadaMasNueva && masNueva && !masNueva.approvedAt ? masNueva : null,
+    }
+  })
+}
+
+/** Las piezas como las necesita el paso a paso (`estadoDePasos`). */
+export function piezasParaPasos(piezas: PiezaState[]) {
+  return piezas.map(p => ({
+    pieza: p.pieza,
+    contenido: p.actual?.content ?? null,
+    cerrada: p.aprobada && !p.borradorNuevo,
+  }))
 }
 
 /**

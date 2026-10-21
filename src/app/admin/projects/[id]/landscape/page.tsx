@@ -2,7 +2,7 @@ import { db } from '@/lib/db/client'
 import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import {
   getProjectWithSessions, getDeliverable,
-  landscapeState, listLandscapeActivity, summarizeLandscape, type TendenciasContent,
+  landscapeState, listLandscapeActivity, summarizeLandscape, piezasState, piezasParaPasos, type TendenciasContent,
 } from '@/lib/db/store'
 import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
@@ -55,6 +55,7 @@ export default async function LandscapeView({ params, searchParams }: {
   } catch (e) {
     console.error('No se pudieron leer los pasos marcados del Landscape:', e)
   }
+  const piezas = await piezasState(db, id)
   const pasos = estadoDePasos(
     estado.map(e => ({
       stage: e.stage,
@@ -63,6 +64,7 @@ export default async function LandscapeView({ params, searchParams }: {
       cerrada: !!e.actual?.approvedAt && !e.borradorNuevo,
     })),
     marcados,
+    piezasParaPasos(piezas),
   )
 
   // Toda la fase es una página; el link puede nombrar una sección (`?etapa=`) o un paso
@@ -114,8 +116,8 @@ export default async function LandscapeView({ params, searchParams }: {
   }))
 
   const contenidoPorEtapa = Object.fromEntries(
-    estado.map(e => [
-      e.stage,
+    [...estado.map(e => ({ ...e, clave: e.stage as string })), ...piezas.map(p => ({ ...p, clave: p.pieza as string }))].map(e => [
+      e.clave,
       e.actual
         ? {
             id: e.actual.id,

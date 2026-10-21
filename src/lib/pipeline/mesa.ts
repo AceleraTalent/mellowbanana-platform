@@ -8,7 +8,8 @@
 import type { FaseIndice } from './indice'
 import type { AttentionItem } from './attention'
 import type { ActivityEntry } from '@/lib/db/store'
-import { STAGE_LABEL, type StageKey } from '@/lib/landscape/stages'
+import { etiquetaDe, type StageKey } from '@/lib/landscape/stages'
+import { esPieza, etapaDePieza } from '@/lib/landscape/piezas'
 import { ETAPA_LABEL, type EstrategiaKey } from '@/lib/estrategia/stages'
 import { hrefDeSuEtapa } from '@/lib/landscape/pasos'
 import type { QueSigue } from '@/lib/seguimiento/sistema'
@@ -88,8 +89,9 @@ export function armarMovimientos(x: {
     id: `landscape:${a.id}`,
     cuando: a.cuando,
     quien: sujeto(a),
-    texto: `${verbo(a.tipo)} ${STAGE_LABEL[a.stage]}`,
-    href: `${base}/landscape?etapa=${a.stage}`,
+    texto: `${verbo(a.tipo)} ${etiquetaDe(a.stage)}`,
+    // Una pieza (los casos, el brand assets) se abre en la sección de su etapa.
+    href: `${base}/landscape?etapa=${esPieza(a.stage) ? etapaDePieza(a.stage) : a.stage}`,
   }))
 
   const deEstrategia: Movimiento[] = x.estrategia.map(a => ({

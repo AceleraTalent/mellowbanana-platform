@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MIN_TENDENCIAS, MAX_TENDENCIAS, STAGE_ORDER, type StageKey, type TendenciaCandidata } from '@/lib/landscape/stages'
 import { estadoDePasos, type EtapaParaPasos } from '@/lib/landscape/pasos'
+import type { PiezaKey } from '@/lib/landscape/piezas'
 import { LandscapeWorkspace, type ContenidoEtapaVista } from './LandscapeWorkspace'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
@@ -49,6 +50,8 @@ function montar(opciones: {
   /** Lo que Claude dejó en la Entrega, sin aprobar. */
   entrega?: Record<string, unknown>
   diagnosticoNoAplica?: boolean
+  /** Piezas que Claude guardó, sin aprobar. */
+  piezas?: Partial<Record<string, Record<string, unknown>>>
 }) {
   const { conBorrador = false, aprobada = true, tendencias = [], seleccion = [], marcados = [] } = opciones
   const etapas: EtapaParaPasos[] = STAGE_ORDER.map(stage => ({ stage, status: 'pendiente', contenido: null, cerrada: false }))
@@ -66,7 +69,8 @@ function montar(opciones: {
       contenido: { candidatas: tendencias, seleccionadas: seleccion },
       cerrada: seleccion.length > 0,
     })
-  const pasos = estadoDePasos(etapas, new Set(marcados))
+  const piezas = Object.entries(opciones.piezas ?? {}).map(([pieza, contenido]) => ({ pieza: pieza as PiezaKey, contenido, cerrada: false }))
+  const pasos = estadoDePasos(etapas, new Set(marcados), piezas)
   const props = {
     projectId: 'p1',
     proyecto: 'Grupo Heroica',
@@ -79,6 +83,8 @@ function montar(opciones: {
         ? { id: 've', content: { nombre: 'el enfoque' }, aprobada: true, procedencia: 'Escrito por Claude · hace 6 días · aprobada', cuando: 'hace 6 días', borradorNuevo: null }
         : null,
       contexto: contexto({ conBorrador, aprobada }),
+      ...Object.fromEntries(Object.entries(opciones.piezas ?? {}).map(([k, content]) => [k,
+        { id: `v-${k}`, content, aprobada: false, procedencia: 'Escrito por Claude · recién · sin aprobar', cuando: 'recién', borradorNuevo: null }])),
       entrega: opciones.entrega
         ? { id: 'ventrega', content: opciones.entrega, aprobada: false, procedencia: 'Escrito por Claude · hace 1 h · sin aprobar', cuando: 'hace 1 h', borradorNuevo: null }
         : null,
@@ -184,17 +190,30 @@ describe('LandscapeWorkspace · lo que sigue, arriba', () => {
     expect(seccion('setup').getByText('Te toca')).toBeTruthy()
   })
 
-  it('lo que va al deck se pide a Claude y se marca cuando ya está', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
-    vi.stubGlobal('fetch', fetchMock)
+  it('después de elegir, lo que sigue es que Claude desarrolle las tendencias, y su lugar ya está en la sección', () => {
     montar({ conEnfoque: true, marcados: ['1.1'], tendencias: candidatas(6), seleccion: ['t1', 't2', 't3', 't4'] })
 
-    expect(screen.getByText('Casos por tendencia', { selector: 'p' })).toBeTruthy()
+    expect(screen.getByText('Desarrollo de las tendencias', { selector: 'p.font-serif' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Seguir en Claude/ })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Ya está en el deck' }))
+    expect(document.getElementById('tendencias-desarrollo')).toBeTruthy()
+    expect(document.getElementById('tendencias-casos')).toBeTruthy()
+  })
+
+  it('una pieza que guardó Claude se lee y se aprueba en su bloque', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    montar({
+      conEnfoque: true, marcados: ['1.1'], tendencias: candidatas(6), seleccion: ['t1', 't2', 't3', 't4'],
+      piezas: { 'tendencias-casos': { tendencias: [{ titulo: 'Tendencia t1', casos: [{ marca: 'Marca X', descripcion: 'La aplica así.' }] }] } },
+    })
+
+    const bloque = within(document.getElementById('tendencias-casos')!)
+    expect(bloque.getByText('La aplica así.')).toBeTruthy()
+    fireEvent.click(bloque.getByRole('button', { name: 'Aprobar' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ paso: '3.4', hecho: true }))
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/projects/p1/landscape/tendencias-casos')
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'aprobar', versionId: 'v-tendencias-casos' }))
   })
 
   it('elegir tendencias lleva a la sección, no a otra página', () => {

@@ -42,11 +42,11 @@ describe('estadoDeFases', () => {
 
   it('el landscape cuenta pasos listos', () => {
     const s = senales({ pasos: pasos({}, ['1.1', '3.4']) })
-    expect(fase(s, 'landscape')).toMatchObject({ estado: 'en_curso', detalle: '2 de 13 pasos' })
+    expect(fase(s, 'landscape')).toMatchObject({ estado: 'en_curso', detalle: '2 de 14 pasos' })
   })
 
   it('las fases que se cuentan traen su avance corto, el mismo para el inicio y el menú', () => {
-    expect(fase(senales({ pasos: pasos({}, ['1.1', '3.4']) }), 'landscape').avance).toBe('2/13')
+    expect(fase(senales({ pasos: pasos({}, ['1.1', '3.4']) }), 'landscape').avance).toBe('2/14')
     expect(fase(senales({ estrategia: estrategia(3) }), 'estrategia').avance).toBe('3/14')
     // Las que no se cuentan no inventan un número.
     expect(fase(senales(), 'taller').avance).toBeUndefined()

@@ -16,9 +16,9 @@ const estado = (etapas: EtapaParaPasos[], id: string, marcados: string[] = []) =
   estadoDePasos(etapas, new Set(marcados)).find(p => p.id === id)!
 
 describe('PASOS', () => {
-  it('sigue el documento del estudio, sin los trámites que no son un paso: 14, ids únicos, en orden de etapa', () => {
-    expect(PASOS).toHaveLength(14)
-    expect(new Set(PASOS.map(p => p.id)).size).toBe(14)
+  it('sigue el documento del estudio, sin los trámites que no son un paso: 15, ids únicos, en orden de etapa', () => {
+    expect(PASOS).toHaveLength(15)
+    expect(new Set(PASOS.map(p => p.id)).size).toBe(15)
     // Las entregas anteriores son insumo de la lista larga, no un paso aparte; la carpeta y
     // el template son un solo trámite.
     expect(pasoPorId('3.2')).toBeUndefined()
@@ -94,7 +94,7 @@ describe('pasoQueSigue', () => {
 
   it('cuando sólo quedan trámites de afuera, son lo que sigue', () => {
     const todas = vacias().map(e => ({ ...e, status: 'aprobada', contenido: { x: 1, fuentes: [1], candidatas: [1], seleccionadas: [1] }, cerrada: true }))
-    const pasos = estadoDePasos(todas, new Set(['3.4', '4.2', '4.3']))
+    const pasos = estadoDePasos(todas, new Set(['3.5', '3.4', '4.2', '4.3']))
     expect(pasoQueSigue(pasos)!.id).toBe('1.1')
   })
 
@@ -111,10 +111,35 @@ describe('mensajeParaSeguir', () => {
     expect(texto).toContain('guárdalo en la plataforma')
   })
 
-  it('lo que va al deck se queda en el chat', () => {
-    const texto = mensajeParaSeguir(pasoPorId('3.4')!, 'Grupo Heroica')
-    expect(texto).not.toContain('guárdalo en la plataforma')
-    expect(texto).toContain('acá en el chat')
+  it('las partes del deck también se guardan en la plataforma', () => {
+    expect(mensajeParaSeguir(pasoPorId('3.4')!, 'Grupo Heroica')).toContain('guárdalo en la plataforma')
+  })
+})
+
+describe('piezas', () => {
+  const conSeleccion = () => con({ tendencias: { status: 'aprobada', contenido: { candidatas: [{ id: 'a' }], seleccionadas: ['a'] }, cerrada: true } })
+
+  it('una pieza está pendiente hasta que Claude la guarda, por revisar hasta que se aprueba, y hecha al aprobarse', () => {
+    const pieza = (cerrada: boolean) => [{ pieza: 'tendencias-desarrollo' as const, contenido: { tendencias: [{ titulo: 't' }] }, cerrada }]
+    expect(estado(conSeleccion(), '3.5').estado).toBe('pendiente')
+    expect(estadoDePasos(conSeleccion(), new Set(), pieza(false)).find(p => p.id === '3.5')!.estado).toBe('revisar')
+    expect(estadoDePasos(conSeleccion(), new Set(), pieza(true)).find(p => p.id === '3.5')!.estado).toBe('hecho')
+  })
+
+  it('después de elegir, lo que sigue es desarrollar las elegidas, y Claude sabe dónde guardarlo', () => {
+    const pasos = estadoDePasos(con({
+      setup: { status: 'aprobada', contenido: { x: 1 }, cerrada: true },
+      contexto: { status: 'aprobada', contenido: { fuentes: [1], resumen: 'r' }, cerrada: true },
+      tendencias: { status: 'aprobada', contenido: { candidatas: [{ id: 'a' }], seleccionadas: ['a'] }, cerrada: true },
+    }), new Set())
+    expect(pasoQueSigue(pasos)!.id).toBe('3.5')
+    const texto = queSigueParaClaude(pasos)
+    expect(texto).toContain('guardar_etapa en la etapa "tendencias-desarrollo"')
+    expect(texto).toContain('seleccionadas')
+  })
+
+  it('lo que el equipo marcó a mano cuando esto vivía en el chat sigue contando', () => {
+    expect(estado(conSeleccion(), '3.4', ['3.4']).estado).toBe('hecho')
   })
 })
 

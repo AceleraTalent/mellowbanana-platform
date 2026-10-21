@@ -1,7 +1,7 @@
 import type { AnyDb } from '@/lib/db/store'
 import {
   listProjectsWithCounts, getProjectWithSessions, getSessionWithAnswers, getDeliverable,
-  landscapeState, summarizeLandscape, saveLandscapeVersion,
+  landscapeState, summarizeLandscape, saveLandscapeVersion, piezasState, piezasParaPasos,
 } from '@/lib/db/store'
 import { strategyState, summarizeStrategy, saveStrategyVersion } from '@/lib/db/strategy-store'
 import { sessions, answers } from '@/lib/db/schema'
@@ -12,7 +12,8 @@ import { pasosMarcados } from '@/lib/db/pasos-store'
 import { actualizarSeguimiento, conclusionesDelTaller } from '@/lib/db/seguimiento-store'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
-import { validarContenidoEtapa } from './validar'
+import { validarContenidoEtapa, validarPieza } from './validar'
+import { PIEZA_LABEL, esPieza, etapaDePieza, type PiezaKey } from '@/lib/landscape/piezas'
 import { validarContenidoEstrategia } from './validar-estrategia'
 
 // `AnyDb` hace que todo lo que sale del store llegue tipado `any`: estas dos anotan el
@@ -83,6 +84,14 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
       contenidoAprobado: e.aprobada ? e.actual?.content ?? null : null,
       borradorSinAprobar: borradorDe(e),
     })),
+    // Las partes del deck que se guardan aparte (desarrollo y casos de las tendencias,
+    // brand assets, círculo cromático), con el mismo criterio que las etapas.
+    piezas: (await piezasState(db, id)).map(p => ({
+      pieza: p.pieza,
+      titulo: PIEZA_LABEL[p.pieza],
+      contenidoAprobado: p.aprobada ? p.actual?.content ?? null : null,
+      borradorSinAprobar: borradorDe(p),
+    })),
     // Espejo del landscape de arriba, mismo criterio: solo lo aprobado sale del store
     // hacia el chat.
     estrategia: estadoEst.map(e => ({
@@ -92,6 +101,28 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
       contenidoAprobado: e.aprobada ? e.actual?.content ?? null : null,
       borradorSinAprobar: borradorDe(e),
     })),
+  }
+}
+
+/**
+ * Las partes del deck que se guardan aparte de la etapa (ver piezas.ts). Igual que una
+ * etapa: siempre borrador, autor Claude, el equipo aprueba en el panel.
+ */
+async function guardarPieza(db: AnyDb, d: { proyecto: string; pieza: PiezaKey; contenido: unknown }) {
+  validarPieza(d.pieza, d.contenido)
+  const { id, name } = await resolverProyecto(db, d.proyecto)
+  const yaEstabaAprobada = (await piezasState(db, id)).find(p => p.pieza === d.pieza)?.aprobada ?? false
+  const version = await saveLandscapeVersion(db, id, d.pieza, { content: d.contenido, author: 'claude' })
+  const nombre = PIEZA_LABEL[d.pieza]
+  return {
+    versionId: version.id,
+    marca: name,
+    etapa: d.pieza,
+    esperandoAprobacion: true,
+    verEnElPanel: linkAlPanel(id, etapaDePieza(d.pieza)),
+    mensaje: yaEstabaAprobada
+      ? `Guardé una versión nueva de ${nombre}. Sigue valiendo la aprobada hasta que el equipo decida.`
+      : `Guardé ${nombre}. Queda pendiente de aprobación: el equipo la aprueba desde el panel.`,
   }
 }
 
@@ -128,6 +159,7 @@ export async function estadoLandscape(db: AnyDb, ref: string) {
       cerrada: !!e.actual?.approvedAt && !e.borradorNuevo,
     })),
     marcados,
+    piezasParaPasos(await piezasState(db, id)),
   )
   return {
     marca: name,
@@ -197,10 +229,12 @@ export async function guardarEtapa(db: AnyDb, d: {
   proyecto: string; etapa: string; contenido: unknown; fase?: 'landscape' | 'estrategia'
 }) {
   if (d.fase === 'estrategia') return guardarEtapaEstrategia(db, d)
+  if (esPieza(d.etapa)) return guardarPieza(db, { ...d, pieza: d.etapa })
 
   if (!STAGE_ORDER.includes(d.etapa as StageKey))
     throw new ErrorDeHerramienta(
-      `“${d.etapa}” no es una etapa del landscape. Las etapas son: ${STAGE_ORDER.join(', ')}.`,
+      `“${d.etapa}” no es una etapa del landscape. Las etapas son: ${STAGE_ORDER.join(', ')}; ` +
+      `y las partes que se guardan aparte: ${Object.keys(PIEZA_LABEL).join(', ')}.`,
     )
   const etapa = d.etapa as StageKey
 

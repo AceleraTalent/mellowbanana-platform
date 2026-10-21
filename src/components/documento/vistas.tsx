@@ -253,7 +253,7 @@ export function VistaListaLarga({ candidatas, elegidas, conResumen = true }: {
         const delEje = candidatas.filter(t => t.eje === eje)
         if (!delEje.length) return null
         return (
-          <Seccion key={eje} titulo={eje} numero={String(delEje.length)}>
+          <Seccion key={eje} titulo={`${eje} · ${delEje.length}`}>
             <Tarjetas>
               {delEje.map(t => (
                 <Tarjeta key={t.id} tono={elegidas.includes(t.id) ? 'claro' : undefined}>
@@ -468,4 +468,130 @@ export function VistaDiagnostico({ content }: { content: unknown }) {
 /** Cualquier otro contenido: el render genérico, dentro del mismo marco. */
 export function VistaGenerica({ content }: { content: unknown }) {
   return <ContenidoEtapa content={content} />
+}
+
+// ─── Piezas del deck (ver src/lib/landscape/piezas.ts) ───────────────────────────────
+
+/** Un texto o una lista de textos, como puntos si son varios. */
+function TextoOPuntos({ v }: { v: unknown }) {
+  return Array.isArray(v) ? <Puntos items={v} /> : <Parrafo texto={v} />
+}
+
+/** 3.5 · Cada tendencia elegida en sus tres diapositivas. */
+export function VistaDesarrollo({ content }: { content: unknown }) {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const tendencias = lista(leer('tendencias')).map(obj)
+  return (
+    <Documento>
+      {tendencias.map((t, i) => (
+        <Seccion key={i} numero={String(i + 1)} titulo={txt(t.titulo) || `Tendencia ${i + 1}`}>
+          <Tarjetas columnas={3}>
+            <Tarjeta titulo="Explicación"><Parrafo texto={t.explicacion} /></Tarjeta>
+            <Tarjeta titulo="Profundización"><Parrafo texto={t.profundizacion} /></Tarjeta>
+            <Tarjeta titulo="Enfoques para la marca"><TextoOPuntos v={t.enfoques} /></Tarjeta>
+          </Tarjetas>
+          <FuentesEnLinea fuentes={t.fuentes} />
+        </Seccion>
+      ))}
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
+}
+
+/** 3.4 · Las marcas que ya aplican cada tendencia. */
+export function VistaCasos({ content }: { content: unknown }) {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const tendencias = lista(leer('tendencias')).map(obj)
+  return (
+    <Documento>
+      {tendencias.map((t, i) => (
+        <Seccion key={i} titulo={txt(t.titulo) || `Tendencia ${i + 1}`} numero={String(i + 1)}>
+          <Tarjetas>
+            {lista(t.casos).map(obj).map((caso, j) => {
+              const link = txt(caso.link) || txt(caso.url)
+              const imagen = txt(caso.imagen)
+              return (
+                <Tarjeta key={j} titulo={[txt(caso.marca), txt(caso.mercado)].filter(Boolean).join(' · ')}>
+                  <Parrafo texto={caso.descripcion} />
+                  {(link || imagen) && (
+                    <p className="mt-2 flex flex-wrap gap-x-4 text-[13px]">
+                      {link && <a href={link} target="_blank" rel="noreferrer" className="text-[var(--ink)] underline underline-offset-2">Ver el caso ↗</a>}
+                      {imagen && <a href={imagen} target="_blank" rel="noreferrer" className="text-[var(--ink)] underline underline-offset-2">Imagen ↗</a>}
+                    </p>
+                  )}
+                </Tarjeta>
+              )
+            })}
+          </Tarjetas>
+        </Seccion>
+      ))}
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
+}
+
+/** 4.2 · Los 4 competidores principales, por territorio, mensajes y claims. */
+export function VistaBrandAssets({ content }: { content: unknown }) {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const competidores = lista(leer('competidores')).map(obj)
+  const filas: [string, string][] = [['territorio', 'Territorio'], ['mensajes', 'Mensajes'], ['claims', 'Claims']]
+  return (
+    <Documento>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
+          <thead>
+            <tr>
+              <th className="w-[120px] border-b border-[var(--line)] py-2 pr-4" />
+              {competidores.map((m, i) => (
+                <th key={i} scope="col" className="border-b border-[var(--line)] py-2 pr-4 font-semibold text-[var(--ink)]">{txt(m.marca)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map(([campo, etiqueta]) => (
+              <tr key={campo} className="align-top">
+                <th scope="row" className="border-b border-[var(--line)] py-3 pr-4 font-mono text-[11px] font-normal uppercase tracking-[.1em] text-[var(--rotulo)]">{etiqueta}</th>
+                {competidores.map((m, i) => (
+                  <td key={i} className="border-b border-[var(--line)] py-3 pr-4 leading-[1.55] text-[var(--cuerpo)]">
+                    {Array.isArray(m[campo]) ? textos(m[campo]).join(' · ') : txt(m[campo])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Interpretacion titulo="Qué se lee" texto={leer('lectura', 'conclusion')} />
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
+}
+
+/** 4.3 · Los colores de cada marca y los espacios que quedan libres. */
+export function VistaCirculo({ content }: { content: unknown }) {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const marcas = lista(leer('marcas')).map(obj)
+  return (
+    <Documento>
+      <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        {marcas.map((m, i) => (
+          <li key={i} className="flex items-center gap-3">
+            <span className="flex flex-none">
+              {textos(m.colores).map((hex, j) => (
+                <span key={j} title={hex} className="-ml-1 h-6 w-6 rounded-full ring-2 ring-white first:ml-0" style={{ backgroundColor: hex }} />
+              ))}
+            </span>
+            <span className="text-[14.5px] text-[var(--ink)]">{txt(m.marca)}</span>
+            <span className="font-mono text-[11.5px] text-[var(--rotulo)]">{textos(m.colores).join(' ')}</span>
+          </li>
+        ))}
+      </ul>
+      <Interpretacion titulo="Espacios de color libres" texto={leer('lectura')} />
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
 }

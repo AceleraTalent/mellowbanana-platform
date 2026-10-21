@@ -20,9 +20,9 @@ describe('marcarPaso', () => {
   })
 
   it('marcar dos veces no duplica ni falla', async () => {
-    await marcarPaso(db, projectId, '3.4', true)
-    await marcarPaso(db, projectId, '3.4', true)
-    expect([...(await pasosMarcados(db, projectId))]).toEqual(['3.4'])
+    await marcarPaso(db, projectId, '6.1', true)
+    await marcarPaso(db, projectId, '6.1', true)
+    expect([...(await pasosMarcados(db, projectId))]).toEqual(['6.1'])
   })
 
   it('no deja marcar a mano un paso que se cierra aprobando', async () => {

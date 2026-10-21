@@ -1,4 +1,5 @@
 import { EJES, MAX_TENDENCIAS, MIN_TENDENCIAS, type StageKey } from '@/lib/landscape/stages'
+import type { PiezaKey } from '@/lib/landscape/piezas'
 import { ErrorDeHerramienta } from './errores'
 
 /**
@@ -79,4 +80,57 @@ export function validarContenidoEtapa(etapa: StageKey, contenido: unknown): void
         )
     })
   })
+}
+
+const texto = (v: unknown) => typeof v === 'string' && v.trim() !== ''
+const textoOLista = (v: unknown) => texto(v) || (Array.isArray(v) && v.length > 0 && v.every(texto))
+
+function lista(contenido: Record<string, unknown>, campo: string, pieza: string): Record<string, unknown>[] {
+  const v = contenido[campo]
+  if (!Array.isArray(v) || !v.length || v.some(x => typeof x !== 'object' || x === null))
+    throw new ErrorDeHerramienta(`${pieza} necesita “${campo}”: una lista de objetos, con al menos uno.`)
+  return v as Record<string, unknown>[]
+}
+
+function exigir(o: Record<string, unknown>, campos: [string, (v: unknown) => boolean][], donde: string) {
+  for (const [campo, ok] of campos)
+    if (!ok(o[campo])) throw new ErrorDeHerramienta(`A ${donde} le falta “${campo}”.`)
+}
+
+/**
+ * Las piezas que se guardan aparte (ver piezas.ts). La forma mínima es la que el panel sabe
+ * mostrar como parte del deck; lo que sobre se guarda igual y se ve al final.
+ */
+export function validarPieza(pieza: PiezaKey, contenido: unknown): void {
+  if (typeof contenido !== 'object' || contenido === null || Array.isArray(contenido))
+    throw new ErrorDeHerramienta('El contenido tiene que ser un objeto JSON.')
+  const c = contenido as Record<string, unknown>
+  switch (pieza) {
+    case 'tendencias-desarrollo':
+      lista(c, 'tendencias', 'El desarrollo').forEach((t, i) => exigir(t, [
+        ['titulo', texto], ['explicacion', texto], ['profundizacion', texto], ['enfoques', textoOLista],
+      ], `la tendencia ${i + 1}`))
+      return
+    case 'tendencias-casos':
+      lista(c, 'tendencias', 'Los casos').forEach((t, i) => {
+        exigir(t, [['titulo', texto]], `la tendencia ${i + 1}`)
+        lista(t, 'casos', `La tendencia “${t.titulo}”`).forEach((caso, j) =>
+          exigir(caso, [['marca', texto], ['descripcion', texto]], `el caso ${j + 1} de “${t.titulo}”`))
+      })
+      return
+    case 'panorama-brand-assets':
+      lista(c, 'competidores', 'El cuadro de brand assets').forEach((m, i) => exigir(m, [
+        ['marca', texto], ['territorio', textoOLista], ['mensajes', textoOLista], ['claims', textoOLista],
+      ], `el competidor ${i + 1}`))
+      return
+    case 'panorama-circulo':
+      lista(c, 'marcas', 'El círculo cromático').forEach((m, i) => {
+        exigir(m, [['marca', texto]], `la marca ${i + 1}`)
+        const colores = m.colores
+        if (!Array.isArray(colores) || !colores.length || !colores.every(x => typeof x === 'string' && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(x)))
+          throw new ErrorDeHerramienta(`Los “colores” de “${m.marca}” tienen que ser una lista de hex, como "#1A2B3C".`)
+      })
+      if (!texto(c.lectura)) throw new ErrorDeHerramienta('Al círculo cromático le falta “lectura”: qué espacios de color quedan libres.')
+      return
+  }
 }

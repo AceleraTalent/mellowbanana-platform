@@ -276,7 +276,7 @@ describe('conclusiones del taller', () => {
       stage, status: 'aprobada', cerrada: true,
       contenido: stage === 'panorama' ? { benchmarking: 'x' } : { x: 1, fuentes: [1], candidatas: [1], seleccionadas: [1] },
     }))
-    const pasos = estadoDePasos(todoHastaPanorama, new Set(['1.1', '3.4']))
+    const pasos = estadoDePasos(todoHastaPanorama, new Set(['1.1', '3.5', '3.4']))
     expect(queSigueParaClaude(pasos)).toMatch(/^Brand assets: .*set competitivo del Enfoque/)
     expect(queSigueParaClaude(pasos, { conclusionesTaller: true })).not.toContain('set competitivo')
   })
@@ -289,5 +289,35 @@ describe('conclusiones del taller', () => {
     await guardarConclusionesTaller(db, { proyecto: 'Fruta Viva', conclusiones: '  Competidores: A, B, C, D  ' })
     expect((await contextoProyecto(db, 'Fruta Viva')).conclusionesTaller).toBe('Competidores: A, B, C, D')
     await expect(guardarConclusionesTaller(db, { proyecto: 'Fruta Viva', conclusiones: '   ' })).rejects.toBeInstanceOf(ErrorDeHerramienta)
+  })
+})
+
+describe('piezas del deck', () => {
+  const casos = { tendencias: [{ titulo: 'Tendencia A', casos: [{ marca: 'Marca X', mercado: 'Chile', descripcion: 'La aplica así.' }] }] }
+
+  it('Claude las guarda como borrador con guardar_etapa y vuelven en el contexto', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    const r = await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'tendencias-casos', contenido: casos })
+    expect(r).toMatchObject({ etapa: 'tendencias-casos', esperandoAprobacion: true, verEnElPanel: expect.stringMatching(/landscape\?etapa=tendencias$/) })
+
+    const pieza = (await contextoProyecto(db, 'Fruta Viva')).piezas.find(p => p.pieza === 'tendencias-casos')!
+    expect(pieza).toMatchObject({ titulo: 'Casos por tendencia', contenidoAprobado: null, borradorSinAprobar: casos })
+  })
+
+  it('una pieza mal armada se rechaza antes de tocar la base, y dice qué falta', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    await expect(guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'panorama-circulo', contenido: { marcas: [{ marca: 'A', colores: ['azul'] }], lectura: 'x' } }))
+      .rejects.toThrow(/hex/)
+    await expect(guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'tendencias-desarrollo', contenido: { tendencias: [{ titulo: 'T' }] } }))
+      .rejects.toThrow(/explicacion/)
+    expect((await contextoProyecto(db, 'Fruta Viva')).piezas.every(p => p.borradorSinAprobar === null)).toBe(true)
+  })
+
+  it('una clave que no es etapa ni pieza dice cuáles hay', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    await expect(guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'casos', contenido: casos })).rejects.toThrow(/tendencias-casos/)
   })
 })

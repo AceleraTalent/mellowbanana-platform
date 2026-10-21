@@ -7,12 +7,14 @@ import {
   type StageKey, type TendenciaCandidata,
 } from '@/lib/landscape/stages'
 import { pasoQueSigue, tieneContenido, type PasoConEstado } from '@/lib/landscape/pasos'
+import { PIEZAS, PIEZA_LABEL, type PiezaKey } from '@/lib/landscape/piezas'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
 import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
 import { BotonCopiar, BOTON_PRIMARIO, LoQueSigue, PorFuera } from '@/components/paso/piezas'
 import { FuentesEnLinea } from '@/components/documento/bloques'
 import {
-  VistaBenchmarking, VistaContexto, VistaDiagnostico, VistaEnfoque, VistaFuentes, VistaGenerica, VistaListaLarga,
+  VistaBenchmarking, VistaBrandAssets, VistaCasos, VistaCirculo, VistaContexto, VistaDesarrollo, VistaDiagnostico,
+  VistaEnfoque, VistaFuentes, VistaGenerica, VistaListaLarga,
 } from '@/components/documento/vistas'
 
 /** Lo que la página le pasa al panel: ya formateado, sin fechas crudas. */
@@ -124,6 +126,13 @@ function DocumentoDelPaso({ paso, content }: { paso: PasoConEstado; content: unk
   }
 }
 
+const VISTA_DE_PIEZA: Record<PiezaKey, (p: { content: unknown }) => React.ReactNode> = {
+  'tendencias-desarrollo': VistaDesarrollo,
+  'tendencias-casos': VistaCasos,
+  'panorama-brand-assets': VistaBrandAssets,
+  'panorama-circulo': VistaCirculo,
+}
+
 type EstadoSeccion = 'listo' | 'revisar' | 'equipo' | 'claude' | 'despues' | 'no_aplica'
 
 const CHIP: Record<EstadoSeccion, { texto: string; clase: string }> = {
@@ -217,7 +226,7 @@ export function LandscapeWorkspace({
   const [error, setError] = useState<{ donde: string; texto: string } | null>(null)
   // Las secciones donde el equipo pidió mirar sólo la versión aprobada. No decide nada —el
   // borrador sigue guardado y la etapa sigue esperando— así que es estado de vista.
-  const [soloAprobada, setSoloAprobada] = useState<StageKey[]>([])
+  const [soloAprobada, setSoloAprobada] = useState<string[]>([])
   // Con la selección ya confirmada se leen las elegidas; cambiarla es pedirlo.
   const [cambiandoSeleccion, setCambiandoSeleccion] = useState(false)
   // Lo que el equipo abrió o cerró a mano. Lo que no tocó sigue el estado del proyecto:
@@ -283,10 +292,10 @@ export function LandscapeWorkspace({
   const aprobarSeleccion = () =>
     enviar(`${base}/tendencias`, { accion: 'seleccionar-tendencias', seleccionadas: selected }, 'No se pudo guardar', 'tendencias')
   // Aprobar una versión ya guardada: Claude guarda por MCP, el equipo aprueba desde acá.
-  const aprobarVersion = (etapa: StageKey, versionId: string) =>
+  const aprobarVersion = (etapa: StageKey | PiezaKey, versionId: string) =>
     enviar(`${base}/${etapa}`, { accion: 'aprobar', versionId }, 'No se pudo aprobar', etapa)
   // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
-  const mantenerAprobada = (etapa: StageKey) =>
+  const mantenerAprobada = (etapa: StageKey | PiezaKey) =>
     enviar(`${base}/${etapa}`, { accion: 'reafirmar' }, 'No se pudo mantener la versión aprobada', etapa)
   const marcar = (id: string, hecho: boolean) =>
     enviar(`${base}/pasos`, { paso: id, hecho }, 'No se pudo marcar', id)
@@ -394,6 +403,72 @@ export function LandscapeWorkspace({
     )
   }
 
+  /**
+   * Una pieza del deck dentro de su sección (el desarrollo y los casos de las tendencias,
+   * el brand assets, el círculo): su propio documento y su propia aprobación.
+   */
+  function bloquePieza(pieza: PiezaKey) {
+    const contenido = contenidoPorEtapa[pieza] ?? null
+    const borradorNuevo = contenido?.borradorNuevo ?? null
+    const paso = pasos.find(p => p.pieza === pieza)
+    const errorPieza = errorDe(pieza)
+    const Vista = VISTA_DE_PIEZA[pieza]
+    let cuerpo: React.ReactNode
+    if (!contenido) {
+      cuerpo = <Vacio texto={`Claude lo guarda acá cuando se lo pidan en el chat. ${paso?.queEs ?? ''}`} />
+    } else if (borradorNuevo && !soloAprobada.includes(pieza)) {
+      cuerpo = (
+        <>
+          <ComparadorVersiones
+            aprobada={{ content: contenido.content, cuando: contenido.cuando }}
+            nueva={{ content: borradorNuevo.content, cuando: borradorNuevo.cuando, autor: borradorNuevo.autor }}
+            onMantener={() => mantenerAprobada(pieza)}
+            onVerSoloAprobada={() => setSoloAprobada(prev => [...prev, pieza])}
+            onAprobarNueva={() => aprobarVersion(pieza, borradorNuevo.id)}
+            guardando={guardando === pieza}
+          />
+          {errorPieza && <p className="mt-3 text-[13px] text-[var(--error)]">{errorPieza}</p>}
+        </>
+      )
+    } else {
+      cuerpo = (
+        <>
+          {borradorNuevo && (
+            <div className="mb-6">
+              <AvisoVersionNueva autor={borradorNuevo.autor} cuando={borradorNuevo.cuando}
+                onVer={() => setSoloAprobada(prev => prev.filter(e => e !== pieza))} />
+            </div>
+          )}
+          <p className="mb-6 text-[12.5px] text-[var(--rotulo)]">{contenido.procedencia}</p>
+          <Vista content={contenido.content} />
+          {!contenido.aprobada && (
+            <BarraDeRevision
+              procedencia={contenido.procedencia}
+              instruccionCambios={`Ajustemos ${PIEZA_LABEL[pieza]}, del Landscape de ${proyecto}. Lee lo que ya está guardado y cámbialo así:\n`}
+              onAprobar={() => aprobarVersion(pieza, contenido.id)}
+              guardando={guardando === pieza}
+              error={errorPieza}
+            />
+          )}
+        </>
+      )
+    }
+    return (
+      <div key={pieza} id={pieza} className="mt-14 scroll-mt-8">
+        <p className="mb-6 flex items-baseline justify-between gap-4 border-b border-[var(--line)] pb-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">{PIEZA_LABEL[pieza]}</span>
+          {contenido && (
+            <span className="text-[12px] font-semibold text-[var(--secundario)]">{contenido.aprobada && !borradorNuevo ? 'Aprobado' : 'Por revisar'}</span>
+          )}
+        </p>
+        {cuerpo}
+      </div>
+    )
+  }
+
+  /** Las piezas de una etapa, en el orden del deck. */
+  const piezasDe = (etapa: StageKey) => PIEZAS.filter(p => p.etapa === etapa).map(p => bloquePieza(p.key))
+
   /** Lo que Claude guardó en una etapa (menos tendencias): leerlo, compararlo, aprobarlo. */
   function cuerpoDocumento(etapa: StageKey, deLaEtapa: PasoConEstado[]) {
     const contenido = contenidoPorEtapa[etapa] ?? null
@@ -418,12 +493,13 @@ export function LandscapeWorkspace({
     }
 
     // Lo principal primero: en el contexto, el texto y después las fuentes que cita.
+    // Las piezas (brand assets, círculo) tienen su propio bloque: acá va sólo lo de la etapa.
     const conDocumento = deLaEtapa
-      .filter(p => p.donde === 'plataforma' && contenido && tieneContenido(p, contenido.content))
+      .filter(p => p.donde === 'plataforma' && !p.pieza && contenido && tieneContenido(p, contenido.content))
       .sort((a, b) => (a.id === '2.1' ? 1 : 0) - (b.id === '2.1' ? 1 : 0))
     if (!contenido || !conDocumento.length) return QUE_VA[etapa] ? <Vacio texto={QUE_VA[etapa]} /> : null
 
-    const porRevisar = deLaEtapa.some(p => p.estado === 'revisar')
+    const porRevisar = !contenido.aprobada
     return (
       <>
         {/* Se está mirando sólo la aprobada, pero el borrador sigue ahí: la vuelta al
@@ -468,9 +544,15 @@ export function LandscapeWorkspace({
       <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
         Landscape · {listas} de {aplicables} secciones listas
       </p>
-      <h1 className="mt-3 font-serif text-[38px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
-        <span className="underline-banana">Landscape</span>
-      </h1>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <h1 className="font-serif text-[38px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
+          <span className="underline-banana">Landscape</span>
+        </h1>
+        {/* Todo lo aprobado, en el orden del deck: para pasarlo al template o guardarlo en PDF. */}
+        <a href={`/admin/projects/${projectId}/landscape/documento`} className="pb-1.5 text-[14px] font-medium text-[var(--ink)] underline underline-offset-4">
+          Documento para el deck ↗
+        </a>
+      </div>
 
       <LoQueSigue paso={sigue} proyecto={proyecto} guardando={!!sigue && guardando === sigue.id} onMarcar={marcar} />
       {pasoConError && pasoConError.id === sigue?.id && alerta(error!.texto)}
@@ -509,6 +591,8 @@ export function LandscapeWorkspace({
                   {estado === 'no_aplica'
                     ? <p className="text-[14px] text-[var(--secundario)]">No aplica en este proyecto: es una marca nueva, no un rebranding.</p>
                     : etapa === 'tendencias' ? cuerpoTendencias() : cuerpoDocumento(etapa, deLaEtapa)}
+                  {/* El desarrollo y los casos se hacen sobre las tendencias elegidas: antes no hay nada que mostrar. */}
+                  {estado !== 'no_aplica' && (etapa !== 'tendencias' || tendenciasAprobadas) && piezasDe(etapa)}
                   {PUEDEN_NO_APLICAR.includes(etapa) && (
                     <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--secundario)]">
                       {estado === 'no_aplica' ? '¿Sí es un rebranding?' : 'Sólo aplica en rebranding. ¿Es una marca nueva?'}

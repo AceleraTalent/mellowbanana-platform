@@ -100,13 +100,14 @@ export function LoQueSigue({ paso, proyecto, guardando, onMarcar }: {
   }
 
   const quien = paso.turno === 'claude' ? 'Le toca a Claude' : paso.turno === 'revisar' ? 'Te toca revisar' : 'Te toca'
-  const titulo = paso.turno === 'revisar' ? STAGE_LABEL[paso.etapa] : paso.titulo
+  // Una pieza (los casos, el brand assets) se nombra a sí misma; una etapa, por su sección.
+  const titulo = paso.turno === 'revisar' && !paso.pieza ? STAGE_LABEL[paso.etapa] : paso.titulo
   const texto = paso.turno === 'revisar'
     ? 'Claude guardó un borrador. Léelo y apruébalo, o pide cambios.'
     : paso.queEs
 
   const irALaSeccion = (etiqueta: string) => (
-    <a href={`#${paso.etapa}`} className={`${BOTON_PRIMARIO} px-4 py-2 text-[14px]`}>{etiqueta} <span aria-hidden="true">↓</span></a>
+    <a href={`#${paso.pieza ?? paso.etapa}`} className={`${BOTON_PRIMARIO} px-4 py-2 text-[14px]`}>{etiqueta} <span aria-hidden="true">↓</span></a>
   )
   const marcarHecho = (etiqueta: string, principal: boolean) => (
     <button type="button" onClick={() => onMarcar(paso.id, true)} disabled={guardando}

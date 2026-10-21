@@ -101,7 +101,12 @@ const handler = createMcpHandler(
         'beneficios es funcionales y emocionales (listas); arquetipo es arquetipo y justificacion; ' +
         'personalidad es rasgos (lista); valores es items, lista de { valor, validacion }; territorio, ' +
         'brand_ideal, tagline y manifiesto son solo texto; cuadros es brandEssence y consumidor, cada ' +
-        'uno un objeto de pares campo→texto. Los cuadros se llenan desde contenido aprobado.',
+        'uno un objeto de pares campo→texto. Los cuadros se llenan desde contenido aprobado. ' +
+        'Las partes del deck del landscape van en su propia clave de etapa, sin fase: ' +
+        '"tendencias-desarrollo" es { tendencias: [{ titulo, explicacion, profundizacion, enfoques }] }; ' +
+        '"tendencias-casos" es { tendencias: [{ titulo, casos: [{ marca, mercado, descripcion, link, imagen }] }] }; ' +
+        '"panorama-brand-assets" es { competidores: [{ marca, territorio, mensajes, claims }] }; ' +
+        '"panorama-circulo" es { marcas: [{ marca, colores: ["#hex", …] }], lectura }.',
       inputSchema: z.object({
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
         fase: z.enum(['landscape', 'estrategia']).default('landscape')

@@ -129,3 +129,16 @@ describe('POST /api/projects/[id]/landscape/[stage] — no aplica', () => {
     expect(await estadoDe('contexto')).toBe('pendiente')
   })
 })
+
+describe('POST /api/projects/[id]/landscape/[pieza]', () => {
+  it('una pieza del deck se aprueba como una etapa, firmada por quien decidió', async () => {
+    const v = await saveLandscapeVersion(db, projectId, 'tendencias-casos', { content: { tendencias: [] }, author: 'claude' })
+    const res = await post(projectId, 'tendencias-casos', { accion: 'aprobar', versionId: v.id })
+    expect(res.status).toBe(200)
+    expect((await res.json()).approvedAt).not.toBeNull()
+  })
+
+  it('una clave inventada sigue siendo 400', async () => {
+    expect((await post(projectId, 'tendencias-inventada', { accion: 'aprobar', versionId: '00000000-0000-4000-8000-000000000000' })).status).toBe(400)
+  })
+})
