@@ -12,7 +12,7 @@ import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { buildStages, haceCuanto, textoActividad, STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
-import { estadoDePasos, pasoInicial, pasoPorId, type PasoConEstado } from '@/lib/landscape/pasos'
+import { estadoDePasos, pasoPorId, type PasoConEstado } from '@/lib/landscape/pasos'
 import { pasosMarcados } from '@/lib/db/pasos-store'
 import { LandscapeWorkspace } from './LandscapeWorkspace'
 
@@ -63,15 +63,16 @@ export default async function LandscapeView({ params, searchParams }: {
     marcados,
   )
 
-  // Qué paso se mira. `?paso=` manda si nombra uno real; si no, `?etapa=` abre el primer
-  // paso que falta de esa etapa; sin nada, se aterriza en el primer paso que falta de todo
-  // el Landscape. Una query inventada nunca rompe la página.
+  // Qué etapa se mira. `?paso=` manda si nombra uno real (el buscador y “lo que sigue”
+  // apuntan a un paso): se abre su etapa con ese paso resaltado. Si no, `?etapa=`; sin
+  // nada, la etapa del primer paso que falta. Una query inventada nunca rompe la página.
+  const pendiente = (p: PasoConEstado) => p.estado === 'pendiente' || p.estado === 'revisar'
   const pasoPedido = pasoQuery ? pasos.find(p => p.id === pasoPorId(pasoQuery)?.id) : undefined
-  const paso: PasoConEstado = pasoPedido
+  const etapaActiva: StageKey = pasoPedido?.etapa
     ?? (etapa && (STAGE_ORDER as string[]).includes(etapa)
-      ? pasoInicial(pasos, resolverEtapaActiva(etapa, STAGE_ORDER, stages))!
-      : pasos.find(p => p.estado === 'pendiente' || p.estado === 'revisar') ?? pasos[pasos.length - 1])
-  const etapaActiva: StageKey = paso.etapa
+      ? resolverEtapaActiva(etapa, STAGE_ORDER, stages)
+      : (pasos.find(pendiente) ?? pasos[pasos.length - 1]).etapa)
+  const foco = pasoPedido?.id ?? pasos.find(p => p.etapa === etapaActiva && pendiente(p))?.id
 
   const fases = deriveFases(id, señales)
   const pantallas = derivePantallas(id, señales)
@@ -87,17 +88,6 @@ export default async function LandscapeView({ params, searchParams }: {
       ...esperanDecision('estrategia', estrategiaEstado),
     ],
   })
-  // El paso a paso de la etapa activa cuelga de su entrada en el índice.
-  for (const fase of indice) for (const entrada of fase.entradas) {
-    if (entrada.key !== `landscape:${etapaActiva}`) continue
-    entrada.pasos = pasos.filter(p => p.etapa === etapaActiva).map(p => ({
-      id: p.id,
-      titulo: p.titulo,
-      href: `/admin/projects/${id}/landscape?paso=${p.id}`,
-      estado: p.estado,
-      actual: p.id === paso.id,
-    }))
-  }
   const actual = pantallaActual(fases, pantallas)
   // Lo que la fase necesita de otra y todavía no llegó. Lo rendía `ProjectHeader`; ahora
   // vive en el área de trabajo, que es donde el equipo se pregunta por qué no puede avanzar.
@@ -167,7 +157,8 @@ export default async function LandscapeView({ params, searchParams }: {
       <LandscapeWorkspace
         projectId={id}
         proyecto={project.name}
-        paso={paso}
+        etapa={etapaActiva}
+        foco={foco}
         pasos={pasos}
         tendencias={tendenciasContent?.candidatas ?? []}
         seleccionAprobada={seleccionAprobada}

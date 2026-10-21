@@ -24,16 +24,6 @@ export interface EntradaIndice {
   bloque?: string
   /** Esta etapa espera una decisión del equipo. */
   espera: boolean
-  /** Los pasos de la etapa, sólo en la etapa activa del Landscape: el paso a paso a la vista. */
-  pasos?: SubPasoIndice[]
-}
-
-export interface SubPasoIndice {
-  id: string
-  titulo: string
-  href: string
-  estado: 'hecho' | 'revisar' | 'pendiente' | 'no_aplica'
-  actual: boolean
 }
 
 export interface FaseIndice {

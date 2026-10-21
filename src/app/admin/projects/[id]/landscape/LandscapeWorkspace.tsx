@@ -1,18 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   EJES, MIN_TENDENCIAS, MAX_TENDENCIAS, STAGE_ORDER, STAGE_LABEL,
   type StageKey, type TendenciaCandidata,
 } from '@/lib/landscape/stages'
-import {
-  instruccionParaClaude, siguientePendiente, tieneContenido, type PasoConEstado,
-} from '@/lib/landscape/pasos'
+import { tieneContenido, type PasoConEstado } from '@/lib/landscape/pasos'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
-import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
-import { PanelTurno } from '@/components/paso/PanelTurno'
+import { AvisoVersionNueva, NotaDependencia, Vecinas } from '@/components/EtapaPartes'
+import { BotonCopiar, BOTON_PRIMARIO, ListaDePasos } from '@/components/paso/ListaDePasos'
 import { FuentesEnLinea } from '@/components/documento/bloques'
 import {
   VistaBenchmarking, VistaContexto, VistaDiagnostico, VistaEnfoque, VistaFuentes, VistaGenerica, VistaListaLarga,
@@ -64,7 +61,7 @@ function TendenciaElegible({ t, selected, onToggle }: { t: TendenciaCandidata; s
       </span>
       <span className="min-w-0">
         <span className="block text-[14.5px] font-semibold leading-snug text-[var(--ink)]">{t.titulo}</span>
-        {/* Recortada: para elegir basta el arranque. Entera se lee en el paso 3.1. */}
+        {/* Recortada: para elegir basta el arranque. Entera se lee con la selección confirmada. */}
         <span className="mt-1.5 line-clamp-4 text-[14px] leading-[1.6] text-[var(--cuerpo)]" title={t.descripcion}>{t.descripcion}</span>
         <span className="mt-2.5 block"><FuentesEnLinea fuentes={t.fuentes} /></span>
       </span>
@@ -96,32 +93,69 @@ function Actividad({ actividad }: { actividad: ActividadVista[] }) {
   )
 }
 
-/** Lo que se ve en el centro cuando el paso todavía no tiene nada. */
-function Vacio({ titulo, texto }: { titulo: string; texto: string }) {
+/** Lo que se ve donde va el documento cuando la etapa todavía no tiene nada guardado. */
+function Vacio({ texto }: { texto: string }) {
   return (
-    <div className="rounded-[4px] border border-dashed border-[#CFC9BA] px-6 py-12 text-center">
-      <p className="font-serif text-[19px] text-[var(--ink)]">{titulo}</p>
-      <p className="mx-auto mt-2 max-w-[46ch] text-[14.5px] leading-[1.6] text-[var(--secundario)]">{texto}</p>
-    </div>
+    <p className="rounded-[12px] border border-dashed border-[#CFC9BA] px-6 py-8 text-center text-[14px] leading-[1.6] text-[var(--secundario)]">
+      {texto}
+    </p>
   )
 }
 
-/** El documento de un paso de la plataforma que ya tiene contenido. */
-function DocumentoDelPaso({ paso, content, hrefPaso }: { paso: PasoConEstado; content: unknown; hrefPaso: (id: string) => string }) {
+/** El documento que produce un paso de la plataforma. */
+function DocumentoDelPaso({ paso, content }: { paso: PasoConEstado; content: unknown }) {
   switch (paso.id) {
     case '1.0': return <VistaEnfoque content={content} />
     case '2.1': return <VistaFuentes content={content} />
-    case '2.2': return <VistaContexto content={content} hrefFuentes={hrefPaso('2.1')} />
+    case '2.2': return <VistaContexto content={content} hrefFuentes="#paso-doc-2.1" />
     case '4.1': return <VistaBenchmarking content={content} />
     case '5.1': return <VistaDiagnostico content={content} />
     default: return <VistaGenerica content={content} />
   }
 }
 
+/**
+ * La barra donde se aprueba lo que Claude entregó. Queda pegada abajo mientras se lee el
+ * documento: se decide al terminar de leer, sin volver a subir.
+ */
+function BarraDeRevision({ procedencia, apruebaJuntos, instruccionCambios, onAprobar, guardando, error }: {
+  procedencia: string
+  apruebaJuntos: string[]
+  instruccionCambios: string
+  onAprobar: () => void
+  guardando: boolean
+  error: string | null
+}) {
+  return (
+    <div className="sticky bottom-4 z-10 mt-10 flex flex-col gap-3 rounded-[14px] border border-[var(--ink)] bg-white/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(21,18,12,.12)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-[14px] font-semibold text-[var(--ink)]">Por revisar</p>
+        <p className="text-[12.5px] leading-snug text-[var(--secundario)]">
+          {procedencia}
+          {apruebaJuntos.length > 1 && ` · se aprueban juntos ${apruebaJuntos.join(' y ')}`}
+        </p>
+        {error && <p className="mt-1 text-[13px] text-[var(--error)]">{error}</p>}
+      </div>
+      <div className="flex flex-none flex-wrap items-center gap-2">
+        <BotonCopiar texto={instruccionCambios} etiqueta="Pedir cambios" />
+        <button type="button" onClick={onAprobar} disabled={guardando} className={`${BOTON_PRIMARIO} px-4 py-2`}>
+          {guardando ? 'Aprobando…' : 'Aprobar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Una etapa del Landscape: arriba sus pasos, como lista de chequeo con la acción de cada
+ * uno en su renglón; debajo, lo que Claude guardó en la etapa, para leerlo y aprobarlo.
+ * La etapa es la pantalla: los pasos no son páginas aparte.
+ */
 export function LandscapeWorkspace({
   projectId,
   proyecto,
-  paso,
+  etapa,
+  foco,
   pasos,
   tendencias,
   seleccionAprobada,
@@ -133,8 +167,10 @@ export function LandscapeWorkspace({
   projectId: string
   /** El nombre del proyecto, para la instrucción que se copia a Claude. */
   proyecto: string
-  /** El paso que se está mirando. Viene de `?paso=` o `?etapa=`, ya resuelto por la página. */
-  paso: PasoConEstado
+  /** La etapa que se está mirando. Viene de `?etapa=` o de `?paso=`, ya resuelta por la página. */
+  etapa: StageKey
+  /** El paso que se resalta en la lista: el que pidió la URL o el primero que falta. */
+  foco?: string
   /** Los quince pasos con su estado, en orden. */
   pasos: PasoConEstado[]
   tendencias: TendenciaCandidata[]
@@ -146,22 +182,33 @@ export function LandscapeWorkspace({
   dependencia?: string
 }) {
   const router = useRouter()
-  const etapaActiva: StageKey = paso.etapa
   const [selected, setSelected] = useState<string[]>(seleccionAprobada)
-  const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Qué se está guardando: el id de un paso que se marca, o 'etapa' si se aprueba o elige.
+  const [guardando, setGuardando] = useState<string | null>(null)
+  const [error, setError] = useState<{ donde: string; texto: string } | null>(null)
   // El equipo pidió mirar sólo la versión aprobada. No decide nada —el borrador sigue
   // guardado y la etapa sigue esperando— así que es estado de vista y se vuelve.
   const [soloAprobada, setSoloAprobada] = useState(false)
+  // Con la selección ya confirmada se lee la lista entera; cambiarla es pedirlo.
+  const [cambiandoSeleccion, setCambiandoSeleccion] = useState(false)
 
-  // Navegar es cambiar la URL: el componente sigue montado entre pasos, así que lo que era
-  // del paso anterior —el error, qué versión se estaba mirando— se limpia durante el render.
-  const [pasoPrevio, setPasoPrevio] = useState(paso.id)
-  if (pasoPrevio !== paso.id) {
-    setPasoPrevio(paso.id)
+  // Navegar es cambiar la URL: el componente sigue montado entre etapas, así que lo que era
+  // de la anterior —el error, qué versión se estaba mirando— se limpia durante el render.
+  const [etapaPrevia, setEtapaPrevia] = useState(etapa)
+  if (etapaPrevia !== etapa) {
+    setEtapaPrevia(etapa)
     setError(null)
     setSoloAprobada(false)
+    setCambiandoSeleccion(false)
   }
+
+  // Claude guarda desde claude.ai, en otra pestaña. Al volver a esta, se trae lo nuevo:
+  // así no hace falta un botón de “ya guardó”.
+  useEffect(() => {
+    const alVolver = () => { if (document.visibilityState === 'visible') router.refresh() }
+    document.addEventListener('visibilitychange', alVolver)
+    return () => document.removeEventListener('visibilitychange', alVolver)
+  }, [router])
 
   // `seleccionAprobada` puede cambiar por fuera (Claude escribe por MCP con el panel
   // abierto). Se resincroniza sólo cuando el contenido cambia de verdad.
@@ -186,8 +233,8 @@ export function LandscapeWorkspace({
   const listo = selected.length >= MIN_TENDENCIAS && selected.length <= MAX_TENDENCIAS
   const tope = selected.length >= MAX_TENDENCIAS
 
-  async function enviar(url: string, body: unknown, fallo: string) {
-    setGuardando(true)
+  async function enviar(url: string, body: unknown, fallo: string, quien: string) {
+    setGuardando(quien)
     setError(null)
     try {
       const res = await fetch(url, {
@@ -196,76 +243,72 @@ export function LandscapeWorkspace({
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(((await res.json()) as { error?: string }).error ?? fallo)
+      setCambiandoSeleccion(false)
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError({ donde: quien, texto: e instanceof Error ? e.message : String(e) })
     } finally {
-      setGuardando(false)
+      setGuardando(null)
     }
   }
 
   const base = `/api/projects/${projectId}/landscape`
   const aprobarSeleccion = () =>
-    enviar(`${base}/tendencias`, { accion: 'seleccionar-tendencias', seleccionadas: selected }, 'No se pudo guardar')
+    enviar(`${base}/tendencias`, { accion: 'seleccionar-tendencias', seleccionadas: selected }, 'No se pudo guardar', 'etapa')
   // Aprobar una versión ya guardada: Claude guarda por MCP, el equipo aprueba desde acá.
   const aprobarVersion = (versionId: string) =>
-    enviar(`${base}/${etapaActiva}`, { accion: 'aprobar', versionId }, 'No se pudo aprobar')
+    enviar(`${base}/${etapa}`, { accion: 'aprobar', versionId }, 'No se pudo aprobar', 'etapa')
   // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
   const mantenerAprobada = () =>
-    enviar(`${base}/${etapaActiva}`, { accion: 'reafirmar' }, 'No se pudo mantener la versión aprobada')
-  const marcar = (hecho: boolean) =>
-    enviar(`${base}/pasos`, { paso: paso.id, hecho }, 'No se pudo marcar el paso')
+    enviar(`${base}/${etapa}`, { accion: 'reafirmar' }, 'No se pudo mantener la versión aprobada', 'etapa')
+  const marcar = (id: string, hecho: boolean) =>
+    enviar(`${base}/pasos`, { paso: id, hecho }, 'No se pudo marcar el paso', id)
 
-  const hrefPaso = (id: string) => `/admin/projects/${projectId}/landscape?paso=${id}`
-  const i = pasos.findIndex(p => p.id === paso.id)
-  const anterior = i > 0 ? pasos[i - 1] : undefined
-  const proximo = i < pasos.length - 1 ? pasos[i + 1] : undefined
-  const pendiente = siguientePendiente(pasos, paso.id)
+  const hrefEtapa = (key: StageKey) => `/admin/projects/${projectId}/landscape?etapa=${key}`
+  const n = STAGE_ORDER.indexOf(etapa)
+  const anterior = n > 0 ? STAGE_ORDER[n - 1] : undefined
+  const siguiente = n < STAGE_ORDER.length - 1 ? STAGE_ORDER[n + 1] : undefined
 
-  const contenido = contenidoPorEtapa[etapaActiva] ?? null
+  const deLaEtapa = pasos.filter(p => p.etapa === etapa)
+  const aplicables = deLaEtapa.filter(p => p.estado !== 'no_aplica')
+  const hechos = aplicables.filter(p => p.estado === 'hecho').length
+  const deLaPlataforma = deLaEtapa.filter(p => p.donde === 'plataforma')
+  // Los pasos de la etapa que esperan la misma aprobación: Claude los guardó en un solo borrador.
+  const apruebaJuntos = deLaEtapa.filter(p => p.estado === 'revisar').map(p => p.id)
+
+  const contenido = contenidoPorEtapa[etapa] ?? null
   const borradorNuevo = contenido?.borradorNuevo ?? null
-  const enConflicto = paso.donde === 'plataforma' && !!contenido && !!borradorNuevo && !soloAprobada
-    && paso.id !== '3.1' && paso.id !== '3.3'
-  const conContenido = !!contenido && tieneContenido(paso, contenido.content)
-  const numeroEtapa = STAGE_ORDER.indexOf(etapaActiva) + 1
-  // Los pasos de la plataforma de esta etapa que están esperando la misma aprobación.
-  const apruebaJuntos = pasos.filter(p => p.etapa === etapaActiva && p.estado === 'revisar').map(p => p.id)
-  const aplicables = pasos.filter(p => p.estado !== 'no_aplica')
+  const enConflicto = etapa !== 'tendencias' && !!contenido && !!borradorNuevo && !soloAprobada
+  const errorEtapa = error?.donde === 'etapa' ? error.texto : null
 
-  const centro = (() => {
-    if (paso.donde !== 'plataforma') {
-      return (
-        <div className="space-y-4">
-          <div className="rounded-[4px] bg-[var(--papel-hondo)] px-7 py-6">
-            <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
-              {paso.donde === 'chat' ? 'Se trabaja en el chat con Claude' : 'Se hace fuera de la plataforma'}
-            </p>
-            <p className="mt-3 text-[13px] text-[var(--secundario)]">Quién</p>
-            <p className="mt-0.5 max-w-[60ch] text-[15.5px] leading-[1.55] text-[var(--ink)]">{paso.quienTexto}</p>
-            <p className="mt-4 text-[13px] text-[var(--secundario)]">Está listo cuando</p>
-            <p className="mt-0.5 max-w-[60ch] text-[15.5px] leading-[1.55] text-[var(--ink)]">{paso.listoCuando}</p>
-          </div>
-          {paso.donde === 'chat' && (
-            <p className="max-w-[62ch] text-[13.5px] leading-[1.6] text-[var(--secundario)]">
-              La plataforma todavía no guarda lo que Claude produce en este paso. Por ahora Claude te lo entrega en el chat,
-              tú lo pasas al deck y lo marcas como hecho.
-            </p>
-          )}
-        </div>
-      )
-    }
-
-    if (paso.id === '3.1') {
-      return tendencias.length
-        ? <VistaListaLarga candidatas={tendencias} elegidas={seleccionAprobada} />
-        : <Vacio titulo="Todavía no hay lista larga" texto="Cuando Claude la guarde, las tendencias aparecen acá ordenadas por eje." />
-    }
-
-    if (paso.id === '3.3') {
+  const documento = (() => {
+    if (etapa === 'tendencias') {
       if (!tendencias.length)
-        return <Vacio titulo="Primero hace falta la lista larga" texto="Este paso se hace sobre la lista del paso 3.1. Cuando Claude la guarde, eliges acá." />
+        return <Vacio texto="Cuando Claude guarde la lista larga, las tendencias aparecen acá para elegir." />
+
+      if (tendenciasAprobadas && !borradorNuevo && !cambiandoSeleccion) {
+        return (
+          <>
+            {/* 3.1 y 3.3 son el mismo documento: la lista, con las elegidas marcadas. */}
+            <span id="paso-doc-3.3" className="block scroll-mt-8" />
+            <p id="paso-doc-3.1" className="mb-8 flex scroll-mt-8 flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--line)] pb-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">3.1 · Lista larga de tendencias</span>
+              <button type="button" onClick={() => setCambiandoSeleccion(true)}
+                className="text-[13px] font-medium text-[var(--ink)] underline underline-offset-2">
+                Cambiar la selección
+              </button>
+            </p>
+            <VistaListaLarga candidatas={tendencias} elegidas={seleccionAprobada} />
+          </>
+        )
+      }
+
       return (
         <>
+          <span id="paso-doc-3.1" className="block scroll-mt-8" />
+          <p id="paso-doc-3.3" className="mb-8 scroll-mt-8 border-b border-[var(--line)] pb-2.5 font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">
+            3.3 · Elegir 4 o 5 tendencias
+          </p>
           {borradorNuevo && (
             <p className="mb-6 max-w-[62ch] border-l-[1.5px] border-[var(--ink)] pl-3 text-[13.5px] leading-[1.6] text-[var(--secundario)]">
               {borradorNuevo.autor} amplió la lista larga después de la selección aprobada. Abajo está la lista completa;
@@ -288,21 +331,21 @@ export function LandscapeWorkspace({
               )
             })}
           </div>
-          {/* Gate humano: elegir es la decisión del paso. Queda pegado abajo mientras se elige. */}
+          {/* Gate humano: elegir es la decisión de la etapa. Queda pegado abajo mientras se elige. */}
           <div className="sticky bottom-4 z-10 mt-8 flex flex-col gap-3 rounded-[14px] border border-[var(--ink)] bg-white/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(21,18,12,.12)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[14px] text-[var(--secundario)]">
-                <span className="font-semibold tabular-nums text-[var(--ink)]">{selected.length}</span> elegidas · entre {MIN_TENDENCIAS} y {MAX_TENDENCIAS}
-                {tope && <span className="ml-1 text-[var(--ink)]">· Llegaste al máximo.</span>}
-                {error && <span className="ml-2 text-[var(--error)]">{error}</span>}
-              </p>
-              <button
-                type="button"
-                disabled={!listo || guardando}
-                onClick={aprobarSeleccion}
-                className="rounded-[9px] bg-[var(--banana)] px-4 py-2.5 text-[14px] font-semibold text-[var(--ink)] transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
-              >
-                {guardando ? 'Guardando…' : tendenciasAprobadas ? 'Actualizar selección' : 'Confirmar selección'}
-              </button>
+            <p className="text-[14px] text-[var(--secundario)]">
+              <span className="font-semibold tabular-nums text-[var(--ink)]">{selected.length}</span> elegidas · entre {MIN_TENDENCIAS} y {MAX_TENDENCIAS}
+              {tope && <span className="ml-1 text-[var(--ink)]">· Llegaste al máximo.</span>}
+              {errorEtapa && <span className="ml-2 text-[var(--error)]">{errorEtapa}</span>}
+            </p>
+            <button
+              type="button"
+              disabled={!listo || guardando === 'etapa'}
+              onClick={aprobarSeleccion}
+              className="rounded-[9px] bg-[var(--banana)] px-4 py-2.5 text-[14px] font-semibold text-[var(--ink)] transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+            >
+              {guardando === 'etapa' ? 'Guardando…' : tendenciasAprobadas ? 'Actualizar selección' : 'Confirmar selección'}
+            </button>
           </div>
         </>
       )
@@ -310,88 +353,96 @@ export function LandscapeWorkspace({
 
     if (enConflicto && contenido && borradorNuevo) {
       return (
-        <ComparadorVersiones
-          aprobada={{ content: contenido.content, cuando: contenido.cuando }}
-          nueva={{ content: borradorNuevo.content, cuando: borradorNuevo.cuando, autor: borradorNuevo.autor }}
-          onMantener={mantenerAprobada}
-          onVerSoloAprobada={() => setSoloAprobada(true)}
-          onAprobarNueva={() => aprobarVersion(borradorNuevo.id)}
-          guardando={guardando}
-        />
-      )
-    }
-
-    if (contenido && conContenido) {
-      return (
         <>
-          {/* Se está mirando sólo la aprobada, pero el borrador sigue ahí: la vuelta al
-              comparador tiene que estar a un clic. */}
-          {borradorNuevo && soloAprobada && (
-            <div className="mb-6">
-              <AvisoVersionNueva autor={borradorNuevo.autor} cuando={borradorNuevo.cuando} onVer={() => setSoloAprobada(false)} />
-            </div>
-          )}
-          <p className="mb-9 text-[13px] text-[var(--rotulo)]">{contenido.procedencia}</p>
-          <DocumentoDelPaso paso={paso} content={contenido.content} hrefPaso={hrefPaso} />
+          <ComparadorVersiones
+            aprobada={{ content: contenido.content, cuando: contenido.cuando }}
+            nueva={{ content: borradorNuevo.content, cuando: borradorNuevo.cuando, autor: borradorNuevo.autor }}
+            onMantener={mantenerAprobada}
+            onVerSoloAprobada={() => setSoloAprobada(true)}
+            onAprobarNueva={() => aprobarVersion(borradorNuevo.id)}
+            guardando={guardando === 'etapa'}
+          />
+          {errorEtapa && <p className="mt-3 text-[13px] text-[var(--error)]">{errorEtapa}</p>}
         </>
       )
     }
 
-    return paso.quien === 'equipo'
-      ? <Vacio titulo="Todavía no hay nada acá" texto="Este paso lo resuelve el equipo. El panel de la derecha te dice cómo." />
-      : <Vacio titulo="Todavía no hay nada acá" texto="Este paso lo empieza Claude. Sigue los pasos del panel de la derecha: copias la instrucción, la pegas en claude.ai y cuando Claude guarde, el borrador aparece acá." />
+    // Lo principal primero: en el contexto, el texto y después las fuentes que cita.
+    const conDocumento = deLaPlataforma
+      .filter(p => contenido && tieneContenido(p, contenido.content))
+      .sort((a, b) => (a.id === '2.1' ? 1 : 0) - (b.id === '2.1' ? 1 : 0))
+    if (!contenido || !conDocumento.length)
+      return <Vacio texto="Lo que Claude guarde en esta etapa aparece acá para que lo revises." />
+
+    return (
+      <>
+        {/* Se está mirando sólo la aprobada, pero el borrador sigue ahí: la vuelta al
+            comparador tiene que estar a un clic. */}
+        {borradorNuevo && soloAprobada && (
+          <div className="mb-6">
+            <AvisoVersionNueva autor={borradorNuevo.autor} cuando={borradorNuevo.cuando} onVer={() => setSoloAprobada(false)} />
+          </div>
+        )}
+        <div className="space-y-16">
+          {conDocumento.map((p, i) => (
+            <div key={p.id} id={`paso-doc-${p.id}`} className="scroll-mt-8">
+              {/* Cada documento dice de qué paso sale; quién lo escribió y si está aprobado
+                  va una sola vez, en el primero: la etapa se guarda y se aprueba entera. */}
+              <p className="mb-8 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--line)] pb-2.5">
+                <span className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">{p.id} · {p.titulo}</span>
+                {i === 0 && <span className="text-[12.5px] text-[var(--rotulo)]">{contenido.procedencia}</span>}
+              </p>
+              <DocumentoDelPaso paso={p} content={contenido.content} />
+            </div>
+          ))}
+        </div>
+        {apruebaJuntos.length > 0 && (
+          <BarraDeRevision
+            procedencia={contenido.procedencia}
+            apruebaJuntos={apruebaJuntos}
+            instruccionCambios={`Ajustemos la etapa ${STAGE_LABEL[etapa]} (pasos ${apruebaJuntos.join(' y ')}), del Landscape de ${proyecto}. Lee lo que ya está guardado y cámbialo así:\n`}
+            onAprobar={() => aprobarVersion(contenido.id)}
+            guardando={guardando === 'etapa'}
+            error={errorEtapa}
+          />
+        )}
+      </>
+    )
   })()
 
+  const errorLista = error && error.donde !== 'etapa' ? error.texto : null
+
   return (
-    <div className="-my-8 grid md:-my-12 xl:min-h-screen xl:grid-cols-[minmax(0,1fr)_330px]">
-      <article className="order-2 min-w-0 py-8 md:py-12 xl:order-1 xl:pr-14">
-        <div className="max-w-[820px]">
-        <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
-          Etapa {numeroEtapa} · {STAGE_LABEL[etapaActiva]}
-        </p>
-        <h1 className="mt-3.5 flex items-baseline gap-4 font-serif text-[42px] leading-[1.08] tracking-[-.025em] text-[var(--ink)]">
-          <span className="font-mono text-[19px] tabular-nums tracking-normal text-[var(--rotulo)]">{paso.id}</span>
-          <span className="underline-banana">{paso.titulo}</span>
-        </h1>
-        <p className="mt-4 max-w-[58ch] text-[17px] leading-[1.6] text-[var(--secundario)]">{paso.queEs}</p>
-        {/* La dependencia de la fase es del Panorama (los competidores del Taller): en otro paso confunde. */}
-        {dependencia && etapaActiva === 'panorama' && <NotaDependencia texto={dependencia} />}
+    <div className="max-w-[860px]">
+      <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
+        Landscape · Etapa {n + 1} de {STAGE_ORDER.length}
+        {aplicables.length > 0 && <> · {hechos}/{aplicables.length} listos</>}
+      </p>
+      <h1 className="mt-3 font-serif text-[38px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
+        <span className="underline-banana">{STAGE_LABEL[etapa]}</span>
+      </h1>
+      {/* La dependencia de la fase es del Panorama (los competidores del Taller): en otra etapa confunde. */}
+      {dependencia && etapa === 'panorama' && <NotaDependencia texto={dependencia} />}
 
-        <div className="mt-10">{centro}</div>
+      <div className="mt-8">
+        <ListaDePasos pasos={deLaEtapa} foco={foco} proyecto={proyecto} guardando={guardando} onMarcar={marcar} />
+        {errorLista && <p role="alert" className="mt-2 text-[13px] text-[var(--error)]">{errorLista}</p>}
+      </div>
 
-        <nav aria-label="Pasos vecinos" className="mt-14 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
-          {anterior
-            ? <Link href={hrefPaso(anterior.id)} className="text-[14px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] transition-colors hover:text-[var(--ink)] hover:decoration-[var(--ink)]">‹ {anterior.id} {anterior.titulo}</Link>
-            : <span />}
-          {proximo
-            ? <Link href={hrefPaso(proximo.id)} className="text-[14px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] transition-colors hover:text-[var(--ink)] hover:decoration-[var(--ink)]">{proximo.id} {proximo.titulo} ›</Link>
-            : <span />}
-        </nav>
+      {deLaPlataforma.length > 0 && (
+        <section id="documento" aria-label={`Lo que hay en ${STAGE_LABEL[etapa]}`} className="mt-12 scroll-mt-8">
+          {documento}
+        </section>
+      )}
 
-        <Actividad actividad={actividad} />
-        </div>
-      </article>
+      <div className="mt-12">
+        <Vecinas
+          anterior={anterior && { label: STAGE_LABEL[anterior], href: hrefEtapa(anterior) }}
+          siguiente={siguiente && { label: STAGE_LABEL[siguiente], href: hrefEtapa(siguiente) }}
+        />
+      </div>
 
-      <aside className="order-1 border-b border-[var(--line)] py-8 xl:order-2 xl:-mr-12 xl:border-b-0 xl:border-l xl:py-12 xl:pl-9 xl:pr-10">
-        <div className="xl:sticky xl:top-12">
-          <PanelTurno
-            paso={paso}
-            etapaLabel={STAGE_LABEL[etapaActiva]}
-            avance={{ hechos: aplicables.filter(p => p.estado === 'hecho').length, total: aplicables.length }}
-            siguiente={pendiente && { id: pendiente.id, titulo: pendiente.titulo, turno: pendiente.turno, href: hrefPaso(pendiente.id) }}
-            instruccion={instruccionParaClaude(paso, proyecto)}
-            instruccionCambios={`Ajustemos el paso ${paso.id} · ${paso.titulo}, del Landscape de ${proyecto}. Lee lo que ya está guardado y cámbialo así:\n`}
-            cuando={contenido?.cuando}
-            apruebaJuntos={apruebaJuntos}
-            enConflicto={enConflicto}
-            onAprobar={contenido ? () => aprobarVersion(contenido.id) : undefined}
-            onMarcar={marcar}
-            guardando={guardando}
-            error={paso.id === '3.3' ? null : error}
-          />
-        </div>
-      </aside>
+      <Actividad actividad={actividad} />
     </div>
   )
 }
-

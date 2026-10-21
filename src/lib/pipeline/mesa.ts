@@ -10,20 +10,13 @@ import type { AttentionItem } from './attention'
 import type { ActivityEntry } from '@/lib/db/store'
 import { STAGE_LABEL, type StageKey } from '@/lib/landscape/stages'
 import { ETAPA_LABEL, type EstrategiaKey } from '@/lib/estrategia/stages'
-import { PASOS } from '@/lib/landscape/pasos'
+import { hrefDeSuEtapa } from '@/lib/landscape/pasos'
 import type { QueSigue } from '@/lib/seguimiento/sistema'
 
 export interface PendienteMesa {
   titulo: string
   sub?: string
   href: string
-}
-
-/** La etapa del Landscape a la que lleva un link de paso (`?paso=2.1` → `?etapa=contexto`). */
-function etapaDelPaso(href: string): string | undefined {
-  const id = /[?&]paso=([\d.]+)/.exec(href)?.[1]
-  const paso = PASOS.find(p => p.id === id)
-  return paso && href.replace(/\?.*$/, `?etapa=${paso.etapa}`)
 }
 
 /**
@@ -47,7 +40,7 @@ export function armarNosToca(
         href: s.href,
       }]
     : []
-  const yaArriba = new Set(primero.flatMap(p => [p.href, etapaDelPaso(p.href)]).filter(Boolean))
+  const yaArriba = new Set(primero.flatMap(p => [p.href, hrefDeSuEtapa(p.href)]).filter(Boolean))
 
   const esperas: PendienteMesa[] = indice.flatMap(f =>
     f.entradas.filter(e => e.espera && !yaArriba.has(e.href)).map(e => ({

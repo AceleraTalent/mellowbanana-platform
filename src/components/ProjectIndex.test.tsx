@@ -22,14 +22,7 @@ const fases: FaseIndice[] = [
   {
     key: 'landscape', label: 'Landscape', avance: '2/6',
     entradas: [
-      {
-        key: 'landscape:setup', label: 'Setup', href: `${L}?etapa=setup`, estado: 'actual', espera: false,
-        pasos: [
-          { id: '1.0', titulo: 'Enfoque del estudio', href: `${L}?paso=1.0`, estado: 'hecho', actual: false },
-          { id: '1.1', titulo: 'Carpeta en Dropbox', href: `${L}?paso=1.1`, estado: 'pendiente', actual: true },
-          { id: '1.2', titulo: 'Copia del template', href: `${L}?paso=1.2`, estado: 'pendiente', actual: false },
-        ],
-      },
+      { key: 'landscape:setup', label: 'Setup', href: `${L}?etapa=setup`, estado: 'actual', espera: false },
       { key: 'landscape:contexto', label: 'Contexto del sector', href: `${L}?etapa=contexto`, estado: 'aprobada', espera: false },
       { key: 'landscape:panorama', label: 'Panorama de categoría', href: `${L}?etapa=panorama`, estado: 'pendiente', espera: true },
     ],
@@ -52,7 +45,7 @@ const sistema: SistemaDelProyecto = {
     { key: 'diseno', label: 'Diseño', estado: 'pendiente', detalle: 'Sin empezar' },
   ],
   actual: 'landscape',
-  sigue: { quien: 'equipo', texto: 'Te toca', detalle: '1.2 Copia del template', href: `${L}?paso=1.2` },
+  sigue: { quien: 'claude', texto: 'Le toca a Claude', detalle: '3.1 Lista larga de tendencias', href: `${L}?paso=3.1` },
   pasos: [
     { id: '1.0', titulo: 'Enfoque del estudio', estado: 'hecho' },
     { id: '1.1', titulo: 'Carpeta en Dropbox', estado: 'pendiente' },
@@ -96,11 +89,12 @@ describe('ProjectIndex', () => {
     expect(screen.getByRole('link', { name: /Estrategia/ }).getAttribute('href')).toBe('/admin/projects/p1/estrategia')
   })
 
-  it('marca la pantalla actual con aria-current="page" y sólo esa', () => {
+  it('marca la etapa actual con aria-current="page" y sólo esa: los pasos no se listan', () => {
     menu()
     const actuales = screen.getAllByRole('link').filter(a => a.getAttribute('aria-current') === 'page')
     expect(actuales).toHaveLength(1)
-    expect(actuales[0].textContent).toContain('Carpeta en Dropbox')
+    expect(actuales[0].textContent).toMatch(/^Setup/)
+    expect(screen.queryByText('Carpeta en Dropbox')).toBeNull()
   })
 
   it('el avance de cada etapa del Landscape sale de sus pasos, no de la aprobación', () => {
@@ -120,18 +114,18 @@ describe('ProjectIndex', () => {
   it('dice qué sigue, con el mismo chip del inicio, y lleva ahí', () => {
     menu()
     const sigue = screen.getByRole('link', { name: /Lo que sigue/ })
-    expect(sigue.textContent).toContain('Te toca')
-    expect(sigue.textContent).toContain('1.2 Copia del template')
-    expect(sigue.getAttribute('href')).toBe(`${L}?paso=1.2`)
+    expect(sigue.textContent).toContain('Le toca a Claude')
+    expect(sigue.textContent).toContain('3.1 Lista larga de tendencias')
+    expect(sigue.getAttribute('href')).toBe(`${L}?paso=3.1`)
   })
 
-  it('no repite lo que sigue si uno ya está parado ahí', () => {
-    menu({ sistema: { ...sistema, sigue: { ...sistema.sigue, href: `${L}?paso=1.1` } } })
+  it('no repite lo que sigue si uno ya está en la etapa de ese paso', () => {
+    menu({ sistema: { ...sistema, sigue: { quien: 'equipo', texto: 'Te toca', detalle: '1.1 Carpeta en Dropbox', href: `${L}?paso=1.1` } } })
     expect(screen.queryByText('Lo que sigue')).toBeNull()
   })
 
   it('en el resumen marca “Resumen” y abre la fase en curso del Sistema', () => {
-    const sinActiva = fases.map(f => ({ ...f, entradas: f.entradas.map(e => ({ ...e, estado: e.estado === 'actual' ? 'pendiente' as const : e.estado, pasos: undefined })) }))
+    const sinActiva = fases.map(f => ({ ...f, entradas: f.entradas.map(e => ({ ...e, estado: e.estado === 'actual' ? 'pendiente' as const : e.estado })) }))
     menu({ fases: sinActiva, enResumen: true })
     const resumen = screen.getByRole('link', { name: 'Resumen' })
     expect(resumen.getAttribute('aria-current')).toBe('page')
@@ -147,13 +141,13 @@ describe('ProjectIndex', () => {
   })
 
   it('el taller que el equipo cerró se ve hecho aunque la plataforma no lo vea', () => {
-    menu({ fases: fases.map(f => f.key === 'propuesta-valor' ? f : { ...f, entradas: f.entradas.map(e => ({ ...e, estado: 'pendiente' as const, pasos: undefined })) }), enResumen: true, sistema: { ...sistema, actual: 'taller' } })
+    menu({ fases: fases.map(f => f.key === 'propuesta-valor' ? f : { ...f, entradas: f.entradas.map(e => ({ ...e, estado: 'pendiente' as const })) }), enResumen: true, sistema: { ...sistema, actual: 'taller' } })
     const taller = screen.getByRole('link', { name: /Taller en Miro/ })
     expect(taller.querySelector('svg path')).toBeTruthy()
   })
 
   it('muestra el rótulo del bloque cuando la fase está abierta', () => {
-    menu({ sistema: { ...sistema, actual: 'estrategia' }, fases: fases.map(f => ({ ...f, entradas: f.entradas.map(e => ({ ...e, estado: e.key === 'estrategia:diagnostico' ? 'actual' as const : e.estado === 'actual' ? 'pendiente' as const : e.estado, pasos: undefined })) })) })
+    menu({ sistema: { ...sistema, actual: 'estrategia' }, fases: fases.map(f => ({ ...f, entradas: f.entradas.map(e => ({ ...e, estado: e.key === 'estrategia:diagnostico' ? 'actual' as const : e.estado === 'actual' ? 'pendiente' as const : e.estado })) })) })
     expect(screen.getByText('Diagnóstico y consumidor')).toBeTruthy()
   })
 

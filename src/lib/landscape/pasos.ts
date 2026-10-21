@@ -163,6 +163,17 @@ export const pasoPorId = (id: string): Paso | undefined => PASOS.find(p => p.id 
 
 export const pasosDeEtapa = (etapa: StageKey): Paso[] => PASOS.filter(p => p.etapa === etapa)
 
+/**
+ * El link a un paso (`…/landscape?paso=2.1`) convertido al de su etapa
+ * (`…/landscape?etapa=contexto`): la etapa es la pantalla, el paso es un renglón de ella.
+ * Sin un paso real en el link, `undefined`.
+ */
+export function hrefDeSuEtapa(href: string): string | undefined {
+  const id = /[?&]paso=([\d.]+)/.exec(href)?.[1]
+  const paso = PASOS.find(p => p.id === id)
+  return paso && href.replace(/\?.*$/, `?etapa=${paso.etapa}`)
+}
+
 export type EstadoPaso = 'hecho' | 'revisar' | 'pendiente' | 'no_aplica'
 
 /** De quién es la pelota. Es lo primero que dice el panel. */

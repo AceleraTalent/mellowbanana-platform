@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import type { EntradaIndice, FaseIndice, SubPasoIndice } from '@/lib/pipeline/indice'
+import type { EntradaIndice, FaseIndice } from '@/lib/pipeline/indice'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import type { EstadoFase, FaseConEstado, FaseSistema } from '@/lib/seguimiento/sistema'
-import { PASOS } from '@/lib/landscape/pasos'
+import { PASOS, hrefDeSuEtapa } from '@/lib/landscape/pasos'
 import { CabeceraProyecto } from './CabeceraProyecto'
 import { FaseManual } from './FaseManual'
 import { CHIP, MARCA } from './sistema/chips'
@@ -121,46 +121,6 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
 }
 
 /**
- * Los pasos de la etapa activa del Landscape, colgados debajo de ella: tilde amarillo si
- * está hecho, punto amarillo si espera revisión, aro vacío si falta.
- */
-function PasosDeEtapa({ pasos }: { pasos: SubPasoIndice[] }) {
-  return (
-    <ul className="mb-1.5 ml-[10px] mt-0.5">
-      {pasos.map(p => (
-        <li key={p.id}>
-          <Link
-            href={p.href}
-            aria-current={p.actual ? 'page' : undefined}
-            className={`-ml-1.5 flex items-start gap-2 rounded-[5px] px-1.5 py-[4px] text-[13px] leading-[1.35] ${
-              p.actual ? 'bg-[var(--banana)] font-semibold text-[var(--ink)]' : p.estado === 'no_aplica' ? 'text-[var(--rotulo)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
-            }`}
-          >
-            <span className="mt-[3px] flex h-[11px] w-[11px] flex-none items-center justify-center">
-              {p.estado === 'hecho' ? (
-                <svg viewBox="0 0 10 10" className="h-[11px] w-[11px]" aria-hidden="true">
-                  <circle cx="5" cy="5" r="5" fill="var(--banana)" />
-                  <path d="M2.8 5.2 L4.4 6.8 L7.2 3.4" fill="none" stroke="var(--ink)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              ) : p.estado === 'revisar' ? (
-                <span className="h-[8px] w-[8px] rounded-full bg-[var(--banana)] ring-1 ring-[var(--ink)]" />
-              ) : (
-                <span className={`h-[8px] w-[8px] rounded-full border ${p.actual ? 'border-[var(--ink)]' : 'border-[var(--apagado)]'} ${p.estado === 'no_aplica' ? 'border-dashed' : ''}`} />
-              )}
-            </span>
-            <span className={`font-mono text-[11px] tabular-nums ${p.actual ? 'text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}>{p.id}</span>
-            <span className="min-w-0">{p.titulo}</span>
-            <span className="sr-only">
-              {p.estado === 'hecho' ? ' (listo)' : p.estado === 'revisar' ? ' (por revisar)' : p.estado === 'no_aplica' ? ' (no aplica)' : ' (pendiente)'}
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
  * Cuántos pasos de una etapa del Landscape están listos. El estado de la etapa sale de sus
  * pasos y no de la aprobación de la etapa: si no, “Setup” se veía terminado con dos pasos
  * por hacer.
@@ -198,7 +158,7 @@ function Entradas({ fase, sistema }: { fase: FaseMenu; sistema?: SistemaDelProye
             )}
             <Link
               href={entrada.href}
-              aria-current={entrada.estado === 'actual' && !entrada.pasos ? 'page' : undefined}
+              aria-current={entrada.estado === 'actual' ? 'page' : undefined}
               className={`flex items-center gap-2.5 py-[5px] text-[13.5px] ${
                 entrada.estado === 'actual' ? 'font-semibold text-[var(--ink)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
               }`}
@@ -214,7 +174,6 @@ function Entradas({ fase, sistema }: { fase: FaseMenu; sistema?: SistemaDelProye
               )}
               {cuenta && <span className="flex-none font-mono text-[11px] font-normal tabular-nums text-[var(--rotulo)]">{cuenta}</span>}
             </Link>
-            {entrada.pasos && <PasosDeEtapa pasos={entrada.pasos} />}
           </li>
         )
       })}
@@ -274,11 +233,13 @@ export function ProjectIndex({
   const abierta = menu.find(f => f.indice?.entradas.some(e => e.estado === 'actual'))?.key
     ?? (enResumen ? sistema?.actual : undefined)
 
-  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla. En el resumen
-  // también: “Nos toca” arranca con eso mismo.
-  const hrefsActuales = new Set(activas.flatMap(e => [e.href, ...(e.pasos ?? []).filter(p => p.actual).map(p => p.href)]))
+  // Si uno ya está parado en lo que sigue, la tarjeta repetiría la pantalla: un paso del
+  // Landscape es un renglón de su etapa, así que estar en la etapa es estar ahí. En el
+  // resumen tampoco va: “Nos toca” arranca con eso mismo.
+  const hrefsActuales = new Set(activas.map(e => e.href))
   const sigue = sistema?.sigue
-  const mostrarSigue = sigue && !enResumen && !(sigue.href && hrefsActuales.has(sigue.href))
+  const yaAhi = !!sigue?.href && (hrefsActuales.has(sigue.href) || hrefsActuales.has(hrefDeSuEtapa(sigue.href) ?? ''))
+  const mostrarSigue = sigue && !enResumen && !yaAhi
 
   return (
     <nav aria-label="Índice del proyecto" className="flex flex-col gap-5">

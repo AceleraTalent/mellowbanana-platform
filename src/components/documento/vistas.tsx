@@ -241,8 +241,8 @@ export function VistaListaLarga({ candidatas, elegidas }: { candidatas: Tendenci
   return (
     <Documento>
       <p className="text-[15px] text-[var(--secundario)]">
-        <span className="font-semibold text-[var(--ink)]">{candidatas.length} tendencias</span> en tres ejes.
-        Léelas acá; se eligen en el paso 3.3.
+        <span className="font-semibold text-[var(--ink)]">{candidatas.length} tendencias</span> en tres ejes
+        {elegidas.length > 0 ? <>, <span className="font-semibold text-[var(--ink)]">{elegidas.length} elegidas</span>.</> : '.'}
       </p>
       {EJES.map(eje => {
         const delEje = candidatas.filter(t => t.eje === eje)
