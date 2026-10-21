@@ -30,7 +30,7 @@ export function ConclusionesTaller({ projectId, inicial }: { projectId: string; 
   }
 
   return (
-    <div className="mt-8 max-w-[680px] border-t border-[var(--line)] pt-5">
+    <div className="mt-12 max-w-[680px] border-t border-[var(--line)] pt-5">
       <label htmlFor="conclusiones" className="text-[14px] font-semibold text-[var(--ink)]">
         Conclusiones del taller <span className="font-normal text-[var(--secundario)]">(opcional)</span>
       </label>

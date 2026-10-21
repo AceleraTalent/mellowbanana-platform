@@ -1,14 +1,19 @@
 import { db } from '@/lib/db/client'
 import { getSessionWithAnswers } from '@/lib/db/store'
 import { ensureNormalized } from '@/lib/normalize/service'
+import { menuDelProyecto } from '@/lib/pipeline/menu-proyecto'
 import { SCRIPT } from '@/lib/script/questions'
 import { AdminShell } from '@/components/AdminShell'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
+import { ProjectIndex } from '@/components/ProjectIndex'
+import { BOTON_SECUNDARIO } from '@/components/paso/piezas'
 
 export const dynamic = 'force-dynamic'
 const promptOf = (qid: string) => SCRIPT.flatMap(s => s.questions).find(q => q.id === qid)?.prompt ?? qid
 
 type Answer = { id: string; questionId: string; rawText: string; normalizedText?: string | null; imageChoice?: string | null }
 
+/** Lo que respondió una persona, pregunta por pregunta. Se abre desde Entrevistas. */
 export default async function Detail({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params
   const full = await getSessionWithAnswers(db, sessionId)
@@ -19,40 +24,42 @@ export default async function Detail({ params }: { params: Promise<{ sessionId: 
   )
   await ensureNormalized(db, sessionId)
   const fresh = await getSessionWithAnswers(db, sessionId)
+  // Con proyecto, el menú es el del proyecto, parado en Entrevistas: de ahí se llegó.
+  const menu = full.projectId ? await menuDelProyecto(db, full.projectId, 'entrevistas') : null
+
   return (
-    <AdminShell activeProjectId={full.projectId ?? undefined}>
-      <div className="max-w-3xl space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <header>
-          {full.projectId
-            ? <a href={`/admin/projects/${full.projectId}/entrevistas`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710] transition-colors duration-200 hover:text-ink">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M15 6l-6 6 6 6" />
-                </svg>
-                Entrevistas
-              </a>
-            : <p className="text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710]">Respondiente</p>}
-          <h1 className="mt-2 font-serif text-3xl font-medium leading-tight text-ink">{full.company} · {full.name}</h1>
-        </header>
-        <a href={`/api/sessions/${sessionId}/pdf`}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--ink)]/20 px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-[var(--ink)]">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" />
-          </svg>
-          Descargar PDF
-        </a>
-      </div>
-      <section className="border-t border-[var(--line)] pt-6">
-        <div className="divide-y divide-[var(--line)]">
+    <AdminShell
+      activeProjectId={full.projectId ?? undefined}
+      indice={menu && full.projectId
+        ? <ProjectIndex projectId={full.projectId} nombre={menu.nombre} subtitulo={menu.subtitulo} fases={menu.indice} />
+        : undefined}
+    >
+      <div className="max-w-[860px]">
+        <EncabezadoPagina
+          rotulo={full.projectId
+            ? <a href={`/admin/projects/${full.projectId}/entrevistas`} className="hover:text-[var(--ink)] hover:underline">← Entrevistas</a>
+            : 'Entrevista'}
+          titulo={full.name ?? 'Sin nombre'}
+          bajada={[full.role, full.company].filter(Boolean).join(' · ') || undefined}
+        >
+          <a href={`/api/sessions/${sessionId}/pdf`} className={BOTON_SECUNDARIO}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" />
+            </svg>
+            Descargar PDF
+          </a>
+        </EncabezadoPagina>
+
+        <dl className="mt-10 divide-y divide-[var(--line)] border-t border-[var(--ink)]">
           {(fresh!.answers as Answer[]).map(a => (
-            <div key={a.id} className="py-3 first:pt-0 last:pb-0">
-              <p className="text-[11px] font-semibold font-mono uppercase tracking-wide text-[var(--secundario)]">{promptOf(a.questionId)}</p>
-              <p className="mt-1 text-[15px] text-ink">{(a.normalizedText ?? a.rawText)}{a.imageChoice ? ` (${a.imageChoice})` : ''}</p>
+            <div key={a.id} className="py-4">
+              <dt className="font-mono text-[11px] uppercase tracking-[.1em] text-[var(--rotulo)]">{promptOf(a.questionId)}</dt>
+              <dd className="mt-1.5 text-[15.5px] leading-[1.6] text-[var(--cuerpo)]">
+                {a.normalizedText ?? a.rawText}{a.imageChoice ? ` (${a.imageChoice})` : ''}
+              </dd>
             </div>
           ))}
-        </div>
-      </section>
+        </dl>
       </div>
     </AdminShell>
   )

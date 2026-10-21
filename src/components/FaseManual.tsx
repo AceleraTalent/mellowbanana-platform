@@ -38,7 +38,7 @@ export function FaseManual({ projectId, fase, label, estado }: {
     setOcupado(false)
     if (!res?.ok) {
       setValor(antes)
-      setError('No se pudo guardar. Probá de nuevo.')
+      setError('No se pudo guardar. Prueba de nuevo.')
       return
     }
     setError(null)

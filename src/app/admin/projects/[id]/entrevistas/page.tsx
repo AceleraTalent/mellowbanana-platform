@@ -14,6 +14,7 @@ import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 import { RespondentsList, type Respondent } from './RespondentsList'
 import { CopiarLinkEntrevista } from './CopiarLinkEntrevista'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,28 +96,16 @@ export default async function EntrevistasView({ params }: { params: Promise<{ id
         />
       }
     >
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
-              Taller · Entrevistas
-            </p>
-            <h1 className="mt-2 font-serif text-[30px] font-normal tracking-[-.02em] text-[var(--ink)]">Entrevistas</h1>
-            <p className="mt-3 max-w-[60ch] text-[14px] leading-[1.66] text-[var(--secundario)]">
-              Lo que dijo cada persona, en sus palabras. Es la materia prima de todo lo que viene después.
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {respondents.length > 0 && (
-              <p className="text-[13px] tabular-nums text-[var(--rotulo)]">
-                {completas} de {respondents.length} completas
-              </p>
-            )}
-            <CopiarLinkEntrevista projectId={id} />
-          </div>
-        </div>
+      <section className="max-w-[960px]">
+        <EncabezadoPagina
+          rotulo={respondents.length > 0 ? `Taller · ${completas} de ${respondents.length} completas` : 'Taller'}
+          titulo="Entrevistas"
+          bajada="Lo que dijo cada persona, en sus palabras. Es la materia prima de todo lo que viene después."
+        >
+          <CopiarLinkEntrevista projectId={id} />
+        </EncabezadoPagina>
 
-        <div className="mt-8">
+        <div className="mt-10">
           <RespondentsList projectId={id} respondents={respondents} projects={allProjects} />
         </div>
       </section>

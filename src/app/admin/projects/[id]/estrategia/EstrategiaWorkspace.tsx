@@ -8,6 +8,7 @@ import { ContenidoEtapa } from '../landscape/ContenidoEtapa'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
 import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
 import { BarraDeRevision, BOTON_PRIMARIO, Franja, SeguirEnClaude } from '@/components/paso/piezas'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 
 export type ContenidoEstrategiaVista = {
   id: string
@@ -180,12 +181,7 @@ export function EstrategiaWorkspace({
 
   return (
     <div className="max-w-[860px]">
-      <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
-        Estrategia · {aprobadas} de {aplicables} etapas aprobadas
-      </p>
-      <h1 className="mt-3 font-serif text-[38px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
-        <span className="underline-banana">Estrategia</span>
-      </h1>
+      <EncabezadoPagina rotulo={`Estrategia · ${aprobadas} de ${aplicables} etapas aprobadas`} titulo="Estrategia" />
       {dependencia && <NotaDependencia texto={dependencia} />}
 
       {franja}

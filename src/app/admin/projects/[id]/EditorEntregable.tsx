@@ -5,6 +5,7 @@ import type {
   Deliverable, PartKey, Item, Problema, Competencia, Perfil, PropuestaValor, Eje, Referente, FilaValor,
 } from '@/lib/deliverable/schema'
 import type { SectionNumber } from './section-parts'
+import { BOTON_PRIMARIO } from '@/components/paso/piezas'
 
 /**
  * La edición interna del entregable: cada sección del documento se voltea a formulario
@@ -169,7 +170,7 @@ function FormPropuestaValor({ draft, set }: { draft: PropuestaValor; set: (p: Pr
       <span className={ROTULO}>Cómo lo resolvemos, trabajo por trabajo</span>
       <ul className="mt-1.5 space-y-3">
         {draft.filas.map((f, i) => (
-          <li key={i} className="rounded-xl border border-[var(--line)] p-3">
+          <li key={i} className="rounded-[10px] border border-[var(--line)] p-3">
             <div className="flex gap-2">
               <input value={f.job} onChange={e => setFila(i, 'job', e.target.value)}
                 aria-label={`Job de la fila ${i + 1}`} placeholder="Job to be done" className={CAMPO} />
@@ -254,7 +255,7 @@ export function EditorSeccion({ numero, deliverable, projectId, onCerrar }: {
         body: JSON.stringify({ part, data: limpiar(part, data) }),
       }).catch(() => null)
       if (!res?.ok) {
-        setError((await res?.json().catch(() => null))?.error ?? 'No se pudo guardar. Probá de nuevo.')
+        setError((await res?.json().catch(() => null))?.error ?? 'No se pudo guardar. Prueba de nuevo.')
         setGuardando(false)
         return
       }
@@ -263,7 +264,7 @@ export function EditorSeccion({ numero, deliverable, projectId, onCerrar }: {
   }
 
   return (
-    <div className="rounded-2xl border-[1.5px] border-[var(--ink)] bg-white p-6">
+    <div className="mt-8 rounded-[12px] border border-[var(--ink)] bg-white p-6">
       <div className="space-y-6">
         {numero === 1 && problema && <FormProblema draft={problema} set={setProblema} />}
         {numero === 2 && competencia && <FormCompetencia draft={competencia} set={setCompetencia} />}
@@ -275,14 +276,13 @@ export function EditorSeccion({ numero, deliverable, projectId, onCerrar }: {
       </div>
 
       <div className="mt-6 flex items-center justify-end gap-3 border-t border-[var(--line)] pt-4">
-        {error && <p className="mr-auto text-[12.5px] leading-snug text-[#8a3a3a]">{error}</p>}
+        {error && <p role="alert" className="mr-auto text-[12.5px] leading-snug text-[var(--error)]">{error}</p>}
         <button type="button" onClick={onCerrar} disabled={guardando}
-          className="rounded-xl px-3.5 py-2 text-[13px] font-semibold text-[var(--secundario)] hover:text-ink">
+          className="px-2 py-2 text-[13px] text-[var(--secundario)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
           Cancelar
         </button>
         {partes.length > 0 && (
-          <button type="button" onClick={() => void guardar()} disabled={guardando}
-            className="rounded-xl bg-[var(--ink)] px-5 py-2 text-[13px] font-semibold text-white disabled:opacity-50">
+          <button type="button" onClick={() => void guardar()} disabled={guardando} className={`${BOTON_PRIMARIO} px-4 py-2`}>
             {guardando ? 'Guardando…' : 'Guardar cambios'}
           </button>
         )}

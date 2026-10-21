@@ -40,7 +40,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
     }).catch(() => null)
     setOcupado(false)
     if (!res?.ok) {
-      setError((await res?.json().catch(() => null))?.error ?? 'No se pudo renombrar. Probá de nuevo.')
+      setError((await res?.json().catch(() => null))?.error ?? 'No se pudo renombrar. Prueba de nuevo.')
       return
     }
     cerrar()
@@ -52,7 +52,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
     const res = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' }).catch(() => null)
     setOcupado(false)
     if (!res?.ok) {
-      setError((await res?.json().catch(() => null))?.error ?? 'No se pudo borrar. Probá de nuevo.')
+      setError((await res?.json().catch(() => null))?.error ?? 'No se pudo borrar. Prueba de nuevo.')
       return
     }
     router.push('/admin')
@@ -137,36 +137,36 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
             role="dialog"
             aria-modal="true"
             aria-labelledby="titulo-borrar"
-            className="fixed left-1/2 top-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-white p-6 shadow-2xl"
+            className="fixed left-1/2 top-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-[14px] border border-[var(--ink)] bg-white p-6 shadow-[0_8px_24px_rgba(21,18,12,.12)]"
           >
             <h2 id="titulo-borrar" className="font-serif text-[20px] text-[var(--ink)]">
               ¿Borrar «{nombre}»?
             </h2>
             <p className="mt-2.5 text-[13px] leading-[1.6] text-[var(--secundario)]">
               Se borra el proyecto con todas sus entrevistas, el entregable y el historial
-              completo de landscape y estrategia. <strong className="font-semibold text-ink">No se puede deshacer.</strong> Si
-              hay entrevistas que querés conservar, movelas antes a otro proyecto.
+              completo de landscape y estrategia. <strong className="font-semibold text-[var(--ink)]">No se puede deshacer.</strong> Si
+              hay entrevistas que quieres conservar, muévelas antes a otro proyecto.
             </p>
             <label className="mt-4 block text-[12px] font-medium text-[var(--cuerpo)]">
-              Escribí el nombre del proyecto para confirmar
+              Escribe el nombre del proyecto para confirmar
               <input
                 value={confirmacion}
                 onChange={e => setConfirmacion(e.target.value)}
                 autoFocus
                 placeholder={nombre}
-                className="mt-1.5 w-full rounded-lg border border-[var(--ink)]/25 px-3 py-2 text-[14px] text-[var(--ink)] outline-none focus:border-[var(--banana)]"
+                className="mt-1.5 w-full rounded-[8px] border border-[var(--line)] px-3 py-2 text-[14px] text-[var(--ink)] outline-none focus:border-[var(--ink)]"
               />
             </label>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button type="button" onClick={cerrar}
-                className="rounded-xl px-3.5 py-2 text-[13px] font-semibold text-[var(--secundario)] hover:text-ink">
+                className="px-2 py-2 text-[13px] text-[var(--secundario)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
                 Cancelar
               </button>
               <button
                 type="button"
                 disabled={confirmacion.trim() !== nombre || ocupado}
                 onClick={() => void borrar()}
-                className="rounded-xl bg-[var(--error)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity disabled:opacity-40"
+                className="rounded-[7px] bg-[var(--error)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity disabled:opacity-40"
               >
                 {ocupado ? 'Borrando…' : 'Borrar el proyecto'}
               </button>

@@ -5,6 +5,7 @@ import { avisosRecientes } from '@/lib/avisos'
 import { haceCuanto } from '@/lib/landscape/stages'
 import { AdminShell } from '@/components/AdminShell'
 import { MarcarVistos } from './MarcarVistos'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,15 +16,7 @@ export default async function Avisos() {
   const ahora = new Date()
   return (
     <AdminShell>
-      <header>
-        <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">Panel interno</p>
-        <h1 className="mt-3 font-serif text-[46px] leading-[1.05] tracking-[-.025em] text-[var(--ink)]">
-          <span className="underline-banana">Avisos</span>
-        </h1>
-        <p className="mt-3.5 max-w-[60ch] text-[17px] leading-[1.55] text-[var(--secundario)]">
-          Cada vez que un cliente termina su entrevista.
-        </p>
-      </header>
+      <EncabezadoPagina rotulo="Panel interno" titulo="Avisos" bajada="Cada vez que un cliente termina su entrevista." />
       <MarcarVistos />
       {avisos.length === 0 ? (
         <p className="mt-10 max-w-[860px] rounded-[12px] border border-dashed border-[#CFC9BA] px-6 py-6 text-[14px] text-[var(--secundario)]">

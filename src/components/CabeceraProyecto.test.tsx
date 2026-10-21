@@ -66,7 +66,7 @@ describe('CabeceraProyecto', () => {
     const confirmar = screen.getByRole('button', { name: 'Borrar el proyecto' })
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
 
-    const input = screen.getByLabelText(/Escribí el nombre/)
+    const input = screen.getByLabelText(/Escribe el nombre/)
     fireEvent.change(input, { target: { value: 'Cafe Lunar' } })
     expect((confirmar as HTMLButtonElement).disabled).toBe(true)
 
@@ -80,7 +80,7 @@ describe('CabeceraProyecto', () => {
     montar()
 
     fireEvent.click(screen.getByRole('button', { name: /Borrar el proyecto Café Lunar/ }))
-    fireEvent.change(screen.getByLabelText(/Escribí el nombre/), { target: { value: 'Café Lunar' } })
+    fireEvent.change(screen.getByLabelText(/Escribe el nombre/), { target: { value: 'Café Lunar' } })
     fireEvent.click(screen.getByRole('button', { name: 'Borrar el proyecto' }))
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/admin'))

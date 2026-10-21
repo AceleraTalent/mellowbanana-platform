@@ -16,6 +16,7 @@ import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,11 +104,7 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
       indice={<ProjectIndex enResumen projectId={id} nombre={project.name} subtitulo={bajada} fases={indice} />}
     >
       <div className="max-w-3xl">
-        <header className="border-b border-[var(--line)] pb-6">
-          <p className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">Resumen</p>
-          <h1 className="mt-2 font-serif text-[30px] leading-tight tracking-[-.02em] text-[var(--ink)]">{project.name}</h1>
-          <p className="mt-1 text-[13px] text-[var(--rotulo)]">{bajada}</p>
-        </header>
+        <EncabezadoPagina rotulo={`Resumen · ${bajada}`} titulo={project.name} />
 
         <Zona titulo="Nos toca">
           {nosToca.length === 0 ? (

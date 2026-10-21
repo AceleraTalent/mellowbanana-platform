@@ -77,15 +77,13 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
       }
     >
       <PhaseNote
+        rotulo="Taller"
         titulo="Taller en Miro"
         estado={hecho ? 'completa' : taller.status}
-        bajada={hecho ? 'El equipo lo marcó como hecho.' : taller.detalle}
+        bajada={hecho
+          ? 'El equipo lo marcó como hecho.'
+          : 'Se hace en Miro, con el equipo y el cliente en la misma mesa. De ahí vuelven la propuesta de valor refinada y los cuatro competidores principales.'}
       >
-        <p className="mt-4 max-w-[60ch] text-[14px] leading-[1.66] text-[var(--secundario)]">
-          El taller se hace en Miro, con el equipo y el cliente en la misma mesa. De esa sesión vuelven la
-          propuesta de valor refinada y los cuatro competidores principales, que Claude usa en el panorama de
-          categoría del Landscape.
-        </p>
         <ConclusionesTaller projectId={id} inicial={conclusiones} />
         {faseTaller && (
           <div className="mt-8 max-w-[360px] border-t border-[var(--line)] pt-5">

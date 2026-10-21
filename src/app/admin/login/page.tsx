@@ -22,7 +22,7 @@ export function destinoSeguro(crudo: string, origin: string): string {
   return '/admin'
 }
 
-const CAMPO = 'rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none transition focus:border-[var(--banana)] focus:ring-2 focus:ring-[var(--banana)]/40'
+const CAMPO = 'rounded-[8px] border border-[var(--line)] bg-white px-4 py-3 text-[var(--ink)] outline-none transition-colors focus:border-[var(--ink)]'
 
 function Login() {
   const [usuario, setUsuario] = useState('')
@@ -49,13 +49,13 @@ function Login() {
   }
 
   return (
-    <div className="flex min-h-screen w-full justify-center bg-[#ece4d2] md:items-center md:p-8">
-      <div className="flex w-full max-w-md flex-col items-center bg-cream px-7 py-10 text-center md:rounded-[2rem] md:px-12 md:py-12 md:shadow-2xl">
+    <div className="flex min-h-screen w-full justify-center bg-[var(--papel)] md:items-center md:p-8">
+      <div className="flex w-full max-w-md flex-col items-center bg-white px-7 py-10 text-center md:rounded-[14px] md:border md:border-[var(--line)] md:px-12 md:py-12">
         <LogoBlock />
-        <p className="mt-7 text-[11px] font-semibold font-mono uppercase tracking-[0.2em] text-[#7d7710]">
+        <p className="mt-7 font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
           Panel interno
         </p>
-        <h1 className="mt-3 font-serif text-3xl font-medium leading-tight text-ink">
+        <h1 className="mt-3 font-serif text-[34px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
           Hola de <span className="underline-banana">nuevo</span>
         </h1>
         <form onSubmit={submit} className="mt-8 flex w-full flex-col gap-3 text-left">
@@ -72,12 +72,12 @@ function Login() {
               value={clave} onChange={e => setClave(e.target.value)} className={CAMPO} />
           </div>
           {error && (
-            <p role="alert" className="animate-fade text-sm text-red-600">
+            <p role="alert" className="animate-fade text-[13.5px] text-[var(--error)]">
               {maestra ? 'Esa no es la llave maestra.' : 'El usuario o la clave no coinciden.'}
             </p>
           )}
           <button disabled={busy}
-            className="mt-3 rounded-xl bg-[var(--ink)] px-4 py-3.5 font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-50">
+            className="mt-3 rounded-[8px] bg-[var(--ink)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[#2b2720] disabled:opacity-50">
             {busy ? 'Entrando…' : 'Entrar'}
           </button>
         </form>

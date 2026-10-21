@@ -10,8 +10,9 @@ import { pasoQueSigue, tieneContenido, type PasoConEstado } from '@/lib/landscap
 import { PIEZAS, PIEZA_LABEL, type PiezaKey } from '@/lib/landscape/piezas'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
 import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
-import { BarraDeRevision, LoQueSigue, PorFuera } from '@/components/paso/piezas'
+import { BarraDeRevision, BOTON_SECUNDARIO, LoQueSigue, PorFuera } from '@/components/paso/piezas'
 import { FuentesEnLinea } from '@/components/documento/bloques'
+import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 import {
   VistaBenchmarking, VistaBrandAssets, VistaCasos, VistaCirculo, VistaContexto, VistaDesarrollo, VistaDiagnostico,
   VistaEnfoque, VistaFuentes, VistaGenerica, VistaListaLarga,
@@ -513,18 +514,12 @@ export function LandscapeWorkspace({
 
   return (
     <div className="max-w-[860px]">
-      <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
-        Landscape · {listas} de {aplicables} secciones listas
-      </p>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <h1 className="font-serif text-[38px] leading-[1.1] tracking-[-.025em] text-[var(--ink)]">
-          <span className="underline-banana">Landscape</span>
-        </h1>
+      <EncabezadoPagina rotulo={`Landscape · ${listas} de ${aplicables} secciones listas`} titulo="Landscape">
         {/* Todo lo aprobado, en el orden del deck: para pasarlo al template o guardarlo en PDF. */}
-        <a href={`/admin/projects/${projectId}/landscape/documento`} className="pb-1.5 text-[14px] font-medium text-[var(--ink)] underline underline-offset-4">
+        <a href={`/admin/projects/${projectId}/landscape/documento`} className={BOTON_SECUNDARIO}>
           Documento para el deck ↗
         </a>
-      </div>
+      </EncabezadoPagina>
 
       <LoQueSigue paso={sigue} proyecto={proyecto} guardando={!!sigue && guardando === sigue.id} onMarcar={marcar} />
       {pasoConError && pasoConError.id === sigue?.id && alerta(error!.texto)}
