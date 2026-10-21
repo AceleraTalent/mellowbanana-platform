@@ -70,3 +70,6 @@ src/app/fonts/*.otf
 src/app/fonts/*.ttf
 src/app/fonts/*.woff2
 docs/design/
+
+# guía del equipo compilada: lleva ABC Favorit incrustada
+docs/guia-equipo/out/

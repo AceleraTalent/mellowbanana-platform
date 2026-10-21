@@ -1,0 +1,830 @@
+<title>Guía Mellow & Banana + Claude</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: barra lateral amarilla con el índice (como el panel interno) y un recorrido en
+     secciones numeradas. Las dos secciones centrales (del Miro al Landscape, una etapa con
+     Claude) van sobre fondo gris cálido y muestran el chat y el panel tal como se ven.
+     Un solo tema, claro: blanco, tinta, el amarillo del estudio y un gris cálido. */
+  @font-face { font-family: 'ABC Favorit'; font-weight: 700; src: url(data:font/otf;base64,__FAVORIT_B64__) format('opentype'); font-display: swap }
+  @font-face { font-family: 'ABC Favorit Mono'; font-weight: 400; src: url(data:font/otf;base64,__MONO_B64__) format('opentype'); font-display: swap }
+
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --ink: #15120C;
+    --cuerpo: #2C281F;
+    --secundario: #6B6657;
+    --rotulo: #8E8878;
+    --line: #E8E5DC;
+    --superficie: #F4F2EB;
+    --superficie-2: #EFEDE5;
+    --banana: #fcf251;
+    --banana-suave: #FFFAC2;
+    --display: 'ABC Favorit', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'ABC Favorit Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 80px; --s9: 112px;
+    --gutter: 20px;
+  }
+  @media (min-width: 900px) { :root { --gutter: 56px } }
+  @media (min-width: 1280px) { :root { --gutter: 72px } }
+
+  * { box-sizing: border-box }
+  html { scroll-padding-top: 84px }
+  @media (min-width: 900px) { html { scroll-padding-top: 0 } }
+  body { margin: 0; background: var(--bg); color: var(--cuerpo); font-family: var(--sans); font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; font-synthesis-weight: none }
+  h1, h2, h3, h4 { margin: 0; color: var(--ink); text-wrap: balance }
+  h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.015em }
+  h1 { font-size: clamp(36px, 4.4vw, 58px); line-height: 1 }
+  h2 { font-size: clamp(32px, 3.4vw, 46px); line-height: 1.02 }
+  h3 { font-size: 24px; line-height: 1.15 }
+  h4 { font-size: 17px; font-weight: 600; line-height: 1.35 }
+  p, ul, ol { margin: 0 }
+  a { color: inherit }
+  em { font-style: normal; font-weight: 600; color: var(--ink) }
+  .rotulo { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--rotulo); margin: 0; line-height: 1.4 }
+  .rotulo.ink { color: var(--ink) }
+  .suave { color: var(--secundario) }
+
+  /* Los tres lugares: amarillo = panel, tinta = Claude, blanco con borde = Miro */
+  .lugar { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; line-height: 1; padding: 6px 10px; border-radius: 999px; white-space: nowrap; vertical-align: middle; border: 1px solid transparent }
+  .lugar.panel { background: var(--banana); color: var(--ink) }
+  .lugar.claude { background: var(--ink); color: #fff }
+  .lugar.miro { background: #fff; color: var(--ink); border-color: var(--ink) }
+  .lugares { display: flex; gap: 6px; flex-wrap: wrap; align-items: center }
+
+  /* Marco */
+  .marco { display: flex; min-height: 100vh }
+  .barra { display: none }
+  @media (min-width: 900px) {
+    .barra { display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; width: 248px; flex: none; background: var(--banana); color: var(--ink); padding: 28px 16px 24px; overflow-y: auto }
+  }
+  .barra .wordmark { font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.15; color: var(--ink); padding: 0 6px; text-decoration: none; display: block }
+  .barra .wordmark small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(21,18,12,.55); margin-top: 6px }
+  .barra .rotulo { color: rgba(21,18,12,.55); padding: 0 6px 8px; font-size: 10px; letter-spacing: .14em }
+  .barra nav { margin-top: 36px; display: grid; gap: 2px }
+  .barra nav .grupo { margin-top: 22px }
+  .barra nav .grupo:first-child { margin-top: 0 }
+  .barra nav a { display: flex; align-items: center; gap: 10px; border-radius: 10px; padding: 8px 12px; font-size: 13.5px; font-weight: 500; color: var(--ink); text-decoration: none; line-height: 1.3 }
+  .barra nav a .n { font-family: var(--mono); font-size: 11px; color: rgba(21,18,12,.5); min-width: 1.4em }
+  .barra nav a:hover { background: rgba(21,18,12,.07) }
+  .barra nav a.activo { background: var(--ink); color: #fff }
+  .barra nav a.activo .n { color: rgba(255,255,255,.5) }
+  .barra .pie { margin-top: auto; padding: 24px 6px 0; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(21,18,12,.55) }
+
+  /* Barra superior en celular */
+  .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--banana); color: var(--ink); padding: 12px 16px 0; display: grid; gap: 10px }
+  @media (min-width: 900px) { .topbar { display: none } }
+  .topbar .fila { display: flex; justify-content: space-between; align-items: baseline }
+  .topbar .wordmark { font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--ink); text-decoration: none }
+  .topbar .fila span { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(21,18,12,.55) }
+  .topbar nav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none }
+  .topbar nav::-webkit-scrollbar { display: none }
+  .topbar nav a { flex: none; font-size: 12.5px; font-weight: 500; color: var(--ink); text-decoration: none; padding: 6px 11px; border-radius: 999px; white-space: nowrap }
+  .topbar nav a.activo { background: var(--ink); color: #fff }
+
+  /* Contenido */
+  .contenido { flex: 1; min-width: 0 }
+  .pagina { margin: 0 }
+  section, .portada { padding-inline: var(--gutter) }
+  .ancho { max-width: 1240px }
+
+  /* Portada */
+  .portada { padding-block: var(--s7) var(--s8); display: grid; gap: var(--s7) }
+  .portada .arriba { display: grid; gap: var(--s5) }
+  .portada .titulo { display: grid; gap: var(--s4) }
+  .portada .bajada { font-size: 18px; line-height: 1.5; color: var(--secundario); max-width: 58ch }
+  .regla { display: grid; gap: var(--s2); padding: var(--s5); background: var(--banana); color: var(--ink); border-radius: 14px; align-self: start }
+  .regla .rotulo { color: rgba(21,18,12,.55) }
+  .regla strong { font-family: var(--display); font-size: 21px; line-height: 1.25; font-weight: 700 }
+  @media (min-width: 1100px) {
+    .portada .arriba { grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); column-gap: var(--s8); align-items: end }
+    .portada .arriba > .rotulo { grid-column: 1 / -1 }
+  }
+
+  /* El recorrido: una línea de cinco paradas */
+  .recorrido { display: grid; gap: var(--s4) }
+  .recorrido > .cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); flex-wrap: wrap }
+  .recorrido > .cab p { color: var(--secundario); max-width: 60ch }
+  .paradas { display: grid; gap: var(--s3); grid-template-columns: 1fr; list-style: none; padding: 0; margin: 0 }
+  @media (min-width: 900px) { .paradas { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s4) } }
+  .parada { display: grid; gap: var(--s3); align-content: start; padding: var(--s4) var(--s4) var(--s5); border-top: 3px solid var(--ink); position: relative; min-width: 0; text-decoration: none; color: inherit }
+  .parada:hover { background: var(--superficie) }
+  .parada .k { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--rotulo) }
+  .parada h3 { font-size: 20px }
+  .parada p { font-size: 14px; color: var(--secundario) }
+  .parada .lugares { margin-top: auto }
+  .parada.miro { border-top-color: var(--banana) }
+
+  /* Secciones */
+  section { padding-block: var(--s8); display: grid; gap: var(--s7); border-top: 1px solid var(--line) }
+  section.gris { background: var(--superficie); border-top: 0 }
+  section.gris + section { border-top: 0 }
+  section > header { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); align-items: end }
+  section > header .num { font-family: var(--display); font-weight: 700; font-size: clamp(40px, 5vw, 64px); line-height: .9; color: var(--ink); letter-spacing: -0.02em }
+  section > header .tit { display: grid; gap: var(--s3) }
+  section > header .lead { font-size: 17.5px; line-height: 1.5; color: var(--secundario); max-width: 58ch }
+  @media (min-width: 900px) {
+    section > header { grid-template-columns: 110px minmax(0, 1fr); column-gap: var(--s5); align-items: start }
+  }
+  @media (min-width: 1100px) {
+    section > header { grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s6) }
+    section > header .lead { align-self: end; padding-bottom: 6px }
+  }
+  .cuerpo { display: grid; gap: var(--s7) }
+  @media (min-width: 900px) { .cuerpo { padding-left: calc(110px + var(--s5)) } }
+  @media (min-width: 1100px) { .cuerpo { padding-left: calc(110px + var(--s6)) } }
+
+  /* Pasos grandes: lo que hacés a la izquierda, lo que ves a la derecha */
+  .pasos-g { display: grid; gap: var(--s7); counter-reset: pg }
+  .paso-g { display: grid; gap: var(--s5); grid-template-columns: 1fr; counter-increment: pg; padding-top: var(--s5); border-top: 1.5px solid var(--ink) }
+  @media (min-width: 1100px) { .paso-g { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); column-gap: var(--s7) } }
+  .paso-g .haces { display: grid; gap: var(--s4); align-content: start }
+  .paso-g .haces h3 { display: flex; gap: var(--s3); align-items: baseline }
+  .paso-g .haces h3::before { content: counter(pg); font-family: var(--mono); font-size: 13px; letter-spacing: .1em; color: var(--rotulo); flex: none }
+  .paso-g .haces p { font-size: 15.5px }
+  .paso-g .haces ul { padding-left: 1.2em; display: grid; gap: var(--s2) }
+  .paso-g .haces li::marker { color: var(--rotulo) }
+  .paso-g .ves { display: grid; gap: var(--s4); align-content: start; min-width: 0 }
+  .paso-g .ves > .rotulo { display: flex; gap: var(--s2); align-items: center }
+
+  /* Chat simulado */
+  .chat { display: grid; gap: var(--s3); min-width: 0 }
+  .msg { display: grid; gap: 4px; max-width: 92%; min-width: 0 }
+  .msg .quien { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--rotulo) }
+  .msg .b { padding: var(--s3) var(--s4); border-radius: 14px; font-size: 14.5px; line-height: 1.55; color: var(--ink); white-space: pre-wrap }
+  .msg.yo { justify-self: end; text-align: right }
+  .msg.yo .b { background: var(--banana); border-bottom-right-radius: 4px; text-align: left }
+  .msg.ia { justify-self: start }
+  .msg.ia .b { background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px }
+  .gris .msg.ia .b { border-color: transparent }
+  .msg.ia .b .tool { display: block; margin-top: 8px; font-family: var(--mono); font-size: 11.5px; color: var(--secundario) }
+  .msg .b .tool::before { content: '↳ ' }
+  .chat .sys { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--secundario); text-align: center; padding: 4px 0 }
+  .chat .adj { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; justify-self: end }
+  .chat .adj::before { content: '📎'; font-size: 12px }
+
+  /* Panel simulado */
+  .mock { display: grid; grid-template-columns: 14px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; font-size: 14px }
+  .mock .riel { background: var(--banana) }
+  .mock .cuerpo-m { display: grid; gap: var(--s3); padding: var(--s4) var(--s5) }
+  .mock .proy { display: grid; gap: 2px }
+  .mock .proy strong { font-family: var(--display); font-size: 18px; color: var(--ink) }
+  .mock .proy span { font-size: 12.5px; color: var(--secundario) }
+  .mock .proy span.mal { text-decoration: underline wavy var(--rotulo); text-decoration-thickness: 1px }
+  .mock ul { list-style: none; padding: 0; margin: 0; display: grid; border-top: 1px solid var(--line) }
+  .mock li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--ink) }
+  .mock li.fase { font-weight: 600 }
+  .mock li.sub { padding-left: 14px; font-size: 13.5px }
+  .mock li .est { font-size: 12px; color: var(--secundario); white-space: nowrap }
+  .mock li.activa { background: var(--banana-suave); margin-inline: -8px; padding-inline: 8px; border-radius: 6px }
+  .mock .dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; position: relative; box-sizing: border-box }
+  .mock .dot.curso { background: var(--banana-suave) }
+  .mock .dot.aprobada { background: var(--banana) }
+  .mock .dot.aprobada::after { content: ''; position: absolute; left: 3px; top: 0px; width: 3px; height: 6px; border: solid var(--ink); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) }
+  .mock .dot.noaplica { border-style: dotted; opacity: .5 }
+  .mock .dot.n { border: 0; background: transparent }
+  .mock .btn-m { justify-self: start; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 7px 12px; border-radius: 8px; background: var(--ink); color: #fff }
+  .mock .btn-m.ap { background: var(--banana); color: var(--ink) }
+  .mock .fila-b { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center }
+  .mock .fila-b .sec { font-family: var(--mono); font-size: 12px; color: var(--ink); background: var(--superficie); border: 1px solid var(--line); padding: 6px 10px; border-radius: 8px }
+  .mock .texto-m { font-size: 13.5px; color: var(--cuerpo); display: grid; gap: 6px }
+  .mock .texto-m .t { font-family: var(--display); font-size: 16px; color: var(--ink) }
+
+  /* Listas de acciones cortas */
+  ol.pasos { list-style: none; padding: 0; margin: 0; display: grid; counter-reset: p; border-top: 1.5px solid var(--ink); align-content: start }
+  ol.pasos > li { counter-increment: p; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--s4); padding-block: var(--s5); border-bottom: 1px solid var(--line); min-width: 0 }
+  ol.pasos > li::before { content: counter(p); font-family: var(--display); font-weight: 700; font-size: 28px; line-height: 1; color: var(--ink) }
+  ol.pasos > li > div { display: grid; gap: var(--s2); min-width: 0; align-content: start }
+  ol.pasos .que { font-weight: 600; color: var(--ink); font-size: 16px; line-height: 1.4 }
+  ol.pasos .como { font-size: 14.5px; color: var(--secundario) }
+  @media (min-width: 1100px) {
+    ol.pasos.fila { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); column-gap: var(--s6) }
+    ol.pasos.fila > li { grid-template-columns: 1fr; align-content: start; gap: var(--s3); border-bottom: 0 }
+  }
+  .btn { display: inline-block; font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: var(--superficie-2); border-radius: 6px; padding: 1px 8px; line-height: 1.6; white-space: nowrap; vertical-align: baseline }
+  .gris .btn { background: #fff; border: 1px solid var(--line) }
+  .btn.ap { background: var(--banana); border-color: transparent }
+  .ruta { font-family: var(--mono); font-size: 13px; color: var(--ink) }
+
+  .ok { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s3); align-items: baseline; padding: var(--s4) var(--s5); background: var(--banana-suave); border-radius: 12px; font-size: 15px; color: var(--ink) }
+  .ok .rotulo { color: var(--ink) }
+  @media (max-width: 480px) { .ok { grid-template-columns: 1fr } }
+
+  .dos { display: grid; gap: var(--s6); grid-template-columns: 1fr }
+  @media (min-width: 900px) { .dos { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s7) } }
+  .tres { display: grid; gap: var(--s6); grid-template-columns: 1fr }
+  @media (min-width: 900px) { .tres { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--s6) } }
+  .bloque { display: grid; gap: var(--s4); align-content: start; min-width: 0 }
+  .bloque > h3, .bloque > h4 { padding-bottom: var(--s3); border-bottom: 1.5px solid var(--ink) }
+  .bloque ul { padding-left: 1.2em; display: grid; gap: var(--s2); font-size: 15px }
+  .bloque li::marker { color: var(--rotulo) }
+  .lista-check { list-style: none; padding: 0; display: grid; gap: var(--s2); font-size: 15px }
+  .lista-check li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start }
+  .lista-check li::before { content: ''; width: 14px; height: 14px; border: 1.5px solid var(--ink); border-radius: 4px; margin-top: 4px }
+
+  /* Copiable */
+  .copia { background: var(--superficie); border-radius: 12px; padding: var(--s4) var(--s5); display: grid; gap: var(--s3); min-width: 0; align-content: start }
+  .gris .copia { background: #fff }
+  .copia .barra-c { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); flex-wrap: wrap }
+  .copia .barra-c .rotulo { color: var(--ink) }
+  .copia pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--sans); font-size: 14.5px; line-height: 1.6; color: var(--ink) }
+  .copia.m pre { font-family: var(--mono); font-size: 13px }
+  .copia.larga pre { max-height: 280px; overflow: auto; padding-right: 8px }
+  button.cp { font: inherit; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; background: var(--ink); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer }
+  button.cp:hover, button.cp.ok { background: var(--banana); color: var(--ink) }
+  button.cp:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+
+  /* Tabla de etapas (referencia) */
+  .tabla { display: grid; border-top: 1.5px solid var(--ink) }
+  .tabla .enc { display: none }
+  @media (min-width: 1100px) { .tabla .enc { display: grid; grid-template-columns: 190px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .9fr); column-gap: var(--s5); padding: var(--s3) 0; border-bottom: 1px solid var(--line) } }
+  .et { display: grid; gap: var(--s3) var(--s5); padding-block: var(--s5); border-bottom: 1px solid var(--line); grid-template-columns: 1fr; min-width: 0 }
+  @media (min-width: 1100px) { .et { grid-template-columns: 190px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .9fr) } }
+  .et > div { display: grid; gap: var(--s2); align-content: start; min-width: 0 }
+  .et .nom h3 { font-size: 20px }
+  .et .nom p { font-size: 13.5px; color: var(--secundario) }
+  .et p, .et li { font-size: 14.5px }
+  .et ul { padding-left: 1.1em; display: grid; gap: 4px }
+  .et li::marker { color: var(--rotulo) }
+  .et .r { display: none }
+  @media (max-width: 1099px) { .et .r { display: block } }
+  .et .copia { padding: var(--s3) var(--s4) }
+  .et .copia pre { font-size: 14px }
+  .et .pan { font-size: 14.5px; color: var(--ink) }
+
+  /* Problemas */
+  .problemas { display: grid; gap: 0 var(--s7); grid-template-columns: 1fr; border-top: 1.5px solid var(--ink) }
+  @media (min-width: 900px) { .problemas { grid-template-columns: 1fr 1fr } }
+  .problema { display: grid; gap: var(--s2); padding-block: var(--s5); border-bottom: 1px solid var(--line); align-content: start }
+  .problema .q { font-weight: 600; color: var(--ink); font-size: 16px; line-height: 1.4 }
+  .problema .a { font-size: 14.5px }
+
+  .estados { display: grid; gap: var(--s4); grid-template-columns: repeat(2, 1fr) }
+  @media (min-width: 900px) { .estados { grid-template-columns: repeat(4, 1fr) } }
+  .estado { display: grid; gap: 4px; align-content: start; padding-top: var(--s3); border-top: 1.5px solid var(--ink) }
+  .estado .dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; margin-bottom: 6px; position: relative; box-sizing: border-box }
+  .estado .dot.curso { background: var(--banana-suave) }
+  .estado .dot.aprobada { background: var(--banana) }
+  .estado .dot.aprobada::after { content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid var(--ink); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) }
+  .estado .dot.noaplica { border-style: dotted; opacity: .5 }
+  .estado strong { font-size: 15px; color: var(--ink) }
+  .estado p { font-size: 13.5px; color: var(--secundario) }
+
+  footer.pie-pagina { padding: var(--s7) var(--gutter); display: flex; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; border-top: 1px solid var(--line) }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }
+</style>
+
+<div class="marco">
+  <aside class="barra" aria-label="Índice de la guía">
+    <a class="wordmark" href="#inicio">Mellow &amp; Banana<small>Guía de uso</small></a>
+    <nav id="nav-lateral">
+      <div class="grupo">
+        <p class="rotulo">Empezar</p>
+        <a href="#inicio"><span class="n">0</span><span>El recorrido</span></a>
+        <a href="#conectar"><span class="n">1</span><span>Conectar Claude</span></a>
+        <a href="#fase1"><span class="n">2</span><span>Fase 1: entrevistas y taller</span></a>
+      </div>
+      <div class="grupo">
+        <p class="rotulo">Lo central</p>
+        <a href="#puente"><span class="n">3</span><span>Del Miro al Landscape</span></a>
+        <a href="#etapa"><span class="n">4</span><span>Una etapa con Claude</span></a>
+        <a href="#leer"><span class="n">5</span><span>Leer el panel</span></a>
+      </div>
+      <div class="grupo">
+        <p class="rotulo">Referencia</p>
+        <a href="#landscape"><span class="n">6</span><span>Landscape, etapa por etapa</span></a>
+        <a href="#estrategia"><span class="n">7</span><span>Estrategia, bloque por bloque</span></a>
+        <a href="#problemas"><span class="n">8</span><span>Si algo no cuadra</span></a>
+      </div>
+    </nav>
+    <p class="pie">Guía v4 · octubre 2026</p>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <div class="fila"><a class="wordmark" href="#inicio">Mellow &amp; Banana</a><span>Guía de uso</span></div>
+      <nav id="nav-top">
+        <a href="#inicio">Recorrido</a><a href="#conectar">Conectar</a><a href="#fase1">Fase 1</a><a href="#puente">Miro → Landscape</a><a href="#etapa">Una etapa</a><a href="#leer">Leer el panel</a><a href="#landscape">Landscape</a><a href="#estrategia">Estrategia</a><a href="#problemas">Ayuda</a>
+      </nav>
+    </div>
+
+    <main class="pagina">
+      <header class="portada" id="inicio">
+        <div class="arriba ancho">
+          <p class="rotulo">Guía de uso · Plataforma + Claude</p>
+          <div class="titulo">
+            <h1>Cómo llevar un proyecto de las entrevistas a la estrategia</h1>
+            <p class="bajada">Qué haces tú, qué le dices a Claude y qué ves en el panel en cada momento. Las secciones 3 y 4 son el corazón: cómo se pasa del taller al landscape y cómo se trabaja una etapa con Claude, de principio a fin.</p>
+          </div>
+          <div class="regla">
+            <p class="rotulo">La única regla</p>
+            <strong>Claude escribe borradores. El equipo aprueba desde el panel. Nada se vuelve oficial sin un clic de una persona.</strong>
+          </div>
+        </div>
+
+        <div class="recorrido ancho">
+          <div class="cab">
+            <h2>El recorrido</h2>
+            <p>Cinco paradas, en este orden. Las dos primeras las hace la plataforma. El taller es en Miro. Las dos últimas se escriben con Claude y se aprueban en el panel.</p>
+          </div>
+          <ol class="paradas">
+            <li><a class="parada" href="#fase1"><span class="k">Parada 1</span><h3>Entrevistas</h3><p>Cada persona del cliente responde por voz. El proyecto se crea solo.</p><span class="lugares"><span class="lugar panel">Panel</span></span></a></li>
+            <li><a class="parada" href="#fase1"><span class="k">Parada 2</span><h3>Propuesta de valor</h3><p>Un botón. La plataforma la arma con las entrevistas y te da el PDF del taller.</p><span class="lugares"><span class="lugar panel">Panel</span></span></a></li>
+            <li><a class="parada miro" href="#puente"><span class="k">Parada 3</span><h3>Taller</h3><p>Con el cliente, en Miro. Sales con la propuesta refinada y 4 competidores.</p><span class="lugares"><span class="lugar miro">Miro</span></span></a></li>
+            <li><a class="parada" href="#landscape"><span class="k">Parada 4</span><h3>Landscape</h3><p>Seis etapas. Claude redacta, tú apruebas una por una.</p><span class="lugares"><span class="lugar claude">Claude</span><span class="lugar panel">Panel</span></span></a></li>
+            <li><a class="parada" href="#estrategia"><span class="k">Parada 5</span><h3>Estrategia</h3><p>Catorce etapas en cuatro bloques. Mismo ciclo que el landscape.</p><span class="lugares"><span class="lugar claude">Claude</span><span class="lugar panel">Panel</span></span></a></li>
+          </ol>
+        </div>
+      </header>
+
+      <!-- 1 -->
+      <section id="conectar">
+        <header>
+          <p class="num">1</p>
+          <div class="tit"><p class="rotulo">Una sola vez por persona</p><h2>Conectar Claude</h2></div>
+          <p class="lead">Cinco minutos, desde el computador. Después Claude lee y escribe en la plataforma desde cualquier chat. Si ya lo hiciste, salta a la sección 2.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="dos">
+            <ol class="pasos">
+              <li><div><p class="que">En claude.ai, abre Configuración → Conectores → “Agregar conector personalizado”.</p><p class="como">Nombre: <span class="ruta">Mellow Banana</span>. URL: la del cuadro de la derecha, tal cual. Haz clic en “Conectar”, entra con la contraseña del panel y confirma.</p></div></li>
+              <li><div><p class="que">Crea un proyecto en claude.ai por marca.</p><p class="como">Por ejemplo <span class="ruta">Grupo Heroica</span>. Ahí van los informes y el material del taller, y ahí se trabaja siempre esa marca. Un chat nuevo por etapa, siempre dentro del proyecto.</p></div></li>
+              <li><div><p class="que">Pega las instrucciones en “Instrucciones del proyecto”.</p><p class="como">El cuadro de la derecha, completo. Le dicen a Claude cómo trabaja el estudio: leer el proyecto antes de escribir, guardar cada etapa, no aprobar nada.</p></div></li>
+            </ol>
+            <div style="display:grid;gap:var(--s4);align-content:start">
+              <div class="copia m"><div class="barra-c"><p class="rotulo">URL del conector</p><button class="cp" type="button" data-copy="https://forms-melo-banana.vercel.app/api/mcp">Copiar</button></div><pre>https://forms-melo-banana.vercel.app/api/mcp</pre></div>
+              <div class="copia larga"><div class="barra-c"><p class="rotulo">Instrucciones del proyecto</p><button class="cp" type="button" data-copy-target="instr">Copiar</button></div><pre id="instr">Tienes conectada la plataforma de Mellow &amp; Banana por el conector “Mellow Banana”.
+
+Al empezar a trabajar sobre una marca, llama a contexto_proyecto antes de escribir nada: ahí están las entrevistas, la propuesta de valor y lo que ya se aprobó del landscape y de la estrategia. Si no sabes a qué proyecto se refieren, usa listar_proyectos. Usa el nombre exacto del proyecto.
+
+Cada vez que termines de redactar una etapa, guárdala con guardar_etapa sin esperar a que te lo pidan. Lo que no se guarda se queda en el chat y no llega al panel. Al guardar, di en una línea qué guardaste y recuerda que se aprueba desde el panel.
+
+Tú nunca apruebas nada: todo entra como borrador y el equipo aprueba desde el panel. Para la etapa de tendencias, envía la long list completa; elegir las 4 o 5 principales es decisión del equipo.
+
+El taller de propuesta de valor se hace en Miro y sus conclusiones todavía no están en la plataforma. Si para una etapa necesitas la propuesta de valor refinada o los cuatro competidores principales, pídeselos a la persona en el chat antes de redactar.
+
+El landscape tiene seis etapas en este orden: setup, contexto, tendencias, panorama, diagnostico (solo rebranding) y entrega. El Contexto del sector lleva: datos generales (global y Colombia), cifras relevantes con fuente y año, drivers de cambio, evolución del consumidor, retos del sector y qué buscan los clientes del segmento. Cada dato con fuente trazable a los informes adjuntos.
+
+Después del landscape viene el Proceso de Estrategia. Llama a contexto_proyecto y después a estado_estrategia. El bloque 1 es diagnostico, el bloque 2 es consumidor, el bloque 3 es la esencia de marca (rtbs, concepto, beneficios, arquetipo, personalidad, valores, territorio, brand_ideal, ingredients, tagline, manifiesto, sin orden fijo) y el bloque 4 es cuadros, que se arma solo con lo ya aprobado. Guarda cada etapa con fase: "estrategia".</pre></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 -->
+      <section id="fase1">
+        <header>
+          <p class="num">2</p>
+          <div class="tit"><p class="rotulo">Fase 1 · Todo en el panel, menos el taller</p><h2>Entrevistas, propuesta de valor y taller</h2></div>
+          <p class="lead">Esta fase es directa: la plataforma hace el trabajo. Lo único que importa cuidar es con qué sales del taller, porque es lo que Claude va a necesitar después.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <ol class="pasos fila" style="--n:3">
+            <li><div><p class="que">Envía el link de entrevista a cada persona del cliente.</p><p class="como">A la primera, el link general <span class="ruta">forms-melo-banana.vercel.app</span>: la empresa que escriba es el nombre del proyecto. A las demás, el link del proyecto: Panel → proyecto → Entrevistas → <span class="btn">Copiar link de entrevista</span>. En el índice ves “2 de 4 completadas”.</p></div></li>
+            <li><div><p class="que">Genera la propuesta de valor y descarga el PDF del taller.</p><p class="como">Panel → proyecto → Propuesta de valor → <span class="btn">Generar entregable</span>. Lo que diga “pendiente” es lo que las entrevistas no respondieron: se resuelve en el taller. Después <span class="btn">Descargar PDF del taller</span>.</p></div></li>
+            <li><div><p class="que">Haz el taller en Miro con el cliente.</p><p class="como">Como siempre. Lo nuevo es el cierre: antes de dar por terminado el taller, arma el documento de abajo. Es la pieza que une la Fase 1 con el landscape.</p></div></li>
+          </ol>
+          <div class="dos">
+            <div class="bloque">
+              <h3>El documento de cierre del taller</h3>
+              <p class="suave">Un solo archivo (PDF, Word o Google Doc exportado), corto. Es lo que vas a subirle a Claude en la sección 3. Tiene que tener:</p>
+              <ul class="lista-check">
+                <li>La propuesta de valor refinada con el cliente: jobs, dolores, ganancias y la fórmula final.</li>
+                <li>Los <em>4 competidores principales</em>, por nombre. Sin esto no hay Panorama de categoría.</li>
+                <li>Si es rebranding: qué assets actuales de la marca se conservan y cuáles no.</li>
+                <li>Si es marca nueva o rebranding. Define si el landscape tiene 5 o 6 etapas.</li>
+              </ul>
+            </div>
+            <div class="bloque">
+              <h3>Lo que el panel va a decir, y por qué no importa</h3>
+              <p>Apenas generas la propuesta, el proyecto queda en <em>“Taller · Se trabaja en Miro · faltan las conclusiones”</em> y el Landscape avisa que necesita los competidores del taller.</p>
+              <p><em>Ese aviso no se va nunca</em>, aunque el taller ya esté hecho: hoy no hay dónde cargar las conclusiones en el panel. No es un error ni hay que esperar nada. Las conclusiones se las pasas a Claude directamente, y eso es la sección 3.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 -->
+      <section id="puente" class="gris">
+        <header>
+          <p class="num">3</p>
+          <div class="tit"><p class="rotulo">De Miro a Claude · Se hace una vez por proyecto</p><h2>Del Miro al Landscape</h2></div>
+          <p class="lead">Aquí es donde el equipo se pierde. No hay ningún botón: el taller se cierra abriendo el proyecto en claude.ai y dándole a Claude lo que salió de Miro. Son cuatro pasos y diez minutos.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="pasos-g">
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Abre el proyecto de la marca en claude.ai y sube el documento del taller</h3>
+                <p>claude.ai → Proyectos → <span class="ruta">Grupo Heroica</span> (el que creaste en la sección 1). En “Archivos del proyecto” sube el documento de cierre del taller. Ahí queda para todos los chats de esa marca; no hace falta volver a adjuntarlo.</p>
+                <p>Si ya tienes informes de la categoría o reportes de tendencias, súbelos también ahora. Claude los va a usar en las etapas 2 y 3.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> Archivos del proyecto</p>
+                <div class="chat">
+                  <span class="adj">Taller Grupo Heroica — cierre.pdf</span>
+                  <span class="adj">Informe sector eventos Colombia 2026.pdf</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Abre un chat nuevo dentro del proyecto y envía el mensaje de arranque</h3>
+                <p>Un chat nuevo, dentro del proyecto. El primer mensaje le dice a Claude tres cosas: qué marca es, que ya está el taller, y quiénes son los competidores. Reemplaza lo que va entre corchetes.</p>
+                <div class="copia"><div class="barra-c"><p class="rotulo">Mensaje de arranque</p><button class="cp" type="button" data-copy-target="p-arranque">Copiar</button></div><pre id="p-arranque">Trae el contexto de [marca]. Ya hicimos el taller de propuesta de valor: las conclusiones están en el archivo del proyecto. Los cuatro competidores principales son [A], [B], [C] y [D], y el proyecto es [marca nueva / rebranding]. Tenlo en cuenta para todo el landscape. Empecemos por el Setup.</pre></div>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> El chat</p>
+                <div class="chat">
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">Trae el contexto de Grupo Heroica. Ya hicimos el taller de propuesta de valor: las conclusiones están en el archivo del proyecto. Los cuatro competidores principales son Ágora, Plaza Mayor, Corferias y Ático, y el proyecto es marca nueva. Tenlo en cuenta para todo el landscape. Empecemos por el Setup.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Leí el proyecto Grupo Heroica: 4 entrevistas completas y la propuesta de valor generada. Del taller tomo la fórmula refinada y los cuatro competidores: Ágora, Plaza Mayor, Corferias y Ático. Como es marca nueva, el landscape tiene cinco etapas: el Diagnóstico no aplica.
+
+Para el Setup necesito el nombre del deck y la carpeta de Dropbox. ¿Cómo se llaman?<span class="tool">contexto_proyecto · estado_landscape</span></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Responde lo que te pida y deja que guarde</h3>
+                <p>Para el Setup, Claude solo necesita dónde vive el proyecto. Se lo dices y lo guarda. Esa es la primera etapa del landscape, hecha.</p>
+                <p>Si Claude no dijo “Guardé un borrador de…”, no guardó: dile <em>guárdalo</em>.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> El chat, sigue</p>
+                <div class="chat">
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">El deck es “Grupo Heroica — Landscape.key” y la carpeta es /Clientes/Grupo Heroica/Fase 01 Landscape. Guárdalo.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Guardé un borrador del Setup del landscape de Grupo Heroica con el deck y la carpeta. Lo apruebas desde el panel, en Landscape → Setup. ¿Seguimos con el Contexto del sector?<span class="tool">guardar_etapa · landscape / setup</span></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Aprueba el Setup en el panel. Ya estás en el landscape.</h3>
+                <p>Panel → proyecto → Landscape → Setup → <span class="btn ap">Aprobar etapa</span>. El punto de Setup pasa a amarillo lleno.</p>
+                <p>El subtítulo del proyecto va a seguir diciendo “Taller · faltan las conclusiones”. Ignóralo: el índice de abajo es lo que vale. Tú ya estás en la parada 4, y las cinco etapas que faltan se trabajan todas igual, como muestra la sección 4.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar panel">Panel</span> El proyecto, después de aprobar</p>
+                <div class="mock"><div class="riel"></div><div class="cuerpo-m">
+                  <div class="proy"><strong>Grupo Heroica</strong><span class="mal">Taller · Se trabaja en Miro · faltan las conclusiones</span></div>
+                  <ul>
+                    <li class="fase"><i class="dot aprobada"></i>Entrevistas<span class="est">4 completadas</span></li>
+                    <li class="fase"><i class="dot aprobada"></i>Propuesta de valor<span class="est">Generada</span></li>
+                    <li class="fase"><i class="dot curso"></i>Taller<span class="est">Se trabaja en Miro</span></li>
+                    <li class="fase"><i class="dot curso"></i>Landscape<span class="est">1 de 5 etapas aprobadas</span></li>
+                    <li class="sub activa"><i class="dot aprobada"></i>Setup<span class="est">Aprobada</span></li>
+                    <li class="sub"><i class="dot"></i>Contexto del sector<span class="est">Pendiente</span></li>
+                    <li class="sub"><i class="dot"></i>Tendencias<span class="est">Pendiente</span></li>
+                    <li class="sub"><i class="dot"></i>Panorama de categoría<span class="est">Pendiente</span></li>
+                    <li class="sub"><i class="dot noaplica"></i>Diagnóstico<span class="est">Solo rebranding</span></li>
+                    <li class="sub"><i class="dot"></i>Entrega<span class="est">Pendiente</span></li>
+                  </ul>
+                </div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 -->
+      <section id="etapa" class="gris" style="border-top:1px solid var(--line)">
+        <header>
+          <p class="num">4</p>
+          <div class="tit"><p class="rotulo">Se repite 19 veces: 5 en el landscape, 14 en la estrategia</p><h2>Una etapa con Claude, de principio a fin</h2></div>
+          <p class="lead">Esto es “trabajar con Claude en paralelo”: tú en dos ventanas, el chat y el panel. Aquí va una etapa entera de ejemplo, el Contexto del sector, con lo que pasa en cada ventana. Todas las demás etapas son este mismo recorrido con otro mensaje.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="pasos-g">
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Sube el material de la etapa y pídela</h3>
+                <p>Cada etapa tiene su material: para el Contexto, los informes de la categoría; para Tendencias, los reportes; para el Panorama, referentes. Lo subes al proyecto de claude.ai (o lo adjuntas al chat) y pides la etapa. El mensaje exacto de cada etapa está en las secciones 6 y 7.</p>
+                <p>Puedes seguir en el mismo chat del arranque o abrir uno nuevo dentro del proyecto. Si es nuevo, arranca con <em>“Trae el contexto de [marca]”</em>.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> El chat</p>
+                <div class="chat">
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">Con los informes que están en el proyecto, redacta el Contexto del sector de Grupo Heroica: datos generales (global y Colombia), cifras relevantes con fuente y año, drivers de cambio, evolución del consumidor, retos del sector y qué buscan los clientes del segmento. Cada dato con su fuente. Todavía no lo guardes: quiero leerlo primero.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Aquí va el Contexto del sector en seis bloques.
+
+<em>Datos generales.</em> La industria de eventos y convenciones movió USD 1,1 billones a nivel global en 2025 (Allied Market Research, 2025). En Colombia, el sector creció 14 % en 2025 según ProColombia…
+
+<em>Cifras relevantes.</em> …
+
+(sigue con los seis bloques)</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Lee y pide cambios hasta que quede bien</h3>
+                <p>Aquí es donde está tu criterio. Pide lo que haga falta: más cifras, otra fuente, sacar un bloque, cambiar el tono. Las veces que haga falta. Nada de esto llega al panel todavía: es trabajo en el chat.</p>
+                <p>Claude solo lee lo que está en el proyecto. Si pide datos que no tiene, súbele el informe que falta; no inventa.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> El chat, sigue</p>
+                <div class="chat">
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">En “retos del sector” falta el tema de la estacionalidad, está en el informe de ProColombia. Y en “qué buscan los clientes” habla de empresas, no de personas: nuestro cliente alquila el centro de convenciones.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Agregué la estacionalidad como cuarto reto, con el dato de ProColombia (el 62 % de los eventos corporativos se concentra entre agosto y noviembre). Reescribí “qué buscan los clientes del segmento” desde las empresas organizadoras: previsibilidad de costos, capacidad técnica y un solo interlocutor.
+
+¿Lo guardo así?</div></div>
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">Sí, guárdalo.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Guardé un borrador del Contexto del sector de Grupo Heroica. Lo revisas y apruebas en el panel, en Landscape → Contexto del sector.<span class="tool">guardar_etapa · landscape / contexto</span></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Pasa al panel: la etapa apareció como borrador</h3>
+                <p>Panel → proyecto → Landscape → Contexto del sector. El punto de la etapa pasó de vacío a “En curso”, y dentro está el texto que Claude guardó, con la fecha y “borrador de Claude”.</p>
+                <p>Léelo entero una vez más aquí: esto es lo que va a quedar como oficial. Si algo no está bien, no lo edites aquí: vuelve al chat, pide la corrección y que vuelva a guardar. La versión nueva aparece al lado de la anterior.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar panel">Panel</span> Landscape → Contexto del sector</p>
+                <div class="mock"><div class="riel"></div><div class="cuerpo-m">
+                  <div class="proy"><strong>Grupo Heroica</strong><span>Landscape · 1 de 5 etapas aprobadas</span></div>
+                  <ul>
+                    <li class="sub"><i class="dot aprobada"></i>Setup<span class="est">Aprobada</span></li>
+                    <li class="sub activa"><i class="dot curso"></i>Contexto del sector<span class="est">En curso · borrador de Claude</span></li>
+                    <li class="sub"><i class="dot"></i>Tendencias<span class="est">Pendiente</span></li>
+                  </ul>
+                  <div class="texto-m"><p class="t">Contexto del sector</p><p class="suave">Borrador de Claude · hoy 11:42</p><p>Datos generales. La industria de eventos y convenciones movió USD 1,1 billones a nivel global en 2025 (Allied Market Research, 2025). En Colombia…</p></div>
+                  <div class="fila-b"><span class="btn-m ap">Aprobar etapa</span><span class="sec">Pedir cambios en el chat</span></div>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Aprueba. La etapa es oficial y Claude ya la ve.</h3>
+                <p><span class="btn ap">Aprobar etapa</span>. El punto pasa a amarillo lleno y el Landscape dice “2 de 5 etapas aprobadas”. Desde ese momento, cuando Claude lea el contexto de Grupo Heroica, el Contexto del sector aprobado viene incluido.</p>
+                <p>Eso es lo que hace que la etapa siguiente se escriba sobre la anterior: Tendencias se apoya en el Contexto aprobado, el Panorama en los dos, y así. <em>Si no apruebas, Claude no lo ve</em>, aunque lo haya escrito él.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar panel">Panel</span> Después de aprobar</p>
+                <div class="mock"><div class="riel"></div><div class="cuerpo-m">
+                  <div class="proy"><strong>Grupo Heroica</strong><span>Landscape · 2 de 5 etapas aprobadas</span></div>
+                  <ul>
+                    <li class="sub"><i class="dot aprobada"></i>Setup<span class="est">Aprobada</span></li>
+                    <li class="sub activa"><i class="dot aprobada"></i>Contexto del sector<span class="est">Aprobada</span></li>
+                    <li class="sub"><i class="dot"></i>Tendencias<span class="est">Pendiente</span></li>
+                  </ul>
+                </div></div>
+              </div>
+            </div>
+
+            <div class="paso-g">
+              <div class="haces">
+                <h3>Vuelve al chat y pide la siguiente</h3>
+                <p>Mismo chat o uno nuevo. Claude ya tiene el Contexto aprobado como base. Así, una etapa a la vez, hasta la Entrega. Y después la estrategia, igual.</p>
+                <p>Tendencias tiene una diferencia: Claude manda la lista larga, y las 4 o 5 principales las marcas tú en el panel con <span class="btn ap">Aprobar y desarrollar</span>. Es la única etapa donde el panel pide una elección, no solo un visto bueno.</p>
+              </div>
+              <div class="ves">
+                <p class="rotulo"><span class="lugar claude">Claude</span> El chat</p>
+                <div class="chat">
+                  <div class="msg yo"><span class="quien">Tú</span><div class="b">Aprobé el Contexto. Con eso y los reportes de tendencias del proyecto, arma la long list de tendencias para Grupo Heroica, clasificadas por eje (Marca, Estrategia y Comunicación), cada una con título, descripción y fuentes. Guárdala completa; las principales las elegimos nosotros.</div></div>
+                  <div class="msg ia"><span class="quien">Claude · ejemplo</span><div class="b">Leí el Contexto del sector aprobado. Armé 14 tendencias: 5 de Marca, 5 de Estrategia y 4 de Comunicación, cada una con fuente. Guardé la long list completa; las principales las marcan ustedes en el panel.<span class="tool">contexto_proyecto · guardar_etapa · landscape / tendencias</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dos">
+            <div class="bloque">
+              <h3>Claude sí puede</h3>
+              <ul>
+                <li>Listar los proyectos y decir en qué va cada uno.</li>
+                <li>Leer entrevistas completas, propuesta de valor y todo lo aprobado.</li>
+                <li>Redactar y guardar cualquier etapa como borrador, las veces que haga falta.</li>
+                <li>Guardar una versión nueva sobre una etapa aprobada. No la reemplaza: queda al lado, esperando tu decisión.</li>
+              </ul>
+            </div>
+            <div class="bloque">
+              <h3>Claude no puede</h3>
+              <ul>
+                <li>Aprobar nada ni elegir las tendencias principales.</li>
+                <li>Ver un borrador que no se aprobó. En un chat nuevo no lo tiene: apruébalo, o pégale el texto.</li>
+                <li>Crear proyectos ni mover entrevistas.</li>
+                <li>Leer Miro, Dropbox o el archivo del estudio. Lo que necesite, se lo subes al proyecto de claude.ai.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 -->
+      <section id="leer">
+        <header>
+          <p class="num">5</p>
+          <div class="tit"><p class="rotulo">El índice del proyecto</p><h2>Leer el panel</h2></div>
+          <p class="lead">No hay botón de “siguiente fase”. El estado se deduce de lo que hay guardado y aprobado. El índice del proyecto es la fuente de verdad; el subtítulo de arriba, no.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="estados">
+            <div class="estado"><span class="dot"></span><strong>Pendiente</strong><p>Vacío. Nadie la empezó.</p></div>
+            <div class="estado"><span class="dot curso"></span><strong>En curso</strong><p>Hay un borrador esperando tu aprobación.</p></div>
+            <div class="estado"><span class="dot aprobada"></span><strong>Aprobada</strong><p>Versión oficial. Claude la lee como contexto.</p></div>
+            <div class="estado"><span class="dot noaplica"></span><strong>No aplica</strong><p>No va en este proyecto. Hoy solo el Diagnóstico en marca nueva.</p></div>
+          </div>
+          <div class="tres">
+            <div class="bloque">
+              <h4>Las fases se abren solas</h4>
+              <p>Entrevistas abre el proyecto. Con una entrevista completa, Propuesta de valor dice “Lista para generar”. Con la propuesta generada, el Taller queda “en Miro”. Landscape y Estrategia están abiertas siempre: nada las bloquea, las arrancas cuando decides.</p>
+            </div>
+            <div class="bloque">
+              <h4>Las etapas no se bloquean entre sí</h4>
+              <p>Puedes pedir la etapa 3 sin aprobar la 2. Pero Claude solo lee lo aprobado: si saltas una aprobación, la siguiente se escribe sin esa base. Conviene ir en orden: pedir, aprobar, siguiente.</p>
+            </div>
+            <div class="bloque">
+              <h4>El subtítulo del proyecto miente</h4>
+              <p>Como el Taller nunca se cierra en el panel, el proyecto va a decir “Taller · faltan las conclusiones” hasta el final, aunque estés en estrategia. Guíate por los puntos del índice y por el conteo “x de y etapas aprobadas”.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 -->
+      <section id="landscape">
+        <header>
+          <p class="num">6</p>
+          <div class="tit"><p class="rotulo">Referencia · Fase 2</p><h2>Landscape, etapa por etapa</h2></div>
+          <p class="lead">Las seis etapas en orden. Para cada una: qué subes antes, el mensaje para Claude (reemplaza los corchetes) y qué haces en el panel. El ciclo es siempre el de la sección 4.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="tabla">
+            <div class="enc"><p class="rotulo">Etapa</p><p class="rotulo">Qué subes y haces</p><p class="rotulo">Mensaje para Claude</p><p class="rotulo">En el panel</p></div>
+
+            <div class="et">
+              <div class="nom"><h3>1 · Setup</h3><p>Dónde vive el proyecto.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Crea en Dropbox la carpeta “Fase 01 Landscape”.</li><li>Duplica el deck base como “[marca] — Landscape”.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-setup">Copiar</button></div><pre id="p-setup">Registra el Setup del landscape de [marca]: el deck es “[marca] — Landscape.key” y la carpeta de Dropbox es “/Clientes/[marca]/Fase 01 Landscape”. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Setup → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>2 · Contexto del sector</h3><p>Seis bloques de datos, cada uno con fuente y año.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Sube los informes de la categoría al proyecto de claude.ai (consultoras, artículos, reportes).</li><li>En el chat, revisa que cada cifra tenga fuente y año.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-contexto">Copiar</button></div><pre id="p-contexto">Con los informes del proyecto, redacta el Contexto del sector de [marca]: datos generales (global y Colombia), cifras relevantes con fuente y año, drivers de cambio, evolución del consumidor, retos del sector y qué buscan los clientes del segmento. Cada dato con su fuente. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Contexto del sector → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>3 · Tendencias</h3><p>Claude arma la lista larga. Las principales las eliges tú.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Sube los reportes de tendencias.</li><li>Si la lista queda corta, pídele más: la nueva reemplaza a la anterior.</li><li>Después de aprobar, pídele en el chat las tres láminas de cada elegida (explicación, profundización, enfoques para la marca) y los casos. Van al deck; no tienen etapa en el panel.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-tend">Copiar</button></div><pre id="p-tend">Con el contexto aprobado y los reportes de tendencias del proyecto, arma la long list de tendencias para [marca], clasificadas por eje (Marca, Estrategia y Comunicación), cada una con título, descripción y fuentes. Guárdala completa; las principales las elegimos nosotros.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Tendencias → marca 4 o 5 → <span class="btn ap">Aprobar y desarrollar</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>4 · Panorama de categoría</h3><p>Benchmarking de los 4 competidores y círculo cromático.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Los 4 competidores ya se los diste en el arranque. Si no, dáselos aquí.</li><li>Sube los referentes que quieras incluir.</li><li>Las capturas y el círculo cromático se arman en el deck.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-pano">Copiar</button></div><pre id="p-pano">Redacta el Panorama de categoría de [marca] sobre los competidores [A], [B], [C] y [D] y los referentes del proyecto: benchmarking por marca en los cuatro ejes (logos, página web, redes sociales, experiencia de marca), cuadro de brand assets (territorio, mensajes, claims) y lectura del círculo cromático: qué espacios de color quedan libres. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Panorama de categoría → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>5 · Diagnóstico</h3><p>Solo rebranding. Si es marca nueva, queda “no aplica”.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Sube los assets actuales de la marca.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-diag">Copiar</button></div><pre id="p-diag">[marca] es un rebranding. Con los assets actuales del proyecto, redacta el Diagnóstico del landscape: qué funciona, qué no, y el planteo de evolución o revolución. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Diagnóstico → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>6 · Entrega</h3><p>Registro de la presentación y del envío.</p></div>
+              <div><p class="rotulo r">Qué subes y haces</p><ul><li>Presenta el deck al cliente.</li><li>Envía el archivo final.</li><li>Deja registro de las dos cosas.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-entrega">Copiar</button></div><pre id="p-entrega">Registra la Entrega del landscape de [marca]: se presentó el [fecha], el feedback del cliente fue: [feedback]. El archivo final se envió el [fecha]. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Landscape → Entrega → <span class="btn ap">Aprobar etapa</span>. Con esto dice “6 de 6” (o “5 de 5”).</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7 -->
+      <section id="estrategia">
+        <header>
+          <p class="num">7</p>
+          <div class="tit"><p class="rotulo">Referencia · Fase 3</p><h2>Estrategia, bloque por bloque</h2></div>
+          <p class="lead">Catorce etapas en cuatro bloques, según el “Proceso de Estrategia y Naming” del estudio. Claude ya conoce la forma de cada una. Conviene arrancar con el landscape aprobado: el Diagnóstico se apoya en él.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="tabla">
+            <div class="enc"><p class="rotulo">Bloque</p><p class="rotulo">Qué haces</p><p class="rotulo">Mensaje para Claude</p><p class="rotulo">En el panel</p></div>
+
+            <div class="et">
+              <div class="nom"><h3>1 · Diagnóstico</h3><p>Problema, insight, ventaja y diferenciales. Una etapa.</p></div>
+              <div><p class="rotulo r">Qué haces</p><ul><li>Chat nuevo en el proyecto. Claude lee todo el landscape aprobado.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-e1">Copiar</button></div><pre id="p-e1">Trae el contexto de [marca] y el estado de la estrategia. Con el landscape aprobado, redacta el Diagnóstico de estrategia: problema, insight, ventaja y diferenciales. Guárdalo.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Estrategia → Diagnóstico → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>2 · Consumidor</h3><p>Metodología y frases del consumidor. Una etapa.</p></div>
+              <div><p class="rotulo r">Qué haces</p><ul><li>Saca las frases de las entrevistas y del taller.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-e2">Copiar</button></div><pre id="p-e2">Redacta la etapa Consumidor de [marca]: la metodología que usamos y las frases que lo definen, sacadas de las entrevistas y del taller. Guárdala.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Estrategia → Consumidor → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>3 · Esencia de marca</h3><p>Once etapas, sin orden fijo: RTBs, Concepto estratégico, Beneficios, Arquetipo, Personalidad, Valores, Territorio, Brand ideal, Brand ingredients, Tagline, Manifiesto.</p></div>
+              <div><p class="rotulo r">Qué haces</p><ul><li>Pídelas una por una o varias a la vez. Cada una se guarda y se aprueba por separado.</li><li>La Personalidad ya trae una versión automática desde la propuesta de valor: pídele a Claude que la reescriba con lo aprobado y aprueba esa.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-e3">Copiar</button></div><pre id="p-e3">Con el diagnóstico y el consumidor aprobados, redacta para [marca] las etapas de esencia: [RTBs, concepto estratégico y beneficios]. Guarda cada una por separado.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Estrategia → cada etapa → <span class="btn ap">Aprobar etapa</span></p></div>
+            </div>
+
+            <div class="et">
+              <div class="nom"><h3>4 · Cuadros finales</h3><p>No se redactan: se arman con lo aprobado de la esencia. Una etapa.</p></div>
+              <div><p class="rotulo r">Qué haces</p><ul><li>Aprueba antes todo lo de esencia que quieras que entre.</li><li>Si falta aprobar algo, Claude avisa antes de guardar.</li></ul></div>
+              <div><div class="copia"><div class="barra-c"><p class="rotulo">Mensaje</p><button class="cp" type="button" data-copy-target="p-e4">Copiar</button></div><pre id="p-e4">Arma los Cuadros finales de [marca] (brand essence y consumidor) solo con las etapas aprobadas. Si falta alguna, dime cuál antes de guardar.</pre></div></div>
+              <div><p class="rotulo r">En el panel</p><p class="pan">Estrategia → Cuadros finales → <span class="btn ap">Aprobar etapa</span>. La estrategia queda completa.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8 -->
+      <section id="problemas">
+        <header>
+          <p class="num">8</p>
+          <div class="tit"><p class="rotulo">Ayuda</p><h2>Si algo no cuadra</h2></div>
+          <p class="lead">Lo que más pasa, y qué hacer en cada caso.</p>
+        </header>
+        <div class="cuerpo ancho">
+          <div class="problemas">
+            <div class="problema"><p class="q">Claude dice que no existe el proyecto.</p><p class="a">Pídele “lista los proyectos” y usa el nombre exacto. “Grupo Heroica” y “Grupo Heroica - Centro de Convenciones” son dos proyectos distintos.</p></div>
+            <div class="problema"><p class="q">Claude dice que guardó, pero no lo veo.</p><p class="a">Recarga el panel y revisa la fase: Landscape y Estrategia tienen un Diagnóstico cada una. Si sigue sin aparecer, pídele “guárdalo de nuevo y dime en qué fase y etapa”.</p></div>
+            <div class="problema"><p class="q">Claude escribió pero no dijo “Guardé un borrador”.</p><p class="a">No guardó. Dile “guárdalo”. Lo que queda solo en el chat no llega al panel.</p></div>
+            <div class="problema"><p class="q">Una etapa aprobada muestra “Ver la versión nueva”.</p><p class="a">Llegó un borrador nuevo sobre algo aprobado. Lo aprobado sigue vigente. Compara y elige: <span class="btn ap">Aprobar la nueva</span> o quedarte con la anterior.</p></div>
+            <div class="problema"><p class="q">Claude no se acuerda de lo que escribió ayer.</p><p class="a">Solo ve lo aprobado. Si el borrador de ayer no se aprobó, en un chat nuevo no lo tiene. Apruébalo, o copia el texto del panel y pégaselo.</p></div>
+            <div class="problema"><p class="q">Claude escribe sin leer el proyecto.</p><p class="a">Dile “trae el contexto de [marca] antes de seguir”. Y revisa que el proyecto de claude.ai tenga las instrucciones de la sección 1.</p></div>
+            <div class="problema"><p class="q">Claude pide los competidores o la propuesta refinada.</p><p class="a">Es normal: lo del taller no está en la plataforma. Sube el documento de cierre al proyecto de claude.ai (sección 3) o pégale el texto.</p></div>
+            <div class="problema"><p class="q">Dice “Taller · faltan las conclusiones” y ya lo hicimos.</p><p class="a">Ese estado hoy no cambia nunca. Se ignora y se sigue con el Landscape (sección 3).</p></div>
+            <div class="problema"><p class="q">El Landscape nunca llega a “6 de 6”.</p><p class="a">Si la marca es nueva, el Diagnóstico no aplica. “5 de 5” es completo. La estrategia se trabaja igual.</p></div>
+            <div class="problema"><p class="q">Claude dice que no está conectado o sin permiso.</p><p class="a">La conexión caduca tras un mes sin uso. claude.ai → Configuración → Conectores → Mellow Banana → reconectar, con la contraseña del panel.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="pie-pagina">
+        <p class="rotulo">Mellow &amp; Banana · Plataforma + Claude</p>
+        <p class="rotulo">Guía v4 · octubre 2026</p>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function texto(btn) {
+      if (btn.dataset.copy) return btn.dataset.copy;
+      var el = document.getElementById(btn.dataset.copyTarget);
+      return el ? el.textContent : '';
+    }
+    function listo(btn) {
+      var antes = btn.textContent;
+      btn.textContent = 'Copiado'; btn.classList.add('ok');
+      setTimeout(function () { btn.textContent = antes; btn.classList.remove('ok'); }, 1600);
+    }
+    function seleccionar(btn) {
+      var el = document.getElementById(btn.dataset.copyTarget);
+      if (!el) return;
+      var r = document.createRange(); r.selectNodeContents(el);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+    document.querySelectorAll('button.cp').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var t = texto(btn);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(t).then(function () { listo(btn); }, function () { seleccionar(btn); });
+        } else { seleccionar(btn); }
+      });
+    });
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('#nav-lateral a, #nav-top a'));
+    var secciones = Array.prototype.slice.call(document.querySelectorAll('main section[id], main header[id]'));
+    function marcar(id) {
+      links.forEach(function (a) { a.classList.toggle('activo', a.getAttribute('href') === '#' + id); });
+      var top = document.querySelector('#nav-top a.activo');
+      if (top && top.scrollIntoView) top.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
+    if ('IntersectionObserver' in window) {
+      var visibles = {};
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { visibles[e.target.id] = e.isIntersecting ? e.boundingClientRect.top : null; });
+        var mejor = null;
+        secciones.forEach(function (s) {
+          var t = visibles[s.id];
+          if (t !== null && t !== undefined && (mejor === null || t > visibles[mejor])) mejor = s.id;
+        });
+        if (mejor) marcar(mejor);
+      }, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
+      secciones.forEach(function (s) { io.observe(s); });
+    }
+    marcar(location.hash ? location.hash.slice(1) : 'inicio');
+  })();
+</script>

@@ -2,6 +2,35 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-10-13 — Guía de uso del equipo (plataforma + Claude) y revisión del flujo con el MCP
+
+- **Hecho:** el estudio se perdía al llegar al Taller: el panel dice "Taller · Se trabaja en
+  Miro · faltan las conclusiones" y no hay dónde cargarlas, así que nadie sabía cómo pasar al
+  landscape ni cómo era el ciclo con Claude. Se armó una guía de uso como página HTML
+  (`docs/guia-equipo/guia-src.html`, se compila con `scripts/build-guia.mjs`) publicada como
+  artefacto de claude.ai; el fuente va al repo sin las fuentes (marcadores), la salida con
+  ABC Favorit incrustada queda ignorada.
+  - Fue a cuatro versiones por feedback del estudio: la primera describía el sistema; la que
+    quedó muestra el recorrido con el chat y el panel simulados. Lo central son dos
+    secciones: "Del Miro al Landscape" (subir el documento de cierre del taller al proyecto
+    de claude.ai, mensaje de arranque con los 4 competidores, Setup, aprobar) y "Una etapa
+    con Claude, de principio a fin" (pedir, corregir, guardar, aprobar, siguiente).
+  - Texto en español neutro (tuteo). El estudio pidió explícitamente que no fuera voseo.
+  - Prueba en vivo del MCP contra producción: lecturas y un `guardar_etapa` real funcionan.
+    Quedó un borrador de prueba, marcado como tal, en estrategia/diagnostico de M&B: el
+    historial es append-only, se tapa con el próximo borrador real.
+- **Quedó:**
+  - **El panel:** `tienePostTaller` sigue hardcodeado en `false` (`src/lib/pipeline/phases.ts`),
+    por eso el subtítulo del proyecto miente para siempre. Acordado arreglarlo: cargar las
+    conclusiones del taller desde el panel y poder marcar una etapa como `no_aplica` (hoy
+    las rutas solo aceptan guardar/aprobar/reafirmar, y un landscape de marca nueva nunca
+    llega a 6/6). La guía documenta las dos cosas como "lo estamos arreglando".
+  - **El MCP:** revisado el flujo real; primer lote propuesto sin ejecutar: exponer los
+    borradores vigentes en `contexto_proyecto`, llevar las instrucciones al servidor
+    (`instructions` del MCP) en vez de pegarlas en cada proyecto de claude.ai, devolver el
+    link al panel desde `guardar_etapa`, mandar el texto de la pregunta junto con cada
+    respuesta de entrevista.
+  - Confirmar con el estudio los nombres de menú de claude.ai en la sección "Conectar".
 ## 2026-08-27 — El amarillo nuevo y ABC Favorit; y el `.env.local` que estaba pisado
 
 - **Hecho:** el estudio pasó su tipografía (`docs/design/ABC Favorit.zip`) y el amarillo de marca
