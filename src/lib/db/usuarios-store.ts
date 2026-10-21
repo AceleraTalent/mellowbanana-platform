@@ -52,8 +52,9 @@ export async function crearUsuario(db: AnyDb, d: { nombre: string; usuario: stri
   const [existe] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.usuario, usuario))
   if (existe) throw new ErrorDeValidacion(`Ya hay alguien con el usuario “${usuario}”`)
 
+  // Los avisos de antes de que la persona existiera no son nuevos para ella.
   const [f] = (await db.insert(usuarios).values({
-    nombre, usuario, claveHash: await hashDeClave(d.clave), esAdmin: !!d.esAdmin,
+    nombre, usuario, claveHash: await hashDeClave(d.clave), esAdmin: !!d.esAdmin, avisosVistosHasta: new Date(),
   }).returning()) as Fila[]
   return sinClave(f)
 }

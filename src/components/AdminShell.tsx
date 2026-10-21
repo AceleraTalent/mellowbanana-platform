@@ -2,11 +2,33 @@ import Link from 'next/link'
 import { cloneElement, isValidElement } from 'react'
 import { db } from '@/lib/db/client'
 import { quienEntro } from '@/lib/admin/auth'
+import { avisosRecientes, cuantosNuevos } from '@/lib/avisos'
 import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { Wordmark } from './Brand'
 import { PanelMovil } from './PanelMovil'
 import { Buscador, type Buscable } from './Buscador'
 import type { SistemaDelProyecto } from './ProjectIndex'
+
+/** Los avisos, arriba y a la vista: la campana lleva cuántos llegaron sin mirar. */
+function Campana({ nuevos }: { nuevos: number }) {
+  return (
+    <Link
+      href="/admin/avisos"
+      aria-label={nuevos ? `Avisos: ${nuevos} sin ver` : 'Avisos'}
+      className="relative grid h-9 w-9 flex-none place-items-center rounded-full text-[var(--cuerpo)] hover:bg-[var(--superficie)] hover:text-[var(--ink)]"
+    >
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9" />
+        <path d="M10 20a2 2 0 0 0 4 0" />
+      </svg>
+      {nuevos > 0 && (
+        <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--banana)] px-1 text-[11px] font-semibold tabular-nums text-[var(--ink)] ring-2 ring-[var(--papel)]">
+          {nuevos}
+        </span>
+      )}
+    </Link>
+  )
+}
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
@@ -61,7 +83,8 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
   // La barra y el inicio leen el mismo Sistema M&B: lo que espera al equipo acá es
   // exactamente lo que la tabla del inicio marca como del equipo.
   const proyectos = sistema ?? await cargarSistema(db)
-  const quien = await quienEntro()
+  const [quien, avisos] = await Promise.all([quienEntro(), avisosRecientes(db)])
+  const nuevos = cuantosNuevos(avisos, quien?.avisosVistosHasta ?? null)
   const esperan = new Set(proyectos
     .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
     .map(p => p.id))
@@ -79,11 +102,16 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
       })
     : indice
 
+  const campana = <Campana nuevos={nuevos} />
+
   const barra = (
     <div className="flex min-h-full flex-col gap-7">
-      <Link href="/admin" className="font-serif text-[18px] leading-tight text-[var(--ink)]">
-        <Wordmark />
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/admin" className="font-serif text-[18px] leading-tight text-[var(--ink)]">
+          <Wordmark />
+        </Link>
+        {campana}
+      </div>
 
       <Buscador items={buscables(proyectos, activeProjectId)} />
 
@@ -156,9 +184,12 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
             abre como panel desde la izquierda. */}
         <header className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4 md:hidden">
           <Link href="/admin" className="font-serif text-[16px] text-[var(--ink)]"><Wordmark /></Link>
-          <PanelMovil>
-            <div className="min-h-full px-5 py-6">{barra}</div>
-          </PanelMovil>
+          <div className="flex items-center gap-2">
+            {campana}
+            <PanelMovil>
+              <div className="min-h-full px-5 py-6">{barra}</div>
+            </PanelMovil>
+          </div>
         </header>
 
         <main className="w-full px-5 py-8 md:px-12 md:py-12">{children}</main>

@@ -11,9 +11,11 @@ export interface Quien {
   esAdmin: boolean
   /** Entró con la llave maestra, no con una cuenta: no hay a quién atribuirle nada. */
   maestra: boolean
+  /** Hasta cuándo vio los avisos. La llave maestra no lleva la cuenta: `null`. */
+  avisosVistosHasta: Date | null
 }
 
-const LLAVE_MAESTRA: Quien = { id: MAESTRA, nombre: 'Llave maestra', esAdmin: true, maestra: true }
+const LLAVE_MAESTRA: Quien = { id: MAESTRA, nombre: 'Llave maestra', esAdmin: true, maestra: true, avisosVistosHasta: null }
 
 /**
  * La cookie firmada dice quién entró; acá se confirma que esa persona sigue activa. Así,
@@ -24,7 +26,9 @@ async function quienEs(valor?: string): Promise<Quien | null> {
   if (!s) return null
   if (s.uid === MAESTRA) return LLAVE_MAESTRA
   const u = await usuarioPorId(db, s.uid)
-  return u?.activo ? { id: u.id, nombre: u.nombre, esAdmin: u.esAdmin, maestra: false } : null
+  return u?.activo
+    ? { id: u.id, nombre: u.nombre, esAdmin: u.esAdmin, maestra: false, avisosVistosHasta: u.avisosVistosHasta }
+    : null
 }
 
 /** Una cookie leída de un `Request` pelado, para que las rutas se puedan testear a mano. */
