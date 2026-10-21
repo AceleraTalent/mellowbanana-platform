@@ -9,7 +9,7 @@ import Link from 'next/link'
  * comportamiento no se comparte, cada pantalla arma el suyo adentro.
  */
 
-/** Rótulo de ubicación en Favorit Mono y título de la etapa en Favorit Bold. */
+/** Rótulo de ubicación en la mono y título de la etapa en la de titulares (Bold). */
 export function CabeceraEtapa({ ubicacion, titulo }: { ubicacion: string; titulo: string }) {
   return (
     <>

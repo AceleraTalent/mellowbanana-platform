@@ -20,22 +20,28 @@
 
 @theme inline {
   --font-sans: var(--font-geist);
-  /* `font-serif` es el hueco de titulares, hoy ABC Favorit Bold: el nombre quedó
-     de cuando ahí vivía Fraunces y renombrarlo tocaría medio panel sin ganar nada. */
-  --font-serif: var(--font-favorit);
-  --font-mono: var(--font-favorit-mono);
+  /* `font-serif` es el hueco de titulares: Geist Bold mientras se resuelve la licencia
+     web de ABC Favorit (ver layout.tsx). El nombre quedó de cuando ahí vivía Fraunces y
+     renombrarlo tocaría medio panel sin ganar nada. */
+  --font-serif: var(--font-geist);
+  --font-mono: var(--font-rotulo);
 }
 
 .bg-cream { background: var(--cream); }
 .text-ink { color: var(--ink); }
 .underline-banana { box-shadow: inset 0 -0.34em 0 var(--banana); }
 
+/* Favorit sólo vino en Bold, así que todo titular salía en Bold aunque pidiera otro peso.
+   Con Geist en su lugar se fuerza lo mismo, para no cambiar la jerarquía del panel. Va
+   fuera de las capas de Tailwind a propósito: le gana a `font-medium` y compañía. */
+.font-serif { font-weight: 700; }
+
 body {
   background: #fff;
   color: var(--cuerpo);
   font-family: var(--font-geist), system-ui, sans-serif;
-  /* De Favorit sans sólo tenemos el Bold: sin esto el navegador falsifica los
-     pesos que le pidan los titulares (`font-medium`, `font-normal`) y engorda. */
+  /* Los titulares se cargan en un solo peso (Bold): sin esto el navegador falsifica
+     los pesos que les pidan (`font-medium`, `font-normal`) y engorda. */
   font-synthesis-weight: none;
 }
 

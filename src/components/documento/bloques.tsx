@@ -43,8 +43,8 @@ export function Destacado({ texto, rotulo }: { texto: unknown; rotulo?: string }
   return (
     <div>
       {rotulo && <Rotulo>{rotulo}</Rotulo>}
-      {/* Favorit sólo está en Bold: un párrafo largo en Bold cansa. Lo corto (una pregunta)
-          va en Favorit; lo largo (un resumen) en el cuerpo de texto, más grande. */}
+      {/* Los titulares sólo están en Bold: un párrafo largo en Bold cansa. Lo corto (una
+          pregunta) va en la de titulares; lo largo (un resumen) en el cuerpo, más grande. */}
       <p className={`${rotulo ? 'mt-3 ' : ''}max-w-[62ch] text-[var(--ink)] ${
         t.length <= 200
           ? 'font-serif text-[25px] leading-[1.35] tracking-[-.015em]'

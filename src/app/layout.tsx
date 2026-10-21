@@ -1,30 +1,13 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// ABC Favorit es la tipografía del estudio. La licencia que nos pasaron sólo
-// incluye el peso Bold de la sans, así que la reservamos para titulares; el
-// cuerpo de texto sigue en Geist, que sí tiene la familia de pesos completa.
-const favorit = localFont({
-  src: "./fonts/ABCFavorit-Bold.otf",
-  weight: "700",
-  variable: "--font-favorit",
-  display: "swap",
-});
-
-const favoritMono = localFont({
-  src: [
-    { path: "./fonts/ABCFavoritMono-Book.otf", weight: "400", style: "normal" },
-    { path: "./fonts/ABCFavoritMono-BookItalic.otf", weight: "400", style: "italic" },
-    { path: "./fonts/ABCFavoritMono-Bold.otf", weight: "700", style: "normal" },
-    { path: "./fonts/ABCFavoritMono-BoldItalic.otf", weight: "700", style: "italic" },
-  ],
-  variable: "--font-favorit-mono",
-  display: "swap",
-});
-
+// La tipografía del estudio es ABC Favorit, pero la licencia que nos pasaron es de
+// escritorio y este repo es público: mientras el estudio no confirme la licencia web,
+// los titulares y los rótulos van en Geist (ver valkyria/DECISIONES.md). Cuando lleguen
+// los WOFF2, se vuelve a `next/font/local` en este archivo y en globals.css.
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const rotulo = Geist_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-rotulo", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Mellow & Banana — Entrevista Proyectiva",
@@ -39,7 +22,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${favorit.variable} ${favoritMono.variable} ${geist.variable} h-full antialiased`}
+      className={`${geist.variable} ${rotulo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

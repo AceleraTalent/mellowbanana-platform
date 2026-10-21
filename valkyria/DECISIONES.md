@@ -2,6 +2,20 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-10-21 — A producción con Geist mientras se aclara la licencia de Favorit
+
+**Qué:** titulares y rótulos salen en Geist (Bold) y Geist Mono, cargadas desde Google con
+`next/font/google`, en lugar de ABC Favorit. `.font-serif` fuerza Bold para que la jerarquía
+quede igual que con Favorit, que sólo vino en ese peso. El cambio vive en `layout.tsx` y
+`globals.css`; volver a Favorit es revertir esos dos archivos cuando lleguen los WOFF2.
+
+**Por qué:** el equipo necesitaba el panel nuevo en producción y la rama no buildaba en un
+clon limpio (las OTF están gitignoreadas, ver la decisión del 2026-08-27). Esperar la licencia
+dejaba al equipo sin los cambios; Geist ya era la fuente del cuerpo y no requiere binarios.
+
+**Qué se descartó:** esperar la licencia web; y meter las fuentes al deploy por otra vía
+(repo privado, hosting aparte), que sigue siendo decisión del estudio.
+
 ## 2026-08-27 — Las fuentes con licencia no entran a un repo público
 
 **Qué:** las OTF de ABC Favorit viven sólo en la copia local (`src/app/fonts/`, gitignoreado
