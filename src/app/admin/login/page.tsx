@@ -27,8 +27,9 @@ const CAMPO = 'rounded-[8px] border border-[var(--line)] bg-white px-4 py-3 text
 function Login() {
   const [usuario, setUsuario] = useState('')
   const [clave, setClave] = useState('')
-  // La llave maestra es para quien administra: recuperar el acceso y crear las cuentas.
-  const [maestra, setMaestra] = useState(false)
+  // Lo normal es la clave del equipo, la de siempre: un solo campo. Quien tenga cuenta
+  // propia puede entrar con ella para que lo que apruebe quede con su nombre.
+  const [conUsuario, setConUsuario] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
   const params = useSearchParams()
@@ -39,7 +40,7 @@ function Login() {
     setBusy(true); setError(false)
     const r = await fetch('/api/admin/login', {
       method: 'POST',
-      body: JSON.stringify(maestra ? { clave } : { usuario, clave }),
+      body: JSON.stringify(conUsuario ? { usuario, clave } : { clave }),
       headers: { 'content-type': 'application/json' },
     })
     // `window` no existe durante el render del servidor: el origen se calcula acá, no
@@ -59,7 +60,7 @@ function Login() {
           Hola de <span className="underline-banana">nuevo</span>
         </h1>
         <form onSubmit={submit} className="mt-8 flex w-full flex-col gap-3 text-left">
-          {!maestra && (
+          {conUsuario && (
             <div className="flex flex-col gap-1.5">
               <label htmlFor="usuario" className="text-[12px] font-medium text-[var(--secundario)]">Usuario</label>
               <input id="usuario" required autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false}
@@ -67,13 +68,13 @@ function Login() {
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="clave" className="text-[12px] font-medium text-[var(--secundario)]">{maestra ? 'Llave maestra' : 'Clave'}</label>
-            <input id="clave" type="password" required autoFocus={maestra} autoComplete="current-password"
+            <label htmlFor="clave" className="text-[12px] font-medium text-[var(--secundario)]">{conUsuario ? 'Clave' : 'Clave del equipo'}</label>
+            <input id="clave" type="password" required autoFocus={!conUsuario} autoComplete="current-password"
               value={clave} onChange={e => setClave(e.target.value)} className={CAMPO} />
           </div>
           {error && (
             <p role="alert" className="animate-fade text-[13.5px] text-[var(--error)]">
-              {maestra ? 'Esa no es la llave maestra.' : 'El usuario o la clave no coinciden.'}
+              {conUsuario ? 'El usuario o la clave no coinciden.' : 'Esa no es la clave del equipo.'}
             </p>
           )}
           <button disabled={busy}
@@ -81,9 +82,9 @@ function Login() {
             {busy ? 'Entrando…' : 'Entrar'}
           </button>
         </form>
-        <button type="button" onClick={() => { setMaestra(!maestra); setError(false); setClave('') }}
+        <button type="button" onClick={() => { setConUsuario(!conUsuario); setError(false); setClave('') }}
           className="mt-6 text-[13px] text-[var(--secundario)] underline underline-offset-2 hover:text-[var(--ink)]">
-          {maestra ? 'Entrar con mi usuario' : 'Entrar con la llave maestra'}
+          {conUsuario ? 'Entrar con la clave del equipo' : 'Tengo usuario propio'}
         </button>
       </div>
     </div>

@@ -4,10 +4,11 @@ import { verificarCredenciales } from '@/lib/db/usuarios-store'
 import { COOKIE_SESION, DURACION_SESION_MS, MAESTRA, firmarSesion } from '@/lib/admin/sesion'
 
 /**
- * Entrar al panel. Con usuario, es una persona del equipo; sin usuario, la clave se
- * compara con la llave maestra (ADMIN_PASSWORD), que es la de recuperar el acceso y
- * crear las primeras cuentas. Un fallo tarda un poco a propósito: probar claves a ciegas
- * cuesta más.
+ * Entrar al panel. La clave del equipo (ADMIN_PASSWORD, la de siempre) entra siempre,
+ * venga con usuario o sin él: nadie del estudio se queda afuera por no tener cuenta o por
+ * escribir su nombre en el campo equivocado. Con usuario y su propia clave, entra esa
+ * persona y lo que apruebe queda con su nombre. Un fallo tarda un poco a propósito:
+ * probar claves a ciegas cuesta más.
  */
 export async function POST(req: Request) {
   let body: Record<string, unknown> = {}
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
   let uid: string | null = null
   if (usuario) uid = (await verificarCredenciales(db, usuario, clave))?.id ?? null
-  else if (clave && process.env.ADMIN_PASSWORD && clave === process.env.ADMIN_PASSWORD) uid = MAESTRA
+  if (!uid && clave && process.env.ADMIN_PASSWORD && clave === process.env.ADMIN_PASSWORD) uid = MAESTRA
 
   if (!uid) {
     await new Promise(r => setTimeout(r, 400))

@@ -137,7 +137,7 @@ export function PanelEquipo({ personas, yo }: {
     <div className="mt-10 max-w-[860px] space-y-8">
       {yo?.maestra && (
         <p className="max-w-[62ch] border-l-[1.5px] border-[var(--ink)] pl-3 text-[14px] leading-[1.6] text-[var(--secundario)]">
-          Entraste con la llave maestra. Crea una cuenta para cada persona del equipo; después cada quien entra con la suya y
+          Entraste con la clave del equipo. Crea una cuenta para cada persona del equipo; después cada quien entra con la suya y
           el historial dice quién aprobó qué.
         </p>
       )}

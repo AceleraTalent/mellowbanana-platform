@@ -33,15 +33,18 @@ describe('entrar al panel', () => {
     expect(await leerSesion(valor)).toMatchObject({ uid: ana.id })
   })
 
-  it('sin usuario, la clave es la llave maestra', async () => {
-    const res = await entrar({ clave: CLAVE_DE_PRUEBA })
-    expect(res.status).toBe(200)
-    expect(await leerSesion(res.cookies.get(COOKIE_SESION)!.value)).toMatchObject({ uid: 'maestra' })
+  it('la clave del equipo entra siempre, con o sin usuario', async () => {
+    await crearUsuario(db, { nombre: 'Ana', usuario: 'ana', clave: 'una-clave-larga' })
+    for (const body of [{ clave: CLAVE_DE_PRUEBA }, { usuario: 'ana', clave: CLAVE_DE_PRUEBA }, { usuario: 'isa', clave: CLAVE_DE_PRUEBA }]) {
+      const res = await entrar(body)
+      expect(res.status).toBe(200)
+      expect(await leerSesion(res.cookies.get(COOKIE_SESION)!.value)).toMatchObject({ uid: 'maestra' })
+    }
   })
 
   it('con algo que no coincide no entra y no deja cookie', async () => {
     await crearUsuario(db, { nombre: 'Ana', usuario: 'ana', clave: 'una-clave-larga' })
-    for (const body of [{ usuario: 'ana', clave: 'otra-cosa' }, { clave: 'otra-cosa' }, { usuario: 'ana', clave: CLAVE_DE_PRUEBA }, {}]) {
+    for (const body of [{ usuario: 'ana', clave: 'otra-cosa' }, { clave: 'otra-cosa' }, { usuario: 'isa', clave: 'una-clave-larga' }, {}]) {
       const res = await entrar(body)
       expect(res.status).toBe(401)
       expect(res.cookies.get(COOKIE_SESION)).toBeUndefined()

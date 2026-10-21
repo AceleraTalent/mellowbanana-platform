@@ -15,7 +15,7 @@ export interface Quien {
   avisosVistosHasta: Date | null
 }
 
-const LLAVE_MAESTRA: Quien = { id: MAESTRA, nombre: 'Llave maestra', esAdmin: true, maestra: true, avisosVistosHasta: null }
+const LLAVE_MAESTRA: Quien = { id: MAESTRA, nombre: 'Equipo M&B', esAdmin: true, maestra: true, avisosVistosHasta: null }
 
 /**
  * La cookie firmada dice quién entró; acá se confirma que esa persona sigue activa. Así,
