@@ -12,9 +12,15 @@ export interface Seguimiento {
   fechaEntrega: string | null
   estadoManual: EstadoManual | null
   fases: Partial<Record<FaseSistema, EstadoFase>>
+  /**
+   * Lo que volvió del taller en Miro (los 4 competidores, la propuesta refinada), si alguien
+   * lo pegó en el panel o Claude lo guardó desde el chat. Es opcional: sin esto se trabaja
+   * igual, y Claude lo pide cuando hace falta.
+   */
+  conclusionesTaller: string | null
 }
 
-export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {} }
+export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null }
 
 type Fila = typeof projectSeguimiento.$inferSelect
 
@@ -25,7 +31,24 @@ function desdeFila(f: Fila): Seguimiento {
     fechaEntrega: f.fechaEntrega,
     estadoManual: (f.estadoManual as EstadoManual | null) ?? null,
     fases: (f.fases ?? {}) as Seguimiento['fases'],
+    conclusionesTaller: f.conclusionesTaller ?? null,
   }
+}
+
+/**
+ * Lo del taller de un proyecto: las conclusiones, si alguien las cargó, y si el equipo lo
+ * marcó como hecho. Son dos cosas distintas: cargar conclusiones no cierra el taller.
+ */
+export async function tallerDelProyecto(db: AnyDb, projectId: string): Promise<{ conclusiones: string | null; hecho: boolean }> {
+  const [f] = (await db.select().from(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))) as Fila[]
+  return { conclusiones: f?.conclusionesTaller ?? null, hecho: (f?.fases as Seguimiento['fases'] | undefined)?.taller === 'completa' }
+}
+
+/** Las conclusiones del taller de un proyecto, si hay. */
+export async function conclusionesDelTaller(db: AnyDb, projectId: string): Promise<string | null> {
+  const [f] = (await db.select({ c: projectSeguimiento.conclusionesTaller }).from(projectSeguimiento)
+    .where(eq(projectSeguimiento.projectId, projectId))) as { c: string | null }[]
+  return f?.c ?? null
 }
 
 /** El seguimiento de todos los proyectos que lo tienen, por id. Los que no, no aparecen. */
@@ -40,9 +63,10 @@ export interface CambiosSeguimiento {
   fechaEntrega?: string | null
   estadoManual?: EstadoManual | null
   fase?: { key: FaseSistema; estado: EstadoFase }
+  conclusionesTaller?: string | null
 }
 
-const LARGO_MAXIMO = { encargado: 80, notas: 2000 }
+const LARGO_MAXIMO = { encargado: 80, notas: 2000, conclusionesTaller: 30000 }
 
 /** Texto recortado; vacío es `null`, para que borrar un campo lo deje sin valor y no con "". */
 function texto(v: unknown, campo: keyof typeof LARGO_MAXIMO): string | null {
@@ -61,6 +85,7 @@ export function validarCambios(body: Record<string, unknown>): CambiosSeguimient
   const c: CambiosSeguimiento = {}
   if ('encargado' in body) c.encargado = texto(body.encargado, 'encargado')
   if ('notas' in body) c.notas = texto(body.notas, 'notas')
+  if ('conclusionesTaller' in body) c.conclusionesTaller = texto(body.conclusionesTaller, 'conclusionesTaller')
   if ('fechaEntrega' in body) {
     const f = body.fechaEntrega
     if (f !== null && (typeof f !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(f)))

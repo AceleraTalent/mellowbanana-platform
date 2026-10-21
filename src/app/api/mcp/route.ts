@@ -3,7 +3,9 @@ import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { db } from '@/lib/db/client'
 import { verificarAccessToken } from '@/lib/oauth/store'
 import { ErrorDeHerramienta } from '@/lib/mcp/errores'
-import { listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa } from '@/lib/mcp/tools'
+import {
+  listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa, guardarConclusionesTaller,
+} from '@/lib/mcp/tools'
 
 /**
  * Devuelve el error como resultado de herramienta y no como excepción: así Claude lo
@@ -34,7 +36,8 @@ const handler = createMcpHandler(
       title: 'Contexto de un proyecto',
       description:
         'Trae todo el contexto de un proyecto, entero: la marca, las entrevistas con sus ' +
-        'respuestas, la propuesta de valor, el estado del landscape y el de la estrategia, con ' +
+        'respuestas, la propuesta de valor, las conclusiones del taller si alguien las cargó, el ' +
+        'estado del landscape y el de la estrategia, con ' +
         'el contenido de las etapas aprobadas de ambos y, aparte, el borrador que todavía espera ' +
         'aprobación (`borradorSinAprobar`). Llamá a esto al empezar a trabajar en un proyecto, ' +
         'antes de escribir nada, para no repetir lo que ya se decidió; y cuando pidan cambios ' +
@@ -66,6 +69,18 @@ const handler = createMcpHandler(
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
       }),
     }, async ({ proyecto }) => responder(() => estadoEstrategia(db, proyecto)))
+
+    server.registerTool('guardar_conclusiones_taller', {
+      title: 'Guardar las conclusiones del taller',
+      description:
+        'Guarda lo que volvió del taller en Miro (los 4 competidores principales, la propuesta ' +
+        'ajustada, lo que se decidió) cuando el equipo te lo pasa en el chat. Es opcional: si no ' +
+        'hay, se trabaja igual. Reemplaza lo que hubiera guardado antes.',
+      inputSchema: z.object({
+        proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
+        conclusiones: z.string().describe('El texto de las conclusiones, ordenado y completo'),
+      }),
+    }, async ({ proyecto, conclusiones }) => responder(() => guardarConclusionesTaller(db, { proyecto, conclusiones })))
 
     server.registerTool('guardar_etapa', {
       title: 'Guardar una etapa del proceso',

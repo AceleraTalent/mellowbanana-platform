@@ -7,7 +7,7 @@ import {
 import { strategyState, approveStrategyVersion } from '@/lib/db/strategy-store'
 import { STAGE_ORDER } from '@/lib/landscape/stages'
 import { ErrorDeHerramienta } from './errores'
-import { listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa } from './tools'
+import { listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa, guardarConclusionesTaller } from './tools'
 
 describe('mcp · herramientas', () => {
   it('lista los proyectos con su avance', async () => {
@@ -266,5 +266,28 @@ describe('contextoProyecto con estrategia', () => {
     ctx = await contextoProyecto(db, 'Marca Test')
     expect(ctx.estrategia.find((e: { etapa: string }) => e.etapa === 'concepto')?.contenidoAprobado)
       .toEqual({ concepto: 'c', racional: 'r' })
+  })
+})
+
+describe('conclusiones del taller', () => {
+  it('son opcionales: sin ellas, lo que sigue en el brand assets dice cómo seguir igual', async () => {
+    const { estadoDePasos, queSigueParaClaude } = await import('@/lib/landscape/pasos')
+    const todoHastaPanorama = STAGE_ORDER.map(stage => ({
+      stage, status: 'aprobada', cerrada: true,
+      contenido: stage === 'panorama' ? { benchmarking: 'x' } : { x: 1, fuentes: [1], candidatas: [1], seleccionadas: [1] },
+    }))
+    const pasos = estadoDePasos(todoHastaPanorama, new Set(['1.1', '3.4']))
+    expect(queSigueParaClaude(pasos)).toMatch(/^Brand assets: .*set competitivo del Enfoque/)
+    expect(queSigueParaClaude(pasos, { conclusionesTaller: true })).not.toContain('set competitivo')
+  })
+
+  it('Claude las guarda desde el chat y vuelven en el contexto', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    expect((await contextoProyecto(db, 'Fruta Viva')).conclusionesTaller).toBeNull()
+
+    await guardarConclusionesTaller(db, { proyecto: 'Fruta Viva', conclusiones: '  Competidores: A, B, C, D  ' })
+    expect((await contextoProyecto(db, 'Fruta Viva')).conclusionesTaller).toBe('Competidores: A, B, C, D')
+    await expect(guardarConclusionesTaller(db, { proyecto: 'Fruta Viva', conclusiones: '   ' })).rejects.toBeInstanceOf(ErrorDeHerramienta)
   })
 })

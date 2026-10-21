@@ -55,7 +55,7 @@ export function attentionItems(projects: AttentionInput[]): AttentionItem[] {
       const faltan = p.sessionsTotal - p.sessionsCompleted
       push(entrevistas, `${faltan} ${faltan === 1 ? 'entrevista sin completar' : 'entrevistas sin completar'}`, 'externo')
     } else if (taller.status === 'espera') {
-      push(taller, 'Faltan las conclusiones del taller', 'externo')
+      push(taller, 'Taller en Miro por hacer', 'externo')
     } else if (landscape.status === 'pendiente') {
       push(landscape, 'Landscape sin empezar', 'equipo')
     } else if (landscape.status === 'en_curso') {

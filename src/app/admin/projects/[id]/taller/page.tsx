@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/client'
+import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import { getProjectWithSessions, getDeliverable, landscapeState, summarizeLandscape } from '@/lib/db/store'
 import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
@@ -8,6 +9,7 @@ import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { PhaseNote } from '@/components/PhaseNote'
 import { FaseManual } from '@/components/FaseManual'
+import { ConclusionesTaller } from './ConclusionesTaller'
 import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
@@ -24,10 +26,13 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
   )
 
   const deliverable = await getDeliverable(db, id)
+  const { conclusiones, hecho: tallerHecho } = await tallerDelProyecto(db, id)
   const rawSessions = project.sessions as { status?: string | null }[]
   const estadoLandscape = await landscapeState(db, id)
   const estrategiaEstado = await strategyState(db, id)
   const señales = projectSignals({
+    tienePostTaller: !!conclusiones,
+    tallerHecho,
     sessions: rawSessions,
     tieneEntregable: !!deliverable,
     landscape: summarizeLandscape(estadoLandscape),
@@ -77,14 +82,11 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
         bajada={hecho ? 'El equipo lo marcó como hecho.' : taller.detalle}
       >
         <p className="mt-4 max-w-[60ch] text-[14px] leading-[1.66] text-[var(--secundario)]">
-          El taller se hace en Miro, con el equipo y el cliente en la misma mesa. Lo que importa acá es lo
-          que vuelve de esa sesión: la propuesta de valor refinada y los cuatro competidores definidos, que
-          es de lo que depende el panorama de categoría del landscape.
+          El taller se hace en Miro, con el equipo y el cliente en la misma mesa. De esa sesión vuelven la
+          propuesta de valor refinada y los cuatro competidores principales, que Claude usa en el panorama de
+          categoría del Landscape.
         </p>
-        <p className="mt-4 max-w-[60ch] border-l-[1.5px] border-[var(--ink)] pl-3 text-[13px] leading-[1.66] text-[var(--secundario)]">
-          Todavía no se pueden transcribir las conclusiones desde el panel. Es la próxima pieza de esta
-          fase: sin ella, lo que el taller decide no vuelve al proyecto.
-        </p>
+        <ConclusionesTaller projectId={id} inicial={conclusiones} />
         {faseTaller && (
           <div className="mt-8 max-w-[360px] border-t border-[var(--line)] pt-5">
             <p className="text-[14px] font-semibold text-[var(--ink)]">¿Ya se hizo el taller?</p>

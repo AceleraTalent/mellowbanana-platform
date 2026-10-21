@@ -44,6 +44,8 @@ export interface ProjectSignals {
   tieneEntregable: boolean
   /** La propuesta de valor refinada en el taller, transcrita de vuelta. */
   tienePostTaller: boolean
+  /** El equipo marcó el taller como hecho. Es lo que lo cierra; las conclusiones no. */
+  tallerHecho?: boolean
   landscapeEtapasAprobadas: number
   landscapeEtapasTotal: number
   estrategiaEtapasAprobadas: number
@@ -84,8 +86,11 @@ function estadoPropuesta(s: ProjectSignals): { status: PhaseStatus; detalle: str
 
 function estadoTaller(s: ProjectSignals): { status: PhaseStatus; detalle: string } {
   if (!s.tieneEntregable) return { status: 'pendiente', detalle: 'Necesita la propuesta de valor' }
-  if (s.tienePostTaller) return { status: 'completa', detalle: 'Conclusiones transcritas' }
-  return { status: 'espera', detalle: 'Se trabaja en Miro · faltan las conclusiones' }
+  // Las conclusiones son un insumo para Claude, no el cierre del taller: eso lo marca el
+  // equipo (Sistema M&B). Así la pantalla y el menú no se contradicen.
+  if (s.tallerHecho) return { status: 'completa', detalle: s.tienePostTaller ? 'Hecho · conclusiones cargadas' : 'Hecho' }
+  if (s.tienePostTaller) return { status: 'espera', detalle: 'Se trabaja en Miro · conclusiones cargadas' }
+  return { status: 'espera', detalle: 'Se trabaja en Miro' }
 }
 
 function estadoLandscape(s: ProjectSignals): { status: PhaseStatus; detalle: string } {
@@ -113,13 +118,13 @@ export function deriveFases(projectId: string, s: ProjectSignals): Fase[] {
     key: 'propuesta-valor',
     label: FASE_LABEL['propuesta-valor'],
     href: entrevistasHref,
-    status: s.tienePostTaller
+    status: s.tallerHecho
       ? 'completa'
       : s.tieneEntregable
         ? 'espera'
         : haySesiones
-          ? 'en_curso'
-          : 'pendiente',
+        ? 'en_curso'
+        : 'pendiente',
     detalle: s.tieneEntregable ? estadoTaller(s).detalle : haySesiones ? estadoPropuesta(s).detalle : estadoEntrevistas(s).detalle,
   }
 
@@ -130,7 +135,11 @@ export function deriveFases(projectId: string, s: ProjectSignals): Fase[] {
     ...estadoLandscape(s),
     // Dependencia real del proceso: el cuadro de brand assets se arma sobre los 4
     // competidores que se definen en el taller.
-    ...(s.tienePostTaller ? {} : { dependencia: 'El panorama de categoría necesita los competidores del taller' }),
+    // Es una ayuda, no un bloqueo: sin conclusiones Claude los pide en el chat o parte del
+    // set competitivo del Enfoque.
+    ...(s.tienePostTaller ? {} : {
+      dependencia: 'El cuadro de brand assets usa los 4 competidores del taller. Si no están cargados en el Taller, Claude los pide en el chat o parte del set competitivo del Enfoque.',
+    }),
   }
 
   const estrategiaCompleta = s.estrategiaEtapasTotal > 0 && s.estrategiaEtapasAprobadas === s.estrategiaEtapasTotal

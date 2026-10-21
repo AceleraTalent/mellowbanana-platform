@@ -280,7 +280,7 @@ export function mensajeParaSeguir(paso: Paso, proyecto: string): string {
  * Lo mismo, dicho para Claude: lo devuelve `estado_landscape`, así que basta con escribirle
  * “sigamos con Heroica” para que sepa qué hacer y dónde guardarlo.
  */
-export function queSigueParaClaude(pasos: PasoConEstado[]): string {
+export function queSigueParaClaude(pasos: PasoConEstado[], contexto: { conclusionesTaller?: boolean } = {}): string {
   const paso = pasoQueSigue(pasos)
   if (!paso) return 'El Landscape está completo: no queda nada pendiente.'
   if (paso.turno === 'revisar')
@@ -290,5 +290,10 @@ export function queSigueParaClaude(pasos: PasoConEstado[]): string {
   const guardar = paso.donde === 'plataforma'
     ? `Cuando termines, guárdalo con guardar_etapa en la etapa "${paso.etapa}", sin borrar lo que esa etapa ya tenga.`
     : 'Esto no se guarda en la plataforma: entrégalo en el chat, ordenado para pasarlo al deck, y el equipo lo marca hecho en el panel.'
-  return `${paso.titulo}: ${paso.queEs} ${guardar}`
+  // El brand assets sale de los 4 competidores del taller. Si nadie cargó las conclusiones,
+  // no se frena: se piden o se parte del Enfoque.
+  const insumo = paso.id === '4.2' && !contexto.conclusionesTaller
+    ? ' Las conclusiones del taller no están cargadas: pregúntale al equipo cuáles son los 4 competidores principales (o pídeles el documento del taller y guárdalo con guardar_conclusiones_taller); si no los tienen, parte del set competitivo del Enfoque y dilo.'
+    : ''
+  return `${paso.titulo}: ${paso.queEs}${insumo} ${guardar}`
 }

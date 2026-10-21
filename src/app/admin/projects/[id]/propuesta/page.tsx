@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/client'
+import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import { getProjectWithSessions, getDeliverable, landscapeState, summarizeLandscape } from '@/lib/db/store'
 import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import type { Deliverable } from '@/lib/deliverable/schema'
@@ -29,6 +30,7 @@ export default async function PropuestaView({ params }: { params: Promise<{ id: 
   const estadoLandscape = await landscapeState(db, id)
   const estrategiaEstado = await strategyState(db, id)
   const señales = projectSignals({
+    ...(await tallerDelProyecto(db, id).then(t => ({ tienePostTaller: !!t.conclusiones, tallerHecho: t.hecho }))),
     sessions: rawSessions,
     tieneEntregable: !!deliverable,
     landscape: summarizeLandscape(estadoLandscape),

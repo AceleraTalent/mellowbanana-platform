@@ -75,6 +75,7 @@ const DDL = `
     fecha_entrega text,
     estado_manual text,
     fases jsonb NOT NULL DEFAULT '{}',
+    conclusiones_taller text,
     updated_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE TABLE strategy_stages (

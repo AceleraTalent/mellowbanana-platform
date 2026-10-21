@@ -5,7 +5,7 @@ import { ETAPA_ORDER } from '@/lib/estrategia/stages'
 /**
  * Adapta lo que hay guardado al modelo de grupos.
  *
- * Una señal todavía no vive en la base: la versión post-taller. El estado real del
+ * Las conclusiones del taller las trae quien llama (`conclusionesDelTaller`). El estado real del
  * landscape y el de estrategia sí — los trae quien llama, con
  * `summarizeLandscape(landscapeState(db, id))` y el equivalente de estrategia, porque
  * esta función no toca la base (la usan tanto server components con `id` como el
@@ -18,12 +18,17 @@ export function projectSignals(input: {
   tieneEntregable: boolean
   landscape?: { aprobadas: number; total: number }
   estrategia?: { aprobadas: number; total: number }
+  /** Hay conclusiones del taller guardadas (pegadas en el panel o por Claude). */
+  tienePostTaller?: boolean
+  /** El equipo marcó el taller como hecho (Sistema M&B). */
+  tallerHecho?: boolean
 }): ProjectSignals {
   return {
     sessionsTotal: input.sessions.length,
     sessionsCompleted: input.sessions.filter(s => s.status === 'completed').length,
     tieneEntregable: input.tieneEntregable,
-    tienePostTaller: false,
+    tienePostTaller: !!input.tienePostTaller,
+    tallerHecho: !!input.tallerHecho,
     landscapeEtapasAprobadas: input.landscape?.aprobadas ?? 0,
     landscapeEtapasTotal: input.landscape?.total ?? STAGE_ORDER.length,
     estrategiaEtapasAprobadas: input.estrategia?.aprobadas ?? 0,

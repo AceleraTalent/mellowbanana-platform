@@ -92,6 +92,7 @@ export const projectSeguimiento = pgTable('project_seguimiento', {
   fechaEntrega: text('fecha_entrega'),                     // 'AAAA-MM-DD'
   estadoManual: text('estado_manual'),                     // 'pausa' | 'cliente' | null
   fases: jsonb('fases').notNull().default({}),             // { naming: 'en_curso', ... }
+  conclusionesTaller: text('conclusiones_taller'),         // lo que volvió del Miro, si alguien lo pegó
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

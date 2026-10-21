@@ -62,13 +62,13 @@ describe('derivePantallas', () => {
     expect(p.taller.status).toBe('espera')
   })
 
-  it('taller completa con post-taller', () => {
-    const s: ProjectSignals = {
+  it('el taller lo cierra el equipo; las conclusiones sólo se anotan', () => {
+    const base: ProjectSignals = {
       sessionsTotal: 1, sessionsCompleted: 1, tieneEntregable: true, tienePostTaller: true,
       landscapeEtapasAprobadas: 0, landscapeEtapasTotal: 6, estrategiaEtapasAprobadas: 0, estrategiaEtapasTotal: 14,
     }
-    const p = derivePantallas('p1', s)
-    expect(p.taller.status).toBe('completa')
+    expect(derivePantallas('p1', base).taller).toMatchObject({ status: 'espera', detalle: 'Se trabaja en Miro · conclusiones cargadas' })
+    expect(derivePantallas('p1', { ...base, tallerHecho: true }).taller.status).toBe('completa')
   })
 })
 

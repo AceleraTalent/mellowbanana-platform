@@ -1,0 +1,1 @@
+ALTER TABLE "project_seguimiento" ADD COLUMN "conclusiones_taller" text;

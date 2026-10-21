@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/client'
+import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import {
   getProjectWithSessions, getDeliverable, listProjects, answerCountsByProject,
   landscapeState, summarizeLandscape,
@@ -45,6 +46,7 @@ export default async function EntrevistasView({ params }: { params: Promise<{ id
   const estadoLandscape = await landscapeState(db, id)
   const estrategiaEstado = await strategyState(db, id)
   const señales = projectSignals({
+    ...(await tallerDelProyecto(db, id).then(t => ({ tienePostTaller: !!t.conclusiones, tallerHecho: t.hecho }))),
     sessions: rawSessions,
     tieneEntregable: !!deliverable,
     landscape: summarizeLandscape(estadoLandscape),

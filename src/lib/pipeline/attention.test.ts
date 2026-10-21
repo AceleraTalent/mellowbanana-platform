@@ -38,7 +38,7 @@ describe('attentionItems', () => {
     const [taller] = attentionItems([
       proyecto('p1', 'Alta', { sessionsTotal: 1, sessionsCompleted: 1, tieneEntregable: true }),
     ])
-    expect(taller.accion).toBe('Faltan las conclusiones del taller')
+    expect(taller.accion).toBe('Taller en Miro por hacer')
     expect(taller.bloqueo).toBe('externo')
   })
 
@@ -71,7 +71,7 @@ describe('attentionItems', () => {
     const items = attentionItems([
       proyecto('p1', 'Cerrado', {
         sessionsTotal: 2, sessionsCompleted: 2, tieneEntregable: true,
-        tienePostTaller: true, landscapeEtapasAprobadas: 6,
+        tienePostTaller: true, tallerHecho: true, landscapeEtapasAprobadas: 6,
       }),
     ])
     expect(items).toEqual([])

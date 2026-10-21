@@ -9,6 +9,7 @@ import { STAGE_LABEL, STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { ETAPA_LABEL, ETAPA_ORDER, ESENCIA, type EstrategiaKey } from '@/lib/estrategia/stages'
 import { estadoDePasos, queSigueParaClaude } from '@/lib/landscape/pasos'
 import { pasosMarcados } from '@/lib/db/pasos-store'
+import { actualizarSeguimiento, conclusionesDelTaller } from '@/lib/db/seguimiento-store'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
 import { validarContenidoEtapa } from './validar'
@@ -71,6 +72,8 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
     marca: name,
     entrevistas,
     propuestaDeValor: entregable?.content ?? null,
+    // Lo que volvió del taller en Miro, si alguien lo cargó. Puede no estar: es opcional.
+    conclusionesTaller: await conclusionesDelTaller(db, id),
     landscape: estado.map(e => ({
       etapa: e.stage,
       titulo: STAGE_LABEL[e.stage],
@@ -129,7 +132,7 @@ export async function estadoLandscape(db: AnyDb, ref: string) {
   return {
     marca: name,
     // Lo primero que Claude lee cuando le dicen “sigamos”: qué toca ahora y dónde guardarlo.
-    sigue: queSigueParaClaude(pasos),
+    sigue: queSigueParaClaude(pasos, { conclusionesTaller: !!(await conclusionesDelTaller(db, id)) }),
     resumen: summarizeLandscape(estado),
     etapas: estado.map(e => ({
       etapa: e.stage,
@@ -286,5 +289,21 @@ async function guardarEtapaEstrategia(db: AnyDb, d: {
     etapa,
     esperandoAprobacion: true,
     mensaje,
+  }
+}
+
+/**
+ * Guarda lo que volvió del taller en Miro cuando el equipo se lo pasa a Claude en el chat
+ * (el documento de cierre, una foto del tablero transcrita). Reemplaza lo que hubiera: es
+ * el registro del taller, no un borrador que se aprueba.
+ */
+export async function guardarConclusionesTaller(db: AnyDb, d: { proyecto: string; conclusiones: string }) {
+  const texto = d.conclusiones.trim()
+  if (!texto) throw new ErrorDeHerramienta('Las conclusiones vinieron vacías: no guardé nada.')
+  const { id, name } = await resolverProyecto(db, d.proyecto)
+  await actualizarSeguimiento(db, id, { conclusionesTaller: texto.slice(0, 30000) })
+  return {
+    marca: name,
+    mensaje: `Guardé las conclusiones del taller de ${name}. Quedan en el panel, en la pantalla del Taller, y las vas a ver en contexto_proyecto.`,
   }
 }

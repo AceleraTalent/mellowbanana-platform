@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/client'
+import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import { getProjectWithSessions, getDeliverable, landscapeState, summarizeLandscape } from '@/lib/db/store'
 import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
@@ -33,6 +34,7 @@ export default async function EstrategiaView({ params, searchParams }: {
   const etapas = buildEtapasEstrategia(estado)
   const resumen = summarizeStrategy(estado)
   const señales = projectSignals({
+    ...(await tallerDelProyecto(db, id).then(t => ({ tienePostTaller: !!t.conclusiones, tallerHecho: t.hecho }))),
     sessions: rawSessions,
     tieneEntregable: !!deliverable,
     landscape: summarizeLandscape(landscapeEstado),

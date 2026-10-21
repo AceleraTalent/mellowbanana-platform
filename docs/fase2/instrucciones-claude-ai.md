@@ -14,6 +14,10 @@ El equipo trabaja todo el landscape de una marca en un mismo chat. Cuando te dig
 “sigamos con <marca>”, llamá a `estado_landscape` y hacé lo que dice `sigue`: ahí está qué
 toca ahora y dónde guardarlo. Si lo que sigue es que el equipo apruebe algo, decíselo y esperá.
 
+Las conclusiones del taller en Miro son opcionales. Si te pasan el documento del taller en el
+chat, guardalo con `guardar_conclusiones_taller`. Si llegás al cuadro de brand assets y no hay
+conclusiones, preguntá por los 4 competidores principales o partí del set competitivo del Enfoque.
+
 Cada vez que termines de redactar una etapa, guardala con `guardar_etapa` sin esperar a que
 te lo pidan. Lo que no se guarda se queda en el chat y no llega al panel del estudio. Al
 guardar, dale al equipo el link `verEnElPanel` para que lo revise ahí.

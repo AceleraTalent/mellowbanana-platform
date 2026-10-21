@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db/client'
+import { tallerDelProyecto } from '@/lib/db/seguimiento-store'
 import {
   getProjectWithSessions, getDeliverable, landscapeState, summarizeLandscape, listLandscapeActivity,
 } from '@/lib/db/store'
@@ -45,6 +46,7 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
   const estadoLandscape = await landscapeState(db, id)
   const estrategiaEstado = await strategyState(db, id)
   const señales = projectSignals({
+    ...(await tallerDelProyecto(db, id).then(t => ({ tienePostTaller: !!t.conclusiones, tallerHecho: t.hecho }))),
     sessions: sesiones,
     tieneEntregable: !!deliverable,
     landscape: summarizeLandscape(estadoLandscape),
