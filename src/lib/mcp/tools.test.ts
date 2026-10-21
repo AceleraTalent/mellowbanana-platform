@@ -26,6 +26,21 @@ describe('mcp · herramientas', () => {
     expect(ctx.landscape).toHaveLength(6)
   })
 
+  it('el contexto trae el borrador sin aprobar aparte de lo aprobado, para retomarlo en otro chat', async () => {
+    const db = await makeTestDb()
+    const p = await findOrCreateProject(db, 'Fruta Viva')
+    await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'contexto', contenido: { datos: 'v1' } })
+    let ctx = await contextoProyecto(db, 'Fruta Viva')
+    expect(ctx.landscape.find(e => e.etapa === 'contexto')).toMatchObject({ contenidoAprobado: null, borradorSinAprobar: { datos: 'v1' } })
+
+    const [v1] = await listLandscapeVersions(db, p.id, 'contexto')
+    await approveLandscapeVersion(db, v1.id, { projectId: p.id, stage: 'contexto' })
+    await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'contexto', contenido: { datos: 'v2' } })
+    ctx = await contextoProyecto(db, 'Fruta Viva')
+    expect(ctx.landscape.find(e => e.etapa === 'contexto')).toMatchObject({ contenidoAprobado: { datos: 'v1' }, borradorSinAprobar: { datos: 'v2' } })
+    expect(ctx.landscape.find(e => e.etapa === 'setup')!.borradorSinAprobar).toBeNull()
+  })
+
   it('el contexto trae nombre, empresa y rol de la entrevista, pero nunca el email', async () => {
     const db = await makeTestDb()
     const p = await findOrCreateProject(db, 'Fruta Viva')

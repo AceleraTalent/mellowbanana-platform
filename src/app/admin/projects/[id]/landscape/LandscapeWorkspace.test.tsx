@@ -46,9 +46,16 @@ function montar(opciones: {
   seleccion?: string[]
   marcados?: string[]
   dependencia?: string
+  /** Lo que Claude dejó en la Entrega, sin aprobar. */
+  entrega?: Record<string, unknown>
+  diagnosticoNoAplica?: boolean
 }) {
   const { conBorrador = false, aprobada = true, tendencias = [], seleccion = [], marcados = [] } = opciones
   const etapas: EtapaParaPasos[] = STAGE_ORDER.map(stage => ({ stage, status: 'pendiente', contenido: null, cerrada: false }))
+  if (opciones.entrega)
+    Object.assign(etapas.find(e => e.stage === 'entrega')!, { status: 'en_curso', contenido: opciones.entrega })
+  if (opciones.diagnosticoNoAplica)
+    Object.assign(etapas.find(e => e.stage === 'diagnostico')!, { status: 'no_aplica' })
   if (opciones.conEnfoque)
     Object.assign(etapas.find(e => e.stage === 'setup')!, { status: 'aprobada', contenido: { nombre: 'el enfoque' }, cerrada: true })
   const ctx = etapas.find(e => e.stage === 'contexto')!
@@ -72,6 +79,9 @@ function montar(opciones: {
         ? { id: 've', content: { nombre: 'el enfoque' }, aprobada: true, procedencia: 'Escrito por Claude · hace 6 días · aprobada', cuando: 'hace 6 días', borradorNuevo: null }
         : null,
       contexto: contexto({ conBorrador, aprobada }),
+      entrega: opciones.entrega
+        ? { id: 'ventrega', content: opciones.entrega, aprobada: false, procedencia: 'Escrito por Claude · hace 1 h · sin aprobar', cuando: 'hace 1 h', borradorNuevo: null }
+        : null,
       tendencias: seleccion.length
         ? { id: 'vt', content: { candidatas: tendencias, seleccionadas: seleccion }, aprobada: true, procedencia: 'Escrito por Claude · hace 1 día · aprobada', cuando: 'hace 1 día', borradorNuevo: null }
         : null,
@@ -352,5 +362,46 @@ describe('LandscapeWorkspace · con la selección ya confirmada', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar la selección' }))
     expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(4)
     expect(screen.getByRole('button', { name: 'Actualizar selección' })).toBeTruthy()
+  })
+})
+
+describe('LandscapeWorkspace · lo que Claude deja en cualquier sección se ve', () => {
+  it('el material de entrega aparece por revisar y se aprueba ahí', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    montar({ entrega: { resumen: 'para presentar al cliente' } })
+
+    expect(seccion('entrega').getByText('Por revisar', { selector: 'span' })).toBeTruthy()
+    expect(seccion('entrega').getByText(/para presentar al cliente/)).toBeTruthy()
+    fireEvent.click(seccion('entrega').getByRole('button', { name: 'Aprobar' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/projects/p1/landscape/entrega')
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'aprobar', versionId: 'ventrega' }))
+  })
+})
+
+describe('LandscapeWorkspace · el Diagnóstico sólo aplica en rebranding', () => {
+  it('se marca que no aplica desde su sección', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    montar({ irA: 'diagnostico' })
+
+    fireEvent.click(seccion('diagnostico').getByRole('button', { name: 'Marcar que no aplica' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/projects/p1/landscape/diagnostico')
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'no-aplica', noAplica: true }))
+  })
+
+  it('marcado, lo dice y se puede volver a activar', () => {
+    montar({ irA: 'diagnostico', diagnosticoNoAplica: true })
+    expect(seccion('diagnostico').getAllByText('No aplica').length).toBeGreaterThan(0)
+    expect(seccion('diagnostico').getByRole('button', { name: 'Volver a activarlo' })).toBeTruthy()
+  })
+
+  it('las otras secciones no se pueden marcar', () => {
+    montar({ irA: 'contexto' })
+    expect(seccion('contexto').queryByRole('button', { name: 'Marcar que no aplica' })).toBeNull()
   })
 })

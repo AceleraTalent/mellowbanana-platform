@@ -35,6 +35,11 @@ export interface Paso {
   necesita: string
   listoCuando: string
   donde: Donde
+  /**
+   * Sólo existe si Claude guardó algo ahí: sin contenido no aplica, no queda pendiente ni
+   * es lo que sigue. Es el caso de la Entrega, donde Claude a veces deja material.
+   */
+  opcional?: boolean
 }
 
 export const PASOS: Paso[] = [
@@ -127,6 +132,15 @@ export const PASOS: Paso[] = [
     donde: 'plataforma',
   },
   {
+    id: '6.0', etapa: 'entrega', titulo: 'Material de entrega',
+    queEs: 'Lo que Claude haya preparado para la entrega, como el resumen para presentar. Sólo aparece si Claude guardó algo acá.',
+    quien: 'claude', quienTexto: 'Claude lo prepara si se lo piden y el equipo lo aprueba.',
+    necesita: 'El Landscape aprobado.',
+    listoCuando: 'El equipo lo aprueba.',
+    donde: 'plataforma',
+    opcional: true,
+  },
+  {
     id: '6.1', etapa: 'entrega', titulo: 'Presentación al cliente',
     queEs: 'Presentar el deck al cliente, en persona u online, y anotar su feedback.',
     quien: 'equipo', quienTexto: 'Lo hace el equipo con el cliente.',
@@ -211,6 +225,7 @@ export interface PasoConEstado extends Paso {
  *   en `revisar` cuando lo tiene pero falta aprobar. Si no lo tiene, está `pendiente`.
  * - Un paso de chat o de afuera está `hecho` cuando el equipo lo marcó.
  * - Si la etapa no aplica (diagnóstico en una marca nueva), sus pasos tampoco.
+ * - Un paso opcional sin contenido no aplica: no se cuenta ni se espera.
  */
 export function estadoDePasos(etapas: EtapaParaPasos[], marcados: ReadonlySet<string>): PasoConEstado[] {
   const porEtapa = new Map(etapas.map(e => [e.stage, e]))
@@ -218,6 +233,7 @@ export function estadoDePasos(etapas: EtapaParaPasos[], marcados: ReadonlySet<st
     const etapa = porEtapa.get(paso.etapa)
     let estado: EstadoPaso
     if (etapa?.status === 'no_aplica') estado = 'no_aplica'
+    else if (paso.opcional && !(etapa && tieneContenido(paso, etapa.contenido))) estado = 'no_aplica'
     else if (paso.donde !== 'plataforma') estado = marcados.has(paso.id) ? 'hecho' : 'pendiente'
     else if (!etapa || !tieneContenido(paso, etapa.contenido)) estado = 'pendiente'
     // La lista larga no se aprueba sola: se cierra cuando el equipo elige sobre ella.

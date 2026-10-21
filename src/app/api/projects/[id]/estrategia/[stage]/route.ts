@@ -4,8 +4,11 @@ import { saveStrategyVersion, approveStrategyVersion, reafirmarAprobadaEstrategi
 import { ETAPA_ORDER, type EstrategiaKey } from '@/lib/estrategia/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
+import { esAdminRequest } from '@/lib/admin/auth'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; stage: string }> }) {
+  // Aprobar y guardar son decisiones del equipo: sin sesión no pasa nada.
+  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id, stage } = await params
   if (!ETAPA_ORDER.includes(stage as EstrategiaKey))
     return NextResponse.json({ error: `Etapa desconocida: ${stage}` }, { status: 400 })

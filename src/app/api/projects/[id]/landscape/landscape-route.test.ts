@@ -8,18 +8,21 @@ vi.mock('@/lib/db/client', async () => {
 
 import { POST } from './[stage]/route'
 import { db } from '@/lib/db/client'
+import { cookieDeSesion } from '@/lib/admin/sesion-de-prueba'
 import {
-  findOrCreateProject, saveLandscapeVersion, approveLandscapeVersion, landscapeState,
+  findOrCreateProject, saveLandscapeVersion, approveLandscapeVersion, landscapeState, listLandscapeVersions,
 } from '@/lib/db/store'
 
 let contador = 0
 let projectId: string
 beforeEach(async () => { projectId = (await findOrCreateProject(db, `Marca ${contador++}`)).id })
 
-function post(id: string, stage: string, body: unknown) {
+function post(id: string, stage: string, body: unknown, conSesion = true) {
   return POST(
     new Request(`http://localhost/api/projects/${id}/landscape/${stage}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(conSesion ? cookieDeSesion() : {}) },
+      body: JSON.stringify(body),
     }),
     { params: Promise.resolve({ id, stage }) },
   )
@@ -72,5 +75,46 @@ describe('POST /api/projects/[id]/landscape/[stage] — reafirmar', () => {
   it('con una etapa desconocida devuelve 400', async () => {
     const res = await post(projectId, 'inventada', { accion: 'reafirmar' })
     expect(res.status).toBe(400)
+  })
+})
+
+describe('POST /api/projects/[id]/landscape/[stage] — sesión', () => {
+  it('sin sesión es 401 y no aprueba nada', async () => {
+    const v = await saveLandscapeVersion(db, projectId, 'contexto', { content: { v: 1 }, author: 'claude' })
+    const res = await post(projectId, 'contexto', { accion: 'aprobar', versionId: v.id }, false)
+    expect(res.status).toBe(401)
+    expect((await listLandscapeVersions(db, projectId, 'contexto'))[0].approvedAt).toBeNull()
+  })
+
+  it('sin sesión tampoco se puede escribir contenido', async () => {
+    const res = await post(projectId, 'contexto', { accion: 'guardar', content: { v: 1 } }, false)
+    expect(res.status).toBe(401)
+    expect(await listLandscapeVersions(db, projectId, 'contexto')).toHaveLength(0)
+  })
+})
+
+describe('POST /api/projects/[id]/landscape/[stage] — no aplica', () => {
+  const estadoDe = async (stage: string) => (await landscapeState(db, projectId)).find(e => e.stage === stage)!.status
+
+  it('el Diagnóstico se marca como que no aplica, y al reactivarlo vuelve como venía', async () => {
+    expect((await post(projectId, 'diagnostico', { accion: 'no-aplica', noAplica: true })).status).toBe(200)
+    expect(await estadoDe('diagnostico')).toBe('no_aplica')
+
+    expect((await post(projectId, 'diagnostico', { accion: 'no-aplica', noAplica: false })).status).toBe(200)
+    expect(await estadoDe('diagnostico')).toBe('pendiente')
+  })
+
+  it('reactivar una etapa con algo aprobado la deja aprobada', async () => {
+    const v = await saveLandscapeVersion(db, projectId, 'diagnostico', { content: { r: 1 }, author: 'claude' })
+    await approveLandscapeVersion(db, v.id, { projectId, stage: 'diagnostico' })
+    await post(projectId, 'diagnostico', { accion: 'no-aplica', noAplica: true })
+    await post(projectId, 'diagnostico', { accion: 'no-aplica', noAplica: false })
+    expect(await estadoDe('diagnostico')).toBe('aprobada')
+  })
+
+  it('las etapas que siempre aplican no se pueden marcar', async () => {
+    const res = await post(projectId, 'contexto', { accion: 'no-aplica', noAplica: true })
+    expect(res.status).toBe(400)
+    expect(await estadoDe('contexto')).toBe('pendiente')
   })
 })

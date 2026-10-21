@@ -8,6 +8,7 @@ vi.mock('@/lib/db/client', async () => {
 
 import { POST } from './[stage]/route'
 import { db } from '@/lib/db/client'
+import { cookieDeSesion } from '@/lib/admin/sesion-de-prueba'
 import { findOrCreateProject } from '@/lib/db/store'
 import { saveStrategyVersion, approveStrategyVersion, strategyState } from '@/lib/db/strategy-store'
 
@@ -15,10 +16,12 @@ let contador = 0
 let projectId: string
 beforeEach(async () => { projectId = (await findOrCreateProject(db, `Marca ${contador++}`)).id })
 
-function post(id: string, stage: string, body: unknown) {
+function post(id: string, stage: string, body: unknown, conSesion = true) {
   return POST(
     new Request(`http://localhost/api/projects/${id}/estrategia/${stage}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(conSesion ? cookieDeSesion() : {}) },
+      body: JSON.stringify(body),
     }),
     { params: Promise.resolve({ id, stage }) },
   )
@@ -72,5 +75,14 @@ describe('POST /api/projects/[id]/estrategia/[stage]', () => {
   it('reafirmar con un proyecto que no existe devuelve 404', async () => {
     const res = await post('00000000-0000-4000-8000-000000000000', 'concepto', { accion: 'reafirmar' })
     expect(res.status).toBe(404)
+  })
+})
+
+describe('POST /api/projects/[id]/estrategia/[stage] — sesión', () => {
+  it('sin sesión es 401 y no aprueba nada', async () => {
+    const v = await saveStrategyVersion(db, projectId, 'concepto', { content: { concepto: 'c', racional: 'r' }, author: 'claude' })
+    const res = await post(projectId, 'concepto', { accion: 'aprobar', versionId: v.id }, false)
+    expect(res.status).toBe(401)
+    expect((await strategyState(db, projectId)).find(e => e.stage === 'concepto')!.aprobada).toBe(false)
   })
 })

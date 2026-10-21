@@ -75,8 +75,10 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
       etapa: e.stage,
       titulo: STAGE_LABEL[e.stage],
       estado: e.status,
-      // Solo lo aprobado: un borrador sin aprobar todavía no es la versión que manda.
+      // Lo aprobado es la versión que manda. El borrador va aparte y dicho como tal: sin
+      // él, un chat nuevo no puede retomar ni corregir lo que Claude dejó por revisar.
       contenidoAprobado: e.aprobada ? e.actual?.content ?? null : null,
+      borradorSinAprobar: borradorDe(e),
     })),
     // Espejo del landscape de arriba, mismo criterio: solo lo aprobado sale del store
     // hacia el chat.
@@ -85,8 +87,18 @@ export async function contextoProyecto(db: AnyDb, ref: string) {
       titulo: ETAPA_LABEL[e.stage],
       estado: e.status,
       contenidoAprobado: e.aprobada ? e.actual?.content ?? null : null,
+      borradorSinAprobar: borradorDe(e),
     })),
   }
+}
+
+/**
+ * El borrador que espera al equipo, si hay: el que llegó después de lo aprobado o, si la
+ * etapa nunca se aprobó, la versión más nueva.
+ */
+function borradorDe(e: { aprobada: boolean; actual?: { content: unknown } | null; borradorNuevo?: { content: unknown } | null }): unknown {
+  if (e.borradorNuevo) return e.borradorNuevo.content
+  return !e.aprobada && e.actual ? e.actual.content : null
 }
 
 /**

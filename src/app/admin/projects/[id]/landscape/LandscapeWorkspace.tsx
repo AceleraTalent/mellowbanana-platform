@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  EJES, MIN_TENDENCIAS, MAX_TENDENCIAS, STAGE_ORDER, STAGE_LABEL,
+  EJES, MIN_TENDENCIAS, MAX_TENDENCIAS, PUEDEN_NO_APLICAR, STAGE_ORDER, STAGE_LABEL,
   type StageKey, type TendenciaCandidata,
 } from '@/lib/landscape/stages'
 import { pasoQueSigue, tieneContenido, type PasoConEstado } from '@/lib/landscape/pasos'
@@ -290,6 +290,9 @@ export function LandscapeWorkspace({
     enviar(`${base}/${etapa}`, { accion: 'reafirmar' }, 'No se pudo mantener la versión aprobada', etapa)
   const marcar = (id: string, hecho: boolean) =>
     enviar(`${base}/pasos`, { paso: id, hecho }, 'No se pudo marcar', id)
+  // El Diagnóstico es sólo para rebranding: en una marca nueva el equipo dice que no aplica.
+  const noAplica = (etapa: StageKey, valor: boolean) =>
+    enviar(`${base}/${etapa}`, { accion: 'no-aplica', noAplica: valor }, 'No se pudo guardar', etapa)
 
   const sigue = pasoQueSigue(pasos)
   const iSigue = sigue ? STAGE_ORDER.indexOf(sigue.etapa) : STAGE_ORDER.length
@@ -506,6 +509,16 @@ export function LandscapeWorkspace({
                   {estado === 'no_aplica'
                     ? <p className="text-[14px] text-[var(--secundario)]">No aplica en este proyecto: es una marca nueva, no un rebranding.</p>
                     : etapa === 'tendencias' ? cuerpoTendencias() : cuerpoDocumento(etapa, deLaEtapa)}
+                  {PUEDEN_NO_APLICAR.includes(etapa) && (
+                    <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--secundario)]">
+                      {estado === 'no_aplica' ? '¿Sí es un rebranding?' : 'Sólo aplica en rebranding. ¿Es una marca nueva?'}
+                      <button type="button" disabled={guardando === etapa} onClick={() => noAplica(etapa, estado !== 'no_aplica')}
+                        className="font-medium text-[var(--ink)] underline underline-offset-2 disabled:cursor-wait disabled:opacity-60">
+                        {guardando === etapa ? 'Guardando…' : estado === 'no_aplica' ? 'Volver a activarlo' : 'Marcar que no aplica'}
+                      </button>
+                      {errorDe(etapa) && <span role="alert" className="text-[var(--error)]">{errorDe(etapa)}</span>}
+                    </p>
+                  )}
                   <PorFuera pasos={porFuera} guardando={guardando} onMarcar={marcar} />
                   {pasoConError?.etapa === etapa && pasoConError.id !== sigue?.id && alerta(error!.texto)}
                 </div>

@@ -5,7 +5,7 @@ import {
   landscapePasos, projectSeguimiento,
 } from './schema'
 import type { StageKey, StageStatus, TendenciaCandidata } from '@/lib/landscape/stages'
-import { MIN_TENDENCIAS, MAX_TENDENCIAS, STAGE_ORDER } from '@/lib/landscape/stages'
+import { MIN_TENDENCIAS, MAX_TENDENCIAS, PUEDEN_NO_APLICAR, STAGE_ORDER } from '@/lib/landscape/stages'
 
 export type AnyDb = any // drizzle db (neon-http or pglite); kept loose for the adapter seam
 
@@ -301,6 +301,22 @@ export async function setStageStatus(db: AnyDb, projectId: string, stage: StageK
       target: [landscapeStages.projectId, landscapeStages.stage],
       set: { status, updatedAt: new Date() },
     })
+}
+
+/**
+ * El equipo dice si una etapa aplica en este proyecto (el Diagnóstico es sólo para
+ * rebranding). Al volver a activarla queda como venía por sus versiones: aprobada si
+ * tiene una aprobada, en curso si tiene algo escrito, pendiente si nada. Las versiones no
+ * se tocan: marcarla y desmarcarla no pierde nada.
+ */
+export async function marcarNoAplica(db: AnyDb, projectId: string, stage: StageKey, noAplica: boolean) {
+  if (!PUEDEN_NO_APLICAR.includes(stage))
+    throw new ErrorDeValidacion(`La etapa ${stage} no se puede marcar como que no aplica`)
+  if (!(await getProject(db, projectId))) throw new ErrorNoEncontrado(`No existe el proyecto ${projectId}`)
+  if (noAplica) return setStageStatus(db, projectId, stage, 'no_aplica')
+  const versiones = await listLandscapeVersions(db, projectId, stage)
+  const status: StageStatus = versiones.some(v => v.approvedAt) ? 'aprobada' : versiones.length ? 'en_curso' : 'pendiente'
+  return setStageStatus(db, projectId, stage, status)
 }
 
 /**

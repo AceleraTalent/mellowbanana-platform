@@ -4,6 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import type { DocumentProps } from '@react-pdf/renderer'
 import { buildProjectDeckView } from '@/lib/deck/service'
 import { DeckDocument } from '@/lib/deck/DeckDocument'
+import { esAdminRequest } from '@/lib/admin/auth'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +17,9 @@ function slug(name: string): string {
   return out || 'taller'
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // El deck lleva lo que dijeron los clientes: sólo lo descarga el equipo.
+  if (!esAdminRequest(req)) return new Response('No autorizado', { status: 401 })
   const { id } = await params
   const view = await buildProjectDeckView(id)
   if (!view) return new Response('Sin entregable generado', { status: 404 })

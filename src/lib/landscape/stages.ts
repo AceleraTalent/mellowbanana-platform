@@ -56,6 +56,9 @@ export const STAGE_HINT: Partial<Record<StageKey, string>> = {
   diagnostico: 'solo rebranding',
 }
 
+/** Las etapas que el equipo puede marcar como que no aplican: hoy, sólo el Diagnóstico. */
+export const PUEDEN_NO_APLICAR: readonly StageKey[] = ['diagnostico']
+
 /** Las seis etapas siempre, aunque el proyecto todavía no tenga ninguna fila. */
 export function buildStages(estado: { stage: StageKey; status: StageStatus }[]): Stage[] {
   const porEtapa = new Map(estado.map(e => [e.stage, e.status]))

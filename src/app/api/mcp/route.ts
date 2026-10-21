@@ -35,8 +35,10 @@ const handler = createMcpHandler(
       description:
         'Trae todo el contexto de un proyecto, entero: la marca, las entrevistas con sus ' +
         'respuestas, la propuesta de valor, el estado del landscape y el de la estrategia, con ' +
-        'el contenido de las etapas aprobadas de ambos. Llamá a esto al empezar a trabajar en ' +
-        'un proyecto, antes de escribir nada, para no repetir lo que ya se decidió.',
+        'el contenido de las etapas aprobadas de ambos y, aparte, el borrador que todavía espera ' +
+        'aprobación (`borradorSinAprobar`). Llamá a esto al empezar a trabajar en un proyecto, ' +
+        'antes de escribir nada, para no repetir lo que ya se decidió; y cuando pidan cambios ' +
+        'sobre un borrador, para partir de él.',
       inputSchema: z.object({
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
       }),

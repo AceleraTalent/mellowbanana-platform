@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import {
-  saveLandscapeVersion, approveLandscapeVersion, selectTendencias, reafirmarAprobada,
+  saveLandscapeVersion, approveLandscapeVersion, selectTendencias, reafirmarAprobada, marcarNoAplica,
   ErrorDeValidacion, ErrorNoEncontrado,
 } from '@/lib/db/store'
+import { esAdminRequest } from '@/lib/admin/auth'
 import { STAGE_ORDER, type StageKey } from '@/lib/landscape/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; stage: string }> }) {
+  // Aprobar y guardar son decisiones del equipo: sin sesión no pasa nada. Claude escribe
+  // por MCP, con su propio token, no por acá.
+  if (!esAdminRequest(req)) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id, stage } = await params
   if (!STAGE_ORDER.includes(stage as StageKey))
     return NextResponse.json({ error: `Etapa desconocida: ${stage}` }, { status: 400 })
@@ -72,6 +76,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           typeof body.autor === 'string' ? body.autor : undefined,
         )
         return NextResponse.json(version)
+      }
+      case 'no-aplica': {
+        if (typeof body.noAplica !== 'boolean')
+          return NextResponse.json({ error: 'Falta noAplica (true o false)' }, { status: 400 })
+        await marcarNoAplica(db, id, stage as StageKey, body.noAplica)
+        return NextResponse.json({ stage, noAplica: body.noAplica })
       }
       default:
         return NextResponse.json({ error: `Acción desconocida: ${String(body.accion)}` }, { status: 400 })

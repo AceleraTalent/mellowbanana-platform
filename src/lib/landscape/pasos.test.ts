@@ -16,9 +16,9 @@ const estado = (etapas: EtapaParaPasos[], id: string, marcados: string[] = []) =
   estadoDePasos(etapas, new Set(marcados)).find(p => p.id === id)!
 
 describe('PASOS', () => {
-  it('sigue el documento del estudio, sin los trámites que no son un paso: 13, ids únicos, en orden de etapa', () => {
-    expect(PASOS).toHaveLength(13)
-    expect(new Set(PASOS.map(p => p.id)).size).toBe(13)
+  it('sigue el documento del estudio, sin los trámites que no son un paso: 14, ids únicos, en orden de etapa', () => {
+    expect(PASOS).toHaveLength(14)
+    expect(new Set(PASOS.map(p => p.id)).size).toBe(14)
     // Las entregas anteriores son insumo de la lista larga, no un paso aparte; la carpeta y
     // el template son un solo trámite.
     expect(pasoPorId('3.2')).toBeUndefined()
@@ -32,7 +32,7 @@ describe('PASOS', () => {
 describe('estadoDePasos', () => {
   it('sin nada guardado, todo está pendiente y el turno sale de quién hace el paso', () => {
     const pasos = estadoDePasos(vacias(), new Set())
-    expect(pasos.every(p => p.estado === 'pendiente')).toBe(true)
+    expect(pasos.filter(p => !p.opcional).every(p => p.estado === 'pendiente')).toBe(true)
     expect(pasos.find(p => p.id === '2.2')!.turno).toBe('claude')
     expect(pasos.find(p => p.id === '1.1')!.turno).toBe('equipo')
     expect(pasos.find(p => p.id === '3.3')!.turno).toBe('equipo')
@@ -66,6 +66,13 @@ describe('estadoDePasos', () => {
     expect(estado(vacias(), '1.1').estado).toBe('pendiente')
     expect(estado(vacias(), '1.1', ['1.1']).estado).toBe('hecho')
     expect(estado(vacias(), '3.4', ['3.4']).turno).toBe('listo')
+  })
+
+  it('el material de entrega sólo existe si Claude guardó algo: si no, no aplica', () => {
+    expect(estado(vacias(), '6.0').estado).toBe('no_aplica')
+    const conMaterial = con({ entrega: { status: 'en_curso', contenido: { resumen: 'para presentar' } } })
+    expect(estado(conMaterial, '6.0').estado).toBe('revisar')
+    expect(pasoQueSigue(estadoDePasos(conMaterial, new Set()))!.id).toBe('6.0')
   })
 
   it('si la etapa no aplica, sus pasos tampoco', () => {
