@@ -6,6 +6,7 @@ import {
 } from '@/lib/db/store'
 import { strategyState, summarizeStrategy, listStrategyActivity } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
+import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { construirIndice, esperanDecision } from '@/lib/pipeline/indice'
 import { projectSignals } from '@/lib/pipeline/signals'
 import { attentionItems, haceCuanto } from '@/lib/pipeline/attention'
@@ -13,8 +14,7 @@ import { armarNosToca, armarMovimientos } from '@/lib/pipeline/mesa'
 import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 import { AdminShell } from '@/components/AdminShell'
-import { CabeceraProyecto } from '@/components/CabeceraProyecto'
-import { RecorridoPlegable } from '@/components/RecorridoPlegable'
+import { ProjectIndex } from '@/components/ProjectIndex'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,10 +28,10 @@ function Zona({ titulo, children }: { titulo: string; children: React.ReactNode 
 }
 
 /**
- * La mesa de trabajo: el proyecto no abre con su estructura sino con el trabajo.
+ * El resumen del cliente: el proyecto no abre con su estructura sino con el trabajo.
  * Primero lo que espera una decisión del equipo, con el link directo; después qué se
- * movió; al pie, el recorrido completo, plegado. Ver la entrada de la bitácora del
- * 2026-08-21 y la decisión "el proyecto abre con el trabajo".
+ * movió. El recorrido por fases vive en el menú de la izquierda, el mismo de todas las
+ * pantallas del cliente. Ver la decisión "el proyecto abre con el trabajo".
  */
 export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -54,9 +54,7 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
   const pantallas = derivePantallas(id, señales)
   const actual = pantallaActual(fases, pantallas)
 
-  // La mesa no está parada en ninguna etapa (etapaActiva vacía) y necesita el recorrido
-  // entero sin colapsar: una espera escondida detrás de "＋ n etapas más" no se puede
-  // atender.
+  // El resumen no está parado en ninguna etapa (etapaActiva vacía).
   const indice = construirIndice({
     projectId: id,
     fases,
@@ -68,7 +66,6 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
       ...esperanDecision('landscape', estadoLandscape),
       ...esperanDecision('estrategia', estrategiaEstado),
     ],
-    todas: true,
   })
 
   const completadas = sesiones.filter(s => s.status === 'completed').length
@@ -81,7 +78,6 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
     tieneEntregable: !!deliverable,
   }])
 
-  const nosToca = armarNosToca(indice, atencion)
   const movimientos = armarMovimientos({
     projectId: id,
     landscape: await listLandscapeActivity(db, id, 8),
@@ -90,21 +86,31 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
     limite: 8,
   })
   const ahora = new Date()
+  // La fase del Sistema M&B, la misma que dicen el inicio y el menú; la vieja queda de
+  // respaldo si el proyecto no aparece en el Sistema.
+  const sistema = await cargarSistema(db, ahora)
+  const fila = sistema.find(p => p.id === id)
+  const faseDeFila = fila?.fases.find(f => f.key === fila.actual)
+  const bajada = faseDeFila ? `${faseDeFila.label} · ${faseDeFila.detalle}` : `${actual.label} · ${actual.detalle}`
+  const nosToca = armarNosToca(indice, atencion, fila && faseDeFila ? { sigue: fila.sigue, fase: faseDeFila.label } : undefined)
 
   return (
-    <AdminShell activeProjectId={id}>
+    <AdminShell
+      activeProjectId={id}
+      sistema={sistema}
+      indice={<ProjectIndex enResumen projectId={id} nombre={project.name} subtitulo={bajada} fases={indice} />}
+    >
       <div className="max-w-3xl">
-        <CabeceraProyecto
-          portada
-          projectId={id}
-          nombre={project.name}
-          subtitulo={`${actual.label} · ${actual.detalle}`}
-        />
+        <header className="border-b border-[var(--line)] pb-6">
+          <p className="font-mono text-[11px] uppercase tracking-[.12em] text-[var(--rotulo)]">Resumen</p>
+          <h1 className="mt-2 font-serif text-[30px] leading-tight tracking-[-.02em] text-[var(--ink)]">{project.name}</h1>
+          <p className="mt-1 text-[13px] text-[var(--rotulo)]">{bajada}</p>
+        </header>
 
         <Zona titulo="Nos toca">
           {nosToca.length === 0 ? (
             <p className="border-t border-[var(--line)] pt-3 text-[14px] text-[var(--secundario)]">
-              Nada espera una decisión del equipo. El recorrido de abajo dice por dónde seguir.
+              Nada espera una decisión del equipo. El menú de la izquierda dice por dónde seguir.
             </p>
           ) : (
             <ul>
@@ -153,10 +159,6 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
               ))}
             </ul>
           )}
-        </Zona>
-
-        <Zona titulo="El recorrido">
-          <RecorridoPlegable fases={indice} />
         </Zona>
       </div>
     </AdminShell>

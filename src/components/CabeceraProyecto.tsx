@@ -13,12 +13,10 @@ import { useCerrarConEscape } from './PanelMovil'
  * Borrar exige tipear el nombre exacto: es irreversible y se lleva las entrevistas y
  * todo el historial, así que la fricción es a propósito.
  */
-export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false }: {
+export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
   projectId: string
   nombre: string
   subtitulo: string
-  /** En la mesa de trabajo la cabecera es el título de la página: más aire y más cuerpo. */
-  portada?: boolean
 }) {
   const router = useRouter()
   const [modo, setModo] = useState<'normal' | 'renombrando' | 'borrando'>('normal')
@@ -62,7 +60,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
   }
 
   return (
-    <div className={portada ? 'border-b border-[var(--line)] pb-6' : ''}>
+    <div>
       <Link
         href="/admin"
         className="inline-flex items-center gap-1.5 text-[13px] text-[var(--secundario)] transition-colors duration-200 hover:text-ink"
@@ -100,14 +98,12 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
           {error && <p className="mt-1.5 text-[11px] leading-snug text-[var(--error)]">{error}</p>}
         </form>
       ) : (
-        <div className={portada ? 'mt-2 flex items-start gap-2' : 'mt-4 flex items-start gap-1.5'}>
+        <div className="mt-4 flex items-start gap-1.5">
           <div className="min-w-0 flex-1">
-            <p className={portada
-              ? 'font-serif text-[30px] font-normal leading-tight tracking-[-.02em] text-[var(--ink)]'
-              : 'font-serif text-[21px] leading-tight tracking-[-.015em] text-[var(--ink)]'}>
+            <p className="font-serif text-[21px] leading-tight tracking-[-.015em] text-[var(--ink)]">
               {nombre}
             </p>
-            <p className={portada ? 'mt-1 text-[13px] text-[var(--rotulo)]' : 'mt-1.5 text-[13px] leading-snug text-[var(--secundario)]'}>{subtitulo}</p>
+            <p className="mt-1.5 text-[13px] leading-snug text-[var(--secundario)]">{subtitulo}</p>
           </div>
           <button
             type="button"

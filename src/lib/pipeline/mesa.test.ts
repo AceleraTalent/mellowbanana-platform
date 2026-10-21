@@ -8,7 +8,7 @@ const entrada = (over: Partial<FaseIndice['entradas'][0]>) => ({
 })
 
 const fase = (over: Partial<FaseIndice>): FaseIndice => ({
-  key: 'landscape', label: 'Landscape', avance: '2/6', entradas: [], ocultas: 0, hrefTodas: '/x?todas=1', ...over,
+  key: 'landscape', label: 'Landscape', avance: '2/6', entradas: [], ...over,
 })
 
 const atencion = (over: Partial<AttentionItem>): AttentionItem => ({
@@ -17,6 +17,26 @@ const atencion = (over: Partial<AttentionItem>): AttentionItem => ({
 })
 
 describe('armarNosToca', () => {
+  it('lo que sigue según el Sistema va primero, y la espera de su misma etapa no se repite', () => {
+    const indice = [fase({
+      entradas: [
+        entrada({ key: 'landscape:contexto', label: 'Contexto del sector', href: '/admin/projects/p1/landscape?etapa=contexto', espera: true }),
+        entrada({ key: 'landscape:panorama', label: 'Panorama', href: '/admin/projects/p1/landscape?etapa=panorama', espera: true }),
+      ],
+    })]
+    const toca = armarNosToca(indice, [], {
+      fase: 'Landscape',
+      sigue: { quien: 'revisar', texto: 'Por revisar', detalle: '2.1 Fuentes del sector', href: '/admin/projects/p1/landscape?paso=2.1' },
+    })
+    expect(toca.map(t => t.titulo)).toEqual(['Revisar «2.1 Fuentes del sector»', 'Revisar «Panorama»'])
+    expect(toca[0].sub).toBe('Landscape · lo que sigue')
+  })
+
+  it('lo que espera al cliente no es algo que nos toque', () => {
+    const toca = armarNosToca([], [], { fase: 'Taller', sigue: { quien: 'cliente', texto: 'Esperando entrevistas', detalle: '3 de 4', href: '/x' } })
+    expect(toca).toEqual([])
+  })
+
   it('cada etapa con versión sin aprobar es una decisión con su link directo', () => {
     const indice = [fase({
       entradas: [

@@ -7,6 +7,8 @@ import { projectSignals } from '@/lib/pipeline/signals'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { PhaseNote } from '@/components/PhaseNote'
+import { FaseManual } from '@/components/FaseManual'
+import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 
@@ -50,10 +52,16 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
     ],
   })
   const actual = pantallaActual(fases, pantallas)
+  // Cerrar el taller es lo único que la plataforma no ve: lo marca el equipo, y vale lo
+  // mismo que marcarlo desde el inicio.
+  const sistema = await cargarSistema(db)
+  const faseTaller = sistema.find(p => p.id === id)?.fases.find(f => f.key === 'taller')
+  const hecho = faseTaller?.estado === 'completa'
 
   return (
     <AdminShell
       activeProjectId={id}
+      sistema={sistema}
       indice={
         <ProjectIndex
           projectId={id}
@@ -64,9 +72,9 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
       }
     >
       <PhaseNote
-        titulo="Taller"
-        estado={taller.status}
-        bajada={taller.detalle}
+        titulo="Taller en Miro"
+        estado={hecho ? 'completa' : taller.status}
+        bajada={hecho ? 'El equipo lo marcó como hecho.' : taller.detalle}
       >
         <p className="mt-4 max-w-[60ch] text-[14px] leading-[1.66] text-[var(--secundario)]">
           El taller se hace en Miro, con el equipo y el cliente en la misma mesa. Lo que importa acá es lo
@@ -77,6 +85,17 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
           Todavía no se pueden transcribir las conclusiones desde el panel. Es la próxima pieza de esta
           fase: sin ella, lo que el taller decide no vuelve al proyecto.
         </p>
+        {faseTaller && (
+          <div className="mt-8 max-w-[360px] border-t border-[var(--line)] pt-5">
+            <p className="text-[14px] font-semibold text-[var(--ink)]">¿Ya se hizo el taller?</p>
+            <p className="mt-1 text-[13px] leading-snug text-[var(--secundario)]">
+              Al marcarlo, el Sistema M&amp;B da el Taller por terminado.
+            </p>
+            <div className="mt-3">
+              <FaseManual projectId={id} fase="taller" label="el taller" estado={faseTaller.estado} />
+            </div>
+          </div>
+        )}
       </PhaseNote>
     </AdminShell>
   )

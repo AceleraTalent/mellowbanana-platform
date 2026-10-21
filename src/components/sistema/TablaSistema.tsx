@@ -8,24 +8,13 @@ import {
   type EstadoFase, type EstadoManual, type FaseConEstado, type FaseSistema, type Quien,
 } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
+import { CHIP, MARCA } from './chips'
 
 /**
  * El Sistema M&B dentro de la plataforma: una fila por cliente con su fase, qué sigue,
  * quién lo lleva, la fecha de entrega y las notas del equipo. Lo calculado (fase, qué
  * sigue, último movimiento) no se edita; lo del equipo se edita ahí mismo, sin abrir nada.
  */
-
-const CHIP: Record<Quien, string> = {
-  revisar: 'bg-[var(--banana)] text-[var(--ink)]',
-  equipo: 'bg-[var(--banana)] text-[var(--ink)]',
-  claude: 'bg-[var(--ink)] text-white',
-  cliente: 'text-[var(--secundario)] pl-0',
-  pausa: 'border border-dashed border-[var(--rotulo)] text-[var(--secundario)]',
-  listo: 'bg-[var(--papel-hondo)] text-[var(--ink)]',
-}
-
-/** Lo que va antes del texto del chip cuando no lleva fondo: se lee sin depender del color. */
-const MARCA: Partial<Record<Quien, string>> = { cliente: '○ ', pausa: '‖ ', listo: '✓ ' }
 
 /** Lo que nos toca va primero; lo terminado, al final. */
 const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, cliente: 3, pausa: 4, listo: 5 }

@@ -60,6 +60,8 @@ export interface FaseConEstado {
   label: string
   estado: EstadoFase
   detalle: string
+  /** “7/15”: sólo en las fases que se cuentan (Landscape por pasos, Estrategia por etapas). */
+  avance?: string
 }
 
 function taller(s: SenalesProyecto): Omit<FaseConEstado, 'key' | 'label'> {
@@ -74,19 +76,21 @@ function taller(s: SenalesProyecto): Omit<FaseConEstado, 'key' | 'label'> {
 function landscape(s: SenalesProyecto): Omit<FaseConEstado, 'key' | 'label'> {
   const aplicables = s.pasos.filter(p => p.estado !== 'no_aplica')
   const hechos = aplicables.filter(p => p.estado === 'hecho').length
-  if (aplicables.length && hechos === aplicables.length) return { estado: 'completa', detalle: `Los ${hechos} pasos listos` }
+  const avance = `${hechos}/${aplicables.length}`
+  if (aplicables.length && hechos === aplicables.length) return { estado: 'completa', detalle: `Los ${hechos} pasos listos`, avance }
   if (hechos > 0 || aplicables.some(p => p.estado === 'revisar'))
-    return { estado: 'en_curso', detalle: `${hechos} de ${aplicables.length} pasos` }
-  return { estado: 'pendiente', detalle: 'Sin empezar' }
+    return { estado: 'en_curso', detalle: `${hechos} de ${aplicables.length} pasos`, avance }
+  return { estado: 'pendiente', detalle: 'Sin empezar', avance }
 }
 
 function estrategia(s: SenalesProyecto): Omit<FaseConEstado, 'key' | 'label'> {
   const total = s.estrategia.length
   const aprobadas = s.estrategia.filter(e => e.aprobada).length
-  if (total && aprobadas === total) return { estado: 'completa', detalle: `Las ${total} etapas aprobadas` }
+  const avance = `${aprobadas}/${total}`
+  if (total && aprobadas === total) return { estado: 'completa', detalle: `Las ${total} etapas aprobadas`, avance }
   if (aprobadas > 0 || s.estrategia.some(e => e.trabajada))
-    return { estado: 'en_curso', detalle: `${aprobadas} de ${total} etapas aprobadas` }
-  return { estado: 'pendiente', detalle: 'Sin empezar' }
+    return { estado: 'en_curso', detalle: `${aprobadas} de ${total} etapas aprobadas`, avance }
+  return { estado: 'pendiente', detalle: 'Sin empezar', avance }
 }
 
 function manual(estado: EstadoFase | undefined): Omit<FaseConEstado, 'key' | 'label'> {

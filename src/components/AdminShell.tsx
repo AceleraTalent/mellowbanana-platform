@@ -5,6 +5,7 @@ import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { Wordmark } from './Brand'
 import { PanelMovil } from './PanelMovil'
 import { Buscador, type Buscable } from './Buscador'
+import type { SistemaDelProyecto } from './ProjectIndex'
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
@@ -63,14 +64,17 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
     .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
     .map(p => p.id))
 
-  // La línea bajo el nombre del proyecto sale del Sistema M&B, no de la página: así el
-  // índice dice la misma fase que el inicio (“Landscape · 7 de 15 pasos”). La página arma el
-  // índice y el shell conoce el Sistema, por eso se completa acá; la que trae la página
-  // queda de respaldo si el proyecto no aparece en el Sistema.
+  // El menú del cliente se completa con el Sistema M&B, no con lo que trae la página: así
+  // dice la misma fase, el mismo avance y lo mismo que sigue que el inicio (“Landscape · 7
+  // de 15 pasos”). La página arma el índice y el shell conoce el Sistema, por eso se
+  // completa acá; lo que trae la página queda de respaldo si el proyecto no aparece.
   const fila = activeProjectId ? proyectos.find(p => p.id === activeProjectId) : undefined
   const faseDeFila = fila?.fases.find(f => f.key === fila.actual)
-  const indiceConFase = fila && faseDeFila && isValidElement<{ subtitulo?: string }>(indice)
-    ? cloneElement(indice, { subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}` })
+  const indiceConFase = fila && faseDeFila && isValidElement<{ subtitulo?: string; sistema?: SistemaDelProyecto }>(indice)
+    ? cloneElement(indice, {
+        subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}`,
+        sistema: { fases: fila.fases, actual: fila.actual, sigue: fila.sigue, pasos: fila.pasos },
+      })
     : indice
 
   const barra = (

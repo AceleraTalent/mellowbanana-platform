@@ -15,10 +15,10 @@ export const dynamic = 'force-dynamic'
 
 export default async function EstrategiaView({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ etapa?: string; todas?: string }>
+  searchParams: Promise<{ etapa?: string }>
 }) {
   const { id } = await params
-  const { etapa, todas } = await searchParams
+  const { etapa } = await searchParams
   const project = await getProjectWithSessions(db, id)
   if (!project) return (
     <AdminShell activeProjectId={id}>
@@ -56,7 +56,6 @@ export default async function EstrategiaView({ params, searchParams }: {
       ...esperanDecision('landscape', landscapeEstado),
       ...esperanDecision('estrategia', estado),
     ],
-    todas: todas === '1',
   })
   const actual = pantallaActual(fases, pantallas)
   // Lo que la fase necesita de otra y todavía no llegó. Lo rendía `ProjectHeader`; ahora

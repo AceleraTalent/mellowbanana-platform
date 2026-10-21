@@ -10,6 +10,8 @@ import type { AttentionItem } from './attention'
 import type { ActivityEntry } from '@/lib/db/store'
 import { STAGE_LABEL, type StageKey } from '@/lib/landscape/stages'
 import { ETAPA_LABEL, type EstrategiaKey } from '@/lib/estrategia/stages'
+import { PASOS } from '@/lib/landscape/pasos'
+import type { QueSigue } from '@/lib/seguimiento/sistema'
 
 export interface PendienteMesa {
   titulo: string
@@ -17,16 +19,38 @@ export interface PendienteMesa {
   href: string
 }
 
+/** La etapa del Landscape a la que lleva un link de paso (`?paso=2.1` → `?etapa=contexto`). */
+function etapaDelPaso(href: string): string | undefined {
+  const id = /[?&]paso=([\d.]+)/.exec(href)?.[1]
+  const paso = PASOS.find(p => p.id === id)
+  return paso && href.replace(/\?.*$/, `?etapa=${paso.etapa}`)
+}
+
 /**
- * Las decisiones que esperan al equipo, con su link directo. Dos fuentes:
- * las etapas con una versión sin aprobar (lo fino), y la cola de atención del
- * proyecto (lo grueso: "sin entrevistas", "propuesta lista para generar").
- * Cuando lo grueso apunta a una fase que ya tiene esperas finas, se calla:
- * "Landscape en curso" no agrega nada al lado de "Revisar Tendencias".
+ * Las decisiones que esperan al equipo, con su link directo. Tres fuentes: lo que sigue
+ * según el Sistema M&B (va primero: es lo mismo que dice el menú), las etapas con una
+ * versión sin aprobar (lo fino) y la cola de atención del proyecto (lo grueso: "sin
+ * entrevistas", "propuesta lista para generar"). Cuando lo grueso apunta a una fase que ya
+ * tiene esperas finas, se calla: "Landscape en curso" no agrega nada al lado de "Revisar
+ * Tendencias". Y la espera de la etapa donde está lo que sigue también: ya está arriba.
  */
-export function armarNosToca(indice: FaseIndice[], atencion: AttentionItem[]): PendienteMesa[] {
+export function armarNosToca(
+  indice: FaseIndice[],
+  atencion: AttentionItem[],
+  delSistema?: { sigue: QueSigue; fase: string },
+): PendienteMesa[] {
+  const s = delSistema?.sigue
+  const primero: PendienteMesa[] = s?.href && s.detalle && (s.quien === 'equipo' || s.quien === 'revisar' || s.quien === 'claude')
+    ? [{
+        titulo: s.quien === 'revisar' ? `Revisar «${s.detalle}»` : s.detalle,
+        sub: `${delSistema!.fase} · ${s.quien === 'claude' ? 'le toca a Claude, se lo pide el equipo' : 'lo que sigue'}`,
+        href: s.href,
+      }]
+    : []
+  const yaArriba = new Set(primero.flatMap(p => [p.href, etapaDelPaso(p.href)]).filter(Boolean))
+
   const esperas: PendienteMesa[] = indice.flatMap(f =>
-    f.entradas.filter(e => e.espera).map(e => ({
+    f.entradas.filter(e => e.espera && !yaArriba.has(e.href)).map(e => ({
       titulo: `Revisar «${e.label}»`,
       sub: `${f.label} · hay una versión sin aprobar`,
       href: e.href,
@@ -35,10 +59,10 @@ export function armarNosToca(indice: FaseIndice[], atencion: AttentionItem[]): P
 
   const gruesas: PendienteMesa[] = atencion
     .filter(a => a.bloqueo === 'equipo')
-    .filter(a => !esperas.some(e => e.href.startsWith(a.href)))
+    .filter(a => ![...primero, ...esperas].some(e => e.href.startsWith(a.href)))
     .map(a => ({ titulo: a.accion, href: a.href }))
 
-  return [...gruesas, ...esperas]
+  return [...primero, ...gruesas, ...esperas]
 }
 
 export interface Movimiento {

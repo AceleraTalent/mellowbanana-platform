@@ -20,10 +20,10 @@ export const dynamic = 'force-dynamic'
 
 export default async function LandscapeView({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ etapa?: string; paso?: string; todas?: string }>
+  searchParams: Promise<{ etapa?: string; paso?: string }>
 }) {
   const { id } = await params
-  const { etapa, paso: pasoQuery, todas } = await searchParams
+  const { etapa, paso: pasoQuery } = await searchParams
   const project = await getProjectWithSessions(db, id)
   if (!project) return (
     <AdminShell activeProjectId={id}>
@@ -86,7 +86,6 @@ export default async function LandscapeView({ params, searchParams }: {
       ...esperanDecision('landscape', estado),
       ...esperanDecision('estrategia', estrategiaEstado),
     ],
-    todas: todas === '1',
   })
   // El paso a paso de la etapa activa cuelga de su entrada en el índice.
   for (const fase of indice) for (const entrada of fase.entradas) {

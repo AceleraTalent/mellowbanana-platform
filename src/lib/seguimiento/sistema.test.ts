@@ -45,6 +45,14 @@ describe('estadoDeFases', () => {
     expect(fase(s, 'landscape')).toMatchObject({ estado: 'en_curso', detalle: '2 de 15 pasos' })
   })
 
+  it('las fases que se cuentan traen su avance corto, el mismo para el inicio y el menú', () => {
+    expect(fase(senales({ pasos: pasos({}, ['1.1', '1.2']) }), 'landscape').avance).toBe('2/15')
+    expect(fase(senales({ estrategia: estrategia(3) }), 'estrategia').avance).toBe('3/14')
+    // Las que no se cuentan no inventan un número.
+    expect(fase(senales(), 'taller').avance).toBeUndefined()
+    expect(fase(senales(), 'naming').avance).toBeUndefined()
+  })
+
   it('la personalidad que se sincroniza sola no cuenta como estrategia empezada', () => {
     expect(fase(senales(), 'estrategia').estado).toBe('pendiente')
     expect(fase(senales({ estrategia: estrategia(0, { trabajada: true }) }), 'estrategia').estado).toBe('en_curso')

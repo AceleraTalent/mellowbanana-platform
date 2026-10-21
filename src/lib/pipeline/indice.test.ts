@@ -36,37 +36,14 @@ describe('construirIndice', () => {
     expect(actuales.map(e => e.key)).toEqual(['landscape:tendencias'])
   })
 
-  it('colapsa una fase de más de seis etapas y cuenta las ocultas', () => {
+  it('trae todas las etapas de estrategia, sin recortar', () => {
+    // El menú abre sólo la fase activa: ya no hace falta esconder etapas detrás de “＋ n más”.
     const fase = construirIndice({ ...base(), etapaActiva: 'estrategia:personalidad' })
-      .find(f => f.key === 'estrategia')!
-    expect(fase.entradas).toHaveLength(6)
-    expect(fase.ocultas).toBe(8)
-    expect(fase.entradas.some(e => e.key === 'estrategia:personalidad')).toBe(true)
-  })
-
-  it('con todas=true no colapsa nada', () => {
-    const fase = construirIndice({ ...base(), etapaActiva: 'estrategia:personalidad', todas: true })
       .find(f => f.key === 'estrategia')!
     expect(fase.entradas).toHaveLength(14)
-    expect(fase.ocultas).toBe(0)
-  })
-
-  it('el link a “todas” conserva la etapa activa de esa fase', () => {
-    const fase = construirIndice({ ...base(), etapaActiva: 'estrategia:personalidad' })
-      .find(f => f.key === 'estrategia')!
-    expect(fase.hrefTodas).toBe('/admin/projects/p1/estrategia?etapa=personalidad&todas=1')
-  })
-
-  it('el link a “todas” de otra fase no inventa una etapa activa', () => {
-    // Parado en el landscape, la estrategia no tiene etapa activa que preservar: revelar
-    // sus ocultas no puede llevar una `?etapa=` de otra fase puesta.
-    const fase = construirIndice({ ...base(), etapaActiva: 'landscape:tendencias' })
-      .find(f => f.key === 'estrategia')!
-    expect(fase.hrefTodas).toBe('/admin/projects/p1/estrategia?todas=1')
   })
 
   it('pone el rótulo del bloque en la primera etapa de cada bloque de estrategia', () => {
-    // Sin colapso: con la primera etapa activa la ventana arranca en 0.
     const fase = construirIndice({ ...base(), etapaActiva: 'estrategia:diagnostico' })
       .find(f => f.key === 'estrategia')!
     expect(fase.entradas[0].bloque).toBe('Diagnóstico y consumidor')
