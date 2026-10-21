@@ -2,6 +2,41 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-10-21 (bis) — Que funcione de verdad: cuentas, avisos, el deck desde la plataforma y Estrategia
+
+- **Hecho:** revisión funcional contra producción (el conector real devuelve `sigue`) y con los
+  datos reales de Heroica. Se encontró y arregló:
+  - La Entrega de Heroica tenía un borrador de Claude que la página nueva no mostraba (lo rompió
+    el deploy del mismo día): paso opcional 6.0, se ve y se aprueba.
+  - Las rutas de guardar/aprobar etapas, la descarga del deck y generar la propuesta (créditos del
+    modelo) no pedían sesión. Ahora sí.
+  - El Diagnóstico se marca como que no aplica (marca nueva) desde su sección.
+  - `contexto_proyecto` trae `borradorSinAprobar`: un chat nuevo retoma o corrige lo pendiente.
+  - Borrar un proyecto no limpiaba `landscape_pasos` ni `project_seguimiento`.
+- **Pedido del estudio:**
+  - Cuentas por persona (usuario y clave, sin correo) en `/admin/equipo`; la llave maestra queda de
+    respaldo; el historial dice quién aprobó (`approved_by`). Ver DECISIONES.
+  - Avisos: campana arriba de la barra con las entrevistas que llegaron sin mirar
+    (`/admin/avisos`), sin tabla nueva. El correo sale cuando se termine de configurar Resend.
+  - Conclusiones del Taller opcionales: se pegan en el Taller o Claude las guarda desde el chat
+    (`guardar_conclusiones_taller`); si faltan, Claude pide los 4 competidores o parte del Enfoque.
+    Tener conclusiones no cierra el taller: eso lo marca el equipo.
+- **El deck sale de la plataforma:** paso 3.5 (desarrollo de las tendencias elegidas) y los casos, el
+  brand assets y el círculo cromático se guardan como piezas aprobables en su sección.
+  `/landscape/documento` junta todo lo aprobado en el orden del deck, para el template o PDF.
+- **Estrategia** pasó al mismo formato de una página, con su franja y `sigue` para Claude: en
+  Heroica había 13 borradores y ninguno aprobado.
+- **Demo local:** la base PGlite se dañaba cada vez que se detenía el servidor; el cliente de la
+  demo (sin commitear) ahora la cierra al recibir la señal de apagado.
+- **Quedó:**
+  - Subir a producción (migraciones 0005 y 0006 corren solas en el deploy). Después del deploy todos
+    entran con la llave maestra una vez y crean las cuentas.
+  - Correo de avisos: aceptar los términos de Resend en Vercel, `NOTIFY_EMAIL_TO` y un dominio
+    verificado para `NOTIFY_EMAIL_FROM`.
+  - Cambiar la llave maestra por una larga; recuperar el acceso a Neon.
+  - 8 procesos `yes` corriendo hace 56 días en la máquina (no son de esta sesión) se comen la CPU.
+  - Sin responder: Naming antes o después de Estrategia; si el equipo aprueba «Personalidad».
+
 ## 2026-10-19/21 — El panel para trabajar a la par con Claude: inicio, menú y Landscape en una página
 
 - **Hecho:** el estudio no entendía cómo seguir el proceso entre las dos pantallas (claude.ai y
