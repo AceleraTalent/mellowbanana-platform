@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { eq, and } from 'drizzle-orm'
 import { makeTestDb, makeFreshTestDb } from './testdb'
+import { marcarPaso, pasosMarcados } from './pasos-store'
+import { actualizarSeguimiento } from './seguimiento-store'
 import {
   createSession, saveAnswer, getSessionWithAnswers, completeSession, setNormalized,
   normalizeCompanyName, findOrCreateProject, assignSessionToProject,
@@ -134,6 +136,17 @@ describe('projects & deliverables', () => {
     expect(await listLandscapeVersions(db, otraVez.id)).toHaveLength(0)
 
     await expect(deleteProject(db, p.id)).rejects.toBeInstanceOf(ErrorNoEncontrado)
+  })
+
+  it('borrar el proyecto también se lleva sus pasos marcados y su seguimiento', async () => {
+    const db = await makeTestDb()
+    const p = await findOrCreateProject(db, 'Con marcas')
+    await marcarPaso(db, p.id, '1.1', true)
+    await actualizarSeguimiento(db, p.id, { encargado: 'Ana' })
+
+    await deleteProject(db, p.id)
+    expect(await getProjectWithSessions(db, p.id)).toBeNull()
+    expect(await pasosMarcados(db, p.id)).toEqual(new Set())
   })
 
   it('saveDeliverable/getDeliverable persisten y hacen upsert', async () => {
