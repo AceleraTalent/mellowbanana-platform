@@ -18,7 +18,7 @@ import { EJES, type TendenciaCandidata } from '@/lib/landscape/stages'
 type Contenido = Record<string, unknown>
 
 /** El primer campo presente entre varios nombres posibles, y la lista de los nombres usados. */
-function lector(c: Contenido) {
+export function lector(c: Contenido) {
   const usados = new Set<string>()
   const leer = (...nombres: string[]): unknown => {
     for (const n of nombres) usados.add(n)
@@ -29,7 +29,7 @@ function lector(c: Contenido) {
 }
 
 /** Lo que Claude guardó y ninguna vista sabe mostrar. Se muestra igual, al final. */
-function MasInformacion({ c, usados }: { c: Contenido; usados: Set<string> }) {
+export function MasInformacion({ c, usados }: { c: Contenido; usados: Set<string> }) {
   const resto = Object.fromEntries(Object.entries(c).filter(([k]) => !usados.has(k)))
   if (!Object.keys(resto).length) return null
   return (
@@ -39,7 +39,7 @@ function MasInformacion({ c, usados }: { c: Contenido; usados: Set<string> }) {
   )
 }
 
-function Documento({ children }: { children: React.ReactNode }) {
+export function Documento({ children }: { children: React.ReactNode }) {
   return <div className="space-y-9">{children}</div>
 }
 

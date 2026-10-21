@@ -1,7 +1,9 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { BriefView } from './answers-view'
 
-const C = { ink: '#1F1B14', gray: '#9A917D', cream: '#FAF6EC', banana: '#fcf251', border: '#ECE4D2', secGray: '#B9AF98', foot: '#BCB29C' }
+// La paleta “Papel” del panel. Los grises son los de los rótulos del panel, que pasan 4.5:1;
+// los titulares van en Helvetica Bold hasta que haya TTF con licencia (Favorit).
+const C = { ink: '#15120C', gray: '#6B6559', cream: '#F6F4EE', banana: '#fcf251', border: '#E2DED3', secGray: '#6B6559', foot: '#8A8478' }
 
 const s = StyleSheet.create({
   page: { paddingTop: 34, paddingBottom: 46, fontFamily: 'Helvetica', color: C.ink, fontSize: 11 },
@@ -11,13 +13,13 @@ const s = StyleSheet.create({
   body: { paddingHorizontal: 40 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
   logo: { width: 46, height: 46, borderRadius: 8, backgroundColor: C.banana, alignItems: 'center', justifyContent: 'center' },
-  logoTxt: { fontFamily: 'Times-Roman', fontSize: 8, color: '#ffffff', textAlign: 'center' },
-  title: { fontFamily: 'Times-Roman', fontSize: 20 },
+  logoTxt: { fontFamily: 'Helvetica-Bold', fontSize: 7.5, lineHeight: 1.1, color: C.ink, textAlign: 'center' },
+  title: { fontFamily: 'Helvetica-Bold', fontSize: 20, letterSpacing: -0.4 },
   subtitle: { color: C.gray, fontSize: 10, marginTop: 2 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, marginBottom: 4 },
   metaLabel: { color: C.gray, fontSize: 9 },
   metaVal: { fontSize: 12 },
-  secTitle: { fontFamily: 'Times-Roman', fontSize: 12, color: C.secGray, textTransform: 'uppercase', letterSpacing: 1, borderBottomWidth: 1, borderBottomColor: C.border, paddingBottom: 6, marginTop: 30, marginBottom: 10 },
+  secTitle: { fontFamily: 'Helvetica-Bold', fontSize: 9, color: C.secGray, textTransform: 'uppercase', letterSpacing: 1.5, borderBottomWidth: 1, borderBottomColor: C.border, paddingBottom: 6, marginTop: 30, marginBottom: 10 },
   q: { color: C.gray, fontSize: 10, marginTop: 14 },
   a: { fontSize: 12, marginTop: 3, lineHeight: 1.4 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

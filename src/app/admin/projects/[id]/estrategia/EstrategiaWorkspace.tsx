@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BLOQUES, ETAPA_LABEL, ETAPA_ORDER, type EstrategiaKey, type EtapaEstrategia } from '@/lib/estrategia/stages'
 import { mensajeEstrategia, type QueSigueEstrategia } from '@/lib/estrategia/sigue'
-import { ContenidoEtapa } from '../landscape/ContenidoEtapa'
+import { VistaEstrategia } from '@/components/documento/estrategia'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
 import { AvisoVersionNueva, NotaDependencia } from '@/components/EtapaPartes'
-import { BarraDeRevision, BOTON_PRIMARIO, Franja, SeguirEnClaude } from '@/components/paso/piezas'
+import { BarraDeRevision, BOTON_PRIMARIO, BOTON_SECUNDARIO, Franja, SeguirEnClaude } from '@/components/paso/piezas'
 import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 
 export type ContenidoEstrategiaVista = {
@@ -148,7 +148,7 @@ export function EstrategiaWorkspace({
           </div>
         )}
         <p className="mb-6 text-[12.5px] text-[var(--rotulo)]">{contenido.procedencia}</p>
-        <ContenidoEtapa content={contenido.content} />
+        <VistaEstrategia etapa={e.key} content={contenido.content} />
         {!contenido.aprobada && (
           <BarraDeRevision
             procedencia={contenido.procedencia}
@@ -181,7 +181,10 @@ export function EstrategiaWorkspace({
 
   return (
     <div className="max-w-[860px]">
-      <EncabezadoPagina rotulo={`Estrategia · ${aprobadas} de ${aplicables} etapas aprobadas`} titulo="Estrategia" />
+      <EncabezadoPagina rotulo={`Estrategia · ${aprobadas} de ${aplicables} etapas aprobadas`} titulo="Estrategia">
+        {/* Todo lo aprobado, por bloques: para pasarlo al deck o guardarlo en PDF. */}
+        <a href={`/admin/projects/${projectId}/estrategia/documento`} className={BOTON_SECUNDARIO}>Documento para el deck ↗</a>
+      </EncabezadoPagina>
       {dependencia && <NotaDependencia texto={dependencia} />}
 
       {franja}

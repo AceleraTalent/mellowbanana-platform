@@ -2,12 +2,14 @@ import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { DeckView, DeckSection, DeckBlock, DeckItem } from './view-model'
 import type { Origen } from '@/lib/deliverable/schema'
 
+// La paleta “Papel” del panel. Los titulares van en Helvetica Bold —la más cercana a la
+// Geist del panel entre las que trae @react-pdf— hasta que haya TTF con licencia (Favorit).
 const C = {
   banana: '#fcf251',
-  ink: '#1a1510',
-  cream: '#fffdf2',
-  gray: '#6b6155',
-  border: '#e6dfd0',
+  ink: '#15120C',
+  cream: '#F6F4EE',   // el papel del panel
+  gray: '#6B6559',    // el gris de los rótulos: pasa 4.5:1 sobre el papel
+  border: '#E2DED3',
 }
 
 const ORIGEN_LABEL: Partial<Record<Origen, string>> = {
@@ -22,23 +24,24 @@ const s = StyleSheet.create({
   // Portada
   cover: { backgroundColor: C.ink, height: '100%', justifyContent: 'flex-end', padding: 44 },
   coverBar: { width: 90, height: 10, backgroundColor: C.banana, marginBottom: 18 },
-  coverTitle: { fontFamily: 'Times-Roman', fontSize: 34, color: C.cream },
+  coverTitle: { fontFamily: 'Helvetica-Bold', fontSize: 34, letterSpacing: -0.8, lineHeight: 1.1, color: C.cream },
   coverBrand: { fontFamily: 'Helvetica-Bold', fontSize: 15, color: C.banana, marginTop: 16 },
   coverDate: { fontSize: 10, color: '#9a9186', marginTop: 6 },
 
   // Divisor de sección: campo amarillo, número gigante detrás
   divider: { backgroundColor: C.banana, height: '100%', justifyContent: 'center', padding: 44 },
-  divNum: { position: 'absolute', right: 24, bottom: -10, fontFamily: 'Times-Roman', fontSize: 190, color: C.ink, opacity: 0.12 },
+  divNum: { position: 'absolute', right: 24, bottom: -10, fontFamily: 'Helvetica-Bold', fontSize: 190, letterSpacing: -8, color: C.ink, opacity: 0.1 },
   divKicker: { fontFamily: 'Helvetica-Bold', fontSize: 9, color: C.ink, opacity: 0.6, letterSpacing: 2, marginBottom: 12 },
-  divTitle: { fontFamily: 'Times-Roman', fontSize: 30, color: C.ink, maxWidth: '80%' },
+  divTitle: { fontFamily: 'Helvetica-Bold', fontSize: 30, letterSpacing: -0.6, lineHeight: 1.15, color: C.ink, maxWidth: '80%' },
 
   // Contenido
   secHead: { fontFamily: 'Helvetica-Bold', fontSize: 9, color: C.gray, letterSpacing: 1.5, marginBottom: 18 },
-  blockTitle: { fontFamily: 'Times-Roman', fontSize: 14, marginTop: 20, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: C.border, paddingBottom: 5 },
+  blockTitle: { fontFamily: 'Helvetica-Bold', fontSize: 12.5, marginTop: 22, marginBottom: 8, borderTopWidth: 1.5, borderTopColor: C.ink, paddingTop: 7 },
   parrafo: { fontSize: 12, lineHeight: 1.5 },
 
   item: { flexDirection: 'row', marginTop: 9 },
-  bullet: { width: 12, fontSize: 11, color: C.banana },
+  // El amarillo sobre el papel no se ve: la raya va en tinta.
+  bullet: { width: 12, fontSize: 11, color: C.ink },
   itemBody: { flex: 1 },
   itemText: { fontSize: 11.5, lineHeight: 1.45 },
   // Sin fontStyle italic: obligaría a registrar Helvetica-Oblique. El gris + la etiqueta ya distinguen.
@@ -53,12 +56,12 @@ const s = StyleSheet.create({
   jtbdHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   jtbdNumBox: { width: 20, height: 20, backgroundColor: C.banana, alignItems: 'center', justifyContent: 'center' },
   jtbdNum: { fontFamily: 'Helvetica-Bold', fontSize: 10, color: C.ink },
-  jtbdJob: { flex: 1, fontFamily: 'Times-Roman', fontSize: 13.5, lineHeight: 1.35, paddingTop: 1 },
+  jtbdJob: { flex: 1, fontFamily: 'Helvetica-Bold', fontSize: 12.5, lineHeight: 1.35, paddingTop: 1 },
   jtbdSol: { fontSize: 10.5, lineHeight: 1.45, color: C.ink, marginTop: 8, marginLeft: 30,
     paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: C.banana },
   jtbdComo: { fontSize: 11, lineHeight: 1.5, marginTop: 8, marginLeft: 30 },
 
-  error: { backgroundColor: '#fff4f4', borderWidth: 1, borderColor: '#f0d0d0', padding: 12, fontSize: 10, color: '#8a3a3a', marginTop: 16 },
+  error: { borderLeftWidth: 1.5, borderLeftColor: '#B3261E', paddingLeft: 10, fontSize: 10, color: '#B3261E', marginTop: 16 },
   foot: { position: 'absolute', bottom: 18, left: 44, right: 44, flexDirection: 'row', justifyContent: 'space-between', fontSize: 9, color: C.gray },
 })
 

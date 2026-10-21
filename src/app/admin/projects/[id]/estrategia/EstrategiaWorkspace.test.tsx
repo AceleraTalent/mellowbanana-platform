@@ -65,7 +65,7 @@ describe('EstrategiaWorkspace · toda la Estrategia en una página', () => {
   it('las catorce etapas son secciones, agrupadas en los bloques del proceso', () => {
     montar()
     expect(screen.getByRole('heading', { level: 1, name: 'Estrategia' })).toBeTruthy()
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(14)
+    expect(document.querySelectorAll('section[aria-labelledby^="titulo-"]')).toHaveLength(14)
     expect(screen.getByText('Esencia de marca')).toBeTruthy()
   })
 
