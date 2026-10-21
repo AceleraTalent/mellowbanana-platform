@@ -27,7 +27,7 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
     )
   }
   if (estado === 'actual') {
-    return <span className="h-[6px] w-[6px] flex-none rounded-full bg-white ring-1 ring-white/70" />
+    return <span className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--ink)]" />
   }
   if (estado === 'pendiente') {
     return <span className="h-[6px] w-[6px] flex-none rounded-full border border-[var(--apagado)]" />
@@ -41,14 +41,14 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
  */
 function PasosDeEtapa({ pasos }: { pasos: SubPasoIndice[] }) {
   return (
-    <ul className="mb-1 ml-[15px] mt-1 border-l border-[var(--line)] py-0.5">
+    <ul className="mb-2 ml-[3px] mt-1 border-l border-[var(--line)] py-0.5 pl-3">
       {pasos.map(p => (
         <li key={p.id}>
           <Link
             href={p.href}
             aria-current={p.actual ? 'step' : undefined}
-            className={`flex items-start gap-2 py-[5px] pl-3 pr-2 text-[12.5px] leading-[1.35] ${
-              p.actual ? 'font-semibold text-[var(--ink)]' : p.estado === 'no_aplica' ? 'text-[var(--apagado)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
+            className={`-ml-1.5 flex items-start gap-2 rounded-[5px] px-1.5 py-[5px] text-[13px] leading-[1.35] ${
+              p.actual ? 'bg-[var(--banana)] font-semibold text-[var(--ink)]' : p.estado === 'no_aplica' ? 'text-[var(--rotulo)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
             }`}
           >
             <span className="mt-[3px] flex h-[11px] w-[11px] flex-none items-center justify-center">
@@ -63,7 +63,7 @@ function PasosDeEtapa({ pasos }: { pasos: SubPasoIndice[] }) {
                 <span className={`h-[8px] w-[8px] rounded-full border ${p.actual ? 'border-[var(--ink)]' : 'border-[var(--apagado)]'} ${p.estado === 'no_aplica' ? 'border-dashed' : ''}`} />
               )}
             </span>
-            <span className="font-mono text-[10.5px] tabular-nums text-[var(--rotulo)]">{p.id}</span>
+            <span className={`font-mono text-[11px] tabular-nums ${p.actual ? 'text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}>{p.id}</span>
             <span className="min-w-0">{p.titulo}</span>
             <span className="sr-only">
               {p.estado === 'hecho' ? ' (listo)' : p.estado === 'revisar' ? ' (por revisar)' : p.estado === 'no_aplica' ? ' (no aplica)' : ' (pendiente)'}
@@ -87,19 +87,28 @@ export function ProjectIndex({
   fases: FaseIndice[]
 }) {
   return (
-    <nav aria-label="Índice del proyecto" className="flex w-[222px] flex-none flex-col border-r border-[var(--line)]">
+    <nav aria-label="Índice del proyecto" className="flex flex-col gap-5">
       <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} />
       {fases.map(fase => (
-        <div key={fase.key} className="px-3 py-2.5">
-          <div className="flex items-baseline justify-between">
-            <p className="text-[10px] font-bold font-mono uppercase tracking-[.15em] text-[var(--ink)]">{fase.label}</p>
-            <p className="text-[10.5px] tabular-nums text-[var(--apagado)]">{fase.avance}</p>
-          </div>
+        <div key={fase.key}>
+          {/* Un conteo (“5/6”) va a la derecha del nombre; una frase (“Se trabaja en Miro”)
+              no entra ahí y va debajo. */}
+          {/^\d+\/\d+$/.test(fase.avance) ? (
+            <div className="flex items-baseline justify-between gap-2 pb-1.5">
+              <p className="text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">{fase.label}</p>
+              <p className="flex-none font-mono text-[11px] tabular-nums text-[var(--rotulo)]">{fase.avance}</p>
+            </div>
+          ) : (
+            <div className="pb-1.5">
+              <p className="text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">{fase.label}</p>
+              <p className="mt-0.5 text-[12.5px] leading-snug text-[var(--secundario)]">{fase.avance}</p>
+            </div>
+          )}
           <ul>
             {fase.entradas.map(entrada => (
               <li key={entrada.key}>
                 {entrada.bloque && (
-                  <p className="mt-2.5 px-3 text-[8.5px] font-bold font-mono uppercase tracking-[.13em] text-[var(--apagado)]">
+                  <p className="mt-2.5 text-[10px] font-mono uppercase tracking-[.1em] text-[var(--rotulo)]">
                     {entrada.bloque}
                   </p>
                 )}
@@ -108,12 +117,12 @@ export function ProjectIndex({
                   aria-current={entrada.estado === 'actual' ? 'page' : undefined}
                   className={
                     entrada.estado === 'actual'
-                      ? 'flex items-center gap-2 px-3 py-1.5 bg-[var(--ink)] font-semibold text-white'
-                      : 'flex items-center gap-2 px-3 py-1.5 text-[var(--cuerpo)]'
+                      ? 'flex items-center gap-2.5 py-[5px] font-semibold text-[var(--ink)]'
+                      : 'flex items-center gap-2.5 py-[5px] text-[var(--cuerpo)] hover:text-[var(--ink)]'
                   }
                 >
                   <Punto estado={entrada.estado} />
-                  <span className="text-[13px]">{entrada.label}</span>
+                  <span className="text-[14px]">{entrada.label}</span>
                   {entrada.espera && (
                     <>
                       {/* Al final del renglón, separado del punto de estado: no dice en qué anda
@@ -131,7 +140,7 @@ export function ProjectIndex({
             ))}
           </ul>
           {fase.ocultas > 0 && (
-            <Link href={fase.hrefTodas} className="mt-1 block px-3 text-[11.5px] text-[var(--apagado)]">
+            <Link href={fase.hrefTodas} className="mt-1 block text-[12px] text-[var(--secundario)] hover:text-[var(--ink)]">
               ＋ {fase.ocultas} etapas más
             </Link>
           )}

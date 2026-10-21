@@ -97,7 +97,7 @@ export default async function EntrevistasView({ params }: { params: Promise<{ id
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
-              Entrevistas / Propuesta de valor
+              Taller · Entrevistas
             </p>
             <h1 className="mt-2 font-serif text-[30px] font-normal tracking-[-.02em] text-[var(--ink)]">Entrevistas</h1>
             <p className="mt-3 max-w-[60ch] text-[14px] leading-[1.66] text-[var(--secundario)]">

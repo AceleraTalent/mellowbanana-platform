@@ -144,7 +144,7 @@ export function ListaFuentes({ fuentes }: { fuentes: unknown }) {
             </div>
             {url && sitio && (
               <a href={url} target="_blank" rel="noreferrer"
-                className="flex-none rounded-full border border-[var(--line)] px-2.5 py-1 text-[12px] text-[var(--secundario)] transition-colors hover:border-[var(--ink)] hover:text-[var(--ink)]">
+                className="flex-none text-[13px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] transition-colors hover:text-[var(--ink)] hover:decoration-[var(--ink)]">
                 Abrir <span aria-hidden="true">↗</span>
               </a>
             )}
@@ -187,15 +187,15 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
       <Interpretacion titulo="Tensión en el cliente" texto={leer('tension_en_el_cliente', 'tensionEnElCliente', 'tension')} />
 
       {secciones.length > 1 && (
-        <nav aria-label="Secciones del contexto" className="rounded-[12px] border border-[var(--line)] px-5 py-4">
+        <nav aria-label="Secciones del contexto" className="border-y border-[var(--line)] py-5">
           <Rotulo>En este paso</Rotulo>
-          <ol className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <ol className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {secciones.map((s, i) => {
               const { titulo } = sinNumero(txt(s.titulo) || `Sección ${i + 1}`)
               return (
                 <li key={i}>
-                  <a href={`#seccion-${i + 1}`} className="flex gap-2 text-[14px] leading-[1.45] text-[var(--cuerpo)] hover:text-[var(--ink)] hover:underline">
-                    <span className="font-mono text-[11px] tabular-nums text-[var(--rotulo)]">{i + 1}</span>{titulo}
+                  <a href={`#seccion-${i + 1}`} className="flex gap-2.5 text-[14.5px] leading-[1.45] text-[var(--cuerpo)] hover:text-[var(--ink)] hover:underline">
+                    <span className="font-mono text-[12px] tabular-nums text-[var(--rotulo)]">{String(i + 1).padStart(2, '0')}</span>{titulo}
                   </a>
                 </li>
               )
@@ -253,7 +253,7 @@ export function VistaListaLarga({ candidatas, elegidas }: { candidatas: Tendenci
               {delEje.map(t => (
                 <Tarjeta key={t.id} tono={elegidas.includes(t.id) ? 'claro' : undefined}>
                   {elegidas.includes(t.id) && (
-                    <p className="mb-2 inline-flex rounded-full bg-[var(--banana)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink)]">Elegida</p>
+                    <p className="mb-2 inline-flex rounded-[3px] bg-[var(--banana)] px-1.5 py-0.5 text-[11.5px] font-semibold text-[var(--ink)]">Elegida</p>
                   )}
                   <p className="text-[14.5px] font-semibold leading-snug text-[var(--ink)]">{t.titulo}</p>
                   <p className="mt-1.5 text-[14px] leading-[1.6] text-[var(--cuerpo)]">{t.descripcion}</p>
@@ -333,14 +333,14 @@ export function VistaBenchmarking({ content }: { content: unknown }) {
       {(cifras.length > 0 || Object.keys(reviews).length > 0) && (
         <Seccion titulo="Respaldo en cifras">
           {cifras.length > 0 && (
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="border-t-[1.5px] border-[var(--ink)]">
               {cifras.map((d, i) => {
                 const f = obj(d.fuente)
                 return (
-                  <div key={i} className="flex min-w-0 flex-col rounded-[12px] border border-[var(--line)] bg-white px-4 py-3">
-                    <p className="text-[12px] text-[var(--secundario)]">{txt(d.marca)}</p>
-                    <p className="mt-0.5 flex-1 text-[14.5px] font-medium leading-[1.5] text-[var(--ink)]">{txt(d.dato)}</p>
-                    {(txt(f.doc) || txt(f.url)) && <p className="mt-2"><ChipFuente texto={txt(f.doc) || dominio(txt(f.url))} url={txt(f.url) || undefined} /></p>}
+                  <div key={i} className="grid gap-x-6 gap-y-1 border-b border-[var(--line)] py-3.5 sm:grid-cols-[150px_minmax(0,1fr)_minmax(0,200px)] sm:items-baseline">
+                    <span className="text-[13.5px] text-[var(--secundario)]">{txt(d.marca)}</span>
+                    <span className="text-[16px] font-medium leading-[1.45] text-[var(--ink)]">{txt(d.dato)}</span>
+                    {(txt(f.doc) || txt(f.url)) && <span className="min-w-0 sm:text-right"><ChipFuente texto={txt(f.doc) || dominio(txt(f.url))} url={txt(f.url) || undefined} /></span>}
                   </div>
                 )
               })}
@@ -366,15 +366,15 @@ export function VistaBenchmarking({ content }: { content: unknown }) {
               {' '}Horizontal: de <b className="font-medium text-[var(--ink)]">{txt(horizontal.izquierda)}</b> a <b className="font-medium text-[var(--ink)]">{txt(horizontal.derecha)}</b>.
             </p>
           )}
-          <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
-            <table className="w-full min-w-[560px] text-left text-[13.5px]">
-              <thead className="bg-[var(--superficie)] text-[12px] text-[var(--secundario)]">
+          <div className="overflow-x-auto border-t-[1.5px] border-[var(--ink)]">
+            <table className="w-full min-w-[560px] text-left text-[14px]">
+              <thead className="border-b border-[var(--line)] font-mono text-[10.5px] uppercase tracking-[.1em] text-[var(--rotulo)]">
                 <tr>
-                  <th className="px-3 py-2 font-normal">#</th>
-                  <th className="px-3 py-2 font-normal">Marca</th>
-                  <th className="px-3 py-2 font-normal">País</th>
+                  <th className="px-3 py-2.5 font-normal">#</th>
+                  <th className="px-3 py-2.5 font-normal">Marca</th>
+                  <th className="px-3 py-2.5 font-normal">País</th>
                   {Object.keys(obj(marcas[0]?.posicion)).map(k => (
-                    <th key={k} className="px-3 py-2 font-normal">{k.charAt(0).toUpperCase() + k.slice(1)}</th>
+                    <th key={k} className="px-3 py-2.5 font-normal">{k.charAt(0).toUpperCase() + k.slice(1)}</th>
                   ))}
                 </tr>
               </thead>

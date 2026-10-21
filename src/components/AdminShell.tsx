@@ -1,24 +1,50 @@
 import Link from 'next/link'
+import { cloneElement, isValidElement } from 'react'
 import { db } from '@/lib/db/client'
 import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { Wordmark } from './Brand'
-import { AvatarProyecto, BarraProyectos, PanelIndiceMovil, type ProyectoBarra } from './BarraProyectos'
-import { estadoBarra, iniciales } from './barra'
+import { PanelMovil } from './PanelMovil'
+import { Buscador, type Buscable } from './Buscador'
 
 function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-1 pb-1.5 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
+    <p className="pb-2 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">
       {children}
     </p>
   )
 }
 
+const ESTADO_PASO: Record<string, string> = {
+  hecho: 'Listo',
+  revisar: 'Por revisar',
+  pendiente: 'Pendiente',
+  no_aplica: 'No aplica',
+}
+
 /**
- * El marco de todas las pantallas autenticadas. La barra amarilla tiene dos estados que
- * salen de la ruta, no de una preferencia guardada: **ancha** en `/admin`, donde todavía no
- * elegiste proyecto y la barra muestra la cola del equipo; **riel** adentro de un proyecto,
- * donde el espacio es para el índice y el trabajo. El tercer estado —abierta encima— es
- * efímero y vive dentro de `BarraProyectos`.
+ * Lo que el buscador puede encontrar: cada cliente y cada paso de su Landscape. Adentro de
+ * un proyecto, lo de ese proyecto va primero: buscar “2.2” ahí es querer su 2.2.
+ */
+function buscables(proyectos: FilaSistema[], activeProjectId?: string): Buscable[] {
+  const ordenados = [...proyectos].sort((a, b) => Number(b.id === activeProjectId) - Number(a.id === activeProjectId))
+  return ordenados.flatMap(p => {
+    const fase = p.fases.find(f => f.key === p.actual)!
+    return [
+      { tipo: 'cliente' as const, titulo: p.nombre, detalle: `${fase.label} · ${p.sigue.texto}`, href: p.href },
+      ...p.pasos.map(paso => ({
+        tipo: 'paso' as const,
+        titulo: `${paso.id} ${paso.titulo}`,
+        detalle: `${p.nombre} · ${ESTADO_PASO[paso.estado] ?? paso.estado}`,
+        href: `/admin/projects/${p.id}/landscape?paso=${paso.id}`,
+      })),
+    ]
+  })
+}
+
+/**
+ * El marco de todas las pantallas autenticadas, en la dirección “Papel”: una sola barra
+ * lateral de papel con el buscador arriba. En el inicio lleva la navegación y la lista de
+ * clientes; adentro de un proyecto, el índice de ese proyecto (que trae su propio “volver”).
  *
  * El índice llega armado por la prop `indice`: las páginas de proyecto ya consultaron sus
  * etapas, así que el shell no vuelve a la base por eso.
@@ -30,119 +56,95 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
   sistema?: FilaSistema[]
   children: React.ReactNode
 }) {
-  // La barra y el inicio leen el mismo Sistema M&B: lo que “nos toca” acá es exactamente
-  // lo que la tabla del inicio marca como del equipo.
+  // La barra y el inicio leen el mismo Sistema M&B: lo que espera al equipo acá es
+  // exactamente lo que la tabla del inicio marca como del equipo.
   const proyectos = sistema ?? await cargarSistema(db)
-
-  // La cola del equipo: lo que se puede destrabar hoy sin depender de nadie de afuera.
-  const cola = proyectos
+  const esperan = new Set(proyectos
     .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
-    .map(p => ({
-      projectId: p.id,
-      projectName: p.nombre,
-      accion: p.sigue.detalle ? `${p.sigue.texto}: ${p.sigue.detalle}` : p.sigue.texto,
-      href: p.sigue.href ?? p.href,
-    }))
-  const esperan = new Set(cola.map(i => i.projectId))
+    .map(p => p.id))
 
-  const barraAncha = (
-    <aside
-      aria-label="Panel"
-      className="sticky top-0 hidden h-screen w-[230px] flex-none flex-col bg-[var(--banana)] px-4 py-6 md:flex"
-    >
-      <Link href="/admin" className="px-1 font-serif text-[17px] leading-tight text-[var(--ink)]">
+  // La línea bajo el nombre del proyecto sale del Sistema M&B, no de la página: así el
+  // índice dice la misma fase que el inicio (“Landscape · 7 de 15 pasos”). La página arma el
+  // índice y el shell conoce el Sistema, por eso se completa acá; la que trae la página
+  // queda de respaldo si el proyecto no aparece en el Sistema.
+  const fila = activeProjectId ? proyectos.find(p => p.id === activeProjectId) : undefined
+  const faseDeFila = fila?.fases.find(f => f.key === fila.actual)
+  const indiceConFase = fila && faseDeFila && isValidElement<{ subtitulo?: string }>(indice)
+    ? cloneElement(indice, { subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}` })
+    : indice
+
+  const barra = (
+    <div className="flex min-h-full flex-col gap-7">
+      <Link href="/admin" className="font-serif text-[18px] leading-tight text-[var(--ink)]">
         <Wordmark />
       </Link>
 
-      <nav className="mt-8" aria-label="Secciones del panel">
-        <Rotulo>Panel</Rotulo>
-        {/* Una sola sección real: hoy el panel no tiene más rutas que ésta, y un enlace
-            muerto es peor que un menú corto. */}
-        <Link
-          href="/admin"
-          aria-current="page"
-          className="flex items-center justify-between rounded-[10px] bg-[var(--ink)] px-3 py-2 text-[13px] font-medium text-white"
-        >
-          Proyectos
-          <span className="tabular-nums text-white/50">{proyectos.length}</span>
-        </Link>
-      </nav>
+      <Buscador items={buscables(proyectos, activeProjectId)} />
 
-      {cola.length > 0 && (
-        <div className="mt-8">
-          <Rotulo>Nos toca</Rotulo>
-          <div className="rounded-[10px] bg-[rgba(21,18,12,.07)] px-3 py-3">
-            <p className="text-[13px] font-bold text-[var(--ink)]">
-              {cola.length} {cola.length === 1 ? 'decisión' : 'decisiones'}
-            </p>
-            <ul className="mt-2.5 flex flex-col gap-2.5">
-              {cola.slice(0, 3).map(item => (
-                <li key={item.projectId}>
-                  <Link href={item.href} className="flex items-center gap-2.5">
-                    <AvatarProyecto iniciales={iniciales(item.projectName)} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-serif text-[14px] text-[var(--ink)]">
-                        {item.projectName}
-                      </span>
-                      <span className="block text-[11px] leading-tight text-[rgba(21,18,12,.55)]">
-                        {item.accion}
-                      </span>
-                    </span>
+      {indiceConFase ?? (
+        <>
+          <nav aria-label="Secciones del panel">
+            <Link
+              href="/admin"
+              aria-current={activeProjectId ? undefined : 'page'}
+              className={`flex items-baseline justify-between rounded-[6px] px-3 py-2 text-[14px] ${
+                activeProjectId ? 'text-[var(--cuerpo)] hover:bg-[var(--superficie)]' : 'bg-[var(--banana)] font-semibold text-[var(--ink)]'
+              }`}
+            >
+              Sistema M&amp;B
+              <span className="font-mono text-[12px] font-normal tabular-nums">{proyectos.length}</span>
+            </Link>
+          </nav>
+
+          <div>
+            <Rotulo>Clientes</Rotulo>
+            <ul className="flex flex-col">
+              {proyectos.map(p => (
+                <li key={p.id}>
+                  <Link
+                    href={p.href}
+                    aria-current={p.id === activeProjectId ? 'page' : undefined}
+                    className="flex items-center justify-between gap-2 py-1.5 text-[14px] text-[var(--cuerpo)] hover:text-[var(--ink)]"
+                  >
+                    <span className="truncate">{p.nombre}</span>
+                    {esperan.has(p.id) && (
+                      <>
+                        <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--banana)] ring-1 ring-[var(--ink)]" />
+                        <span className="sr-only">Espera al equipo</span>
+                      </>
+                    )}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
-      )}
-
-      <p className="mt-auto px-1 pt-5 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[rgba(21,18,12,.45)]">
-        Panel interno
-      </p>
-    </aside>
-  )
-
-  const paraLaBarra: ProyectoBarra[] = proyectos.map(p => {
-    const { label, detalle } = p.fases.find(f => f.key === p.actual)!
-    return {
-      id: p.id,
-      name: p.nombre,
-      iniciales: iniciales(p.nombre),
-      // El avance en números sí entra en un renglón de 230px; la explicación en prosa no,
-      // y además ya está en el índice del proyecto.
-      faseActual: /^\d/.test(detalle) ? `${label} · ${detalle}` : label,
-      espera: esperan.has(p.id),
-    }
-  })
-
-  return (
-    // `relative` es lo que ancla la barra abierta encima y su velo: flotan sobre todo el
-    // marco sin desplazar ni un píxel del contenido.
-    <div className="relative flex min-h-screen">
-      {estadoBarra(activeProjectId) === 'ancha' ? (
-        barraAncha
-      ) : (
-        <>
-          <BarraProyectos proyectos={paraLaBarra} activeProjectId={activeProjectId!} />
-          {indice && (
-            <div className="hidden flex-none md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto">
-              {indice}
-            </div>
-          )}
         </>
       )}
 
+      <p className="mt-auto pt-4 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">Panel interno</p>
+    </div>
+  )
+
+  return (
+    <div className="relative flex min-h-screen bg-[var(--papel)]">
+      <aside
+        aria-label="Panel"
+        className="sticky top-0 hidden h-screen w-[264px] flex-none overflow-y-auto border-r border-[var(--line)] px-5 py-7 md:block"
+      >
+        {barra}
+      </aside>
+
       <div className="min-w-0 flex-1">
-        {/* En móvil no entran ni la barra ni el índice: queda la cabecera oscura, y el
-            índice se abre como panel desde la izquierda. */}
-        <header className="flex items-center justify-between bg-[var(--ink)] px-6 py-4 md:hidden">
-          <Link href="/admin" className="text-[15px] font-medium text-white"><Wordmark /></Link>
-          {indice
-            ? <PanelIndiceMovil>{indice}</PanelIndiceMovil>
-            : <span className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-white/40">Panel interno</span>}
+        {/* En móvil no entra la barra: queda una cabecera de papel, y la barra entera se
+            abre como panel desde la izquierda. */}
+        <header className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4 md:hidden">
+          <Link href="/admin" className="font-serif text-[16px] text-[var(--ink)]"><Wordmark /></Link>
+          <PanelMovil>
+            <div className="min-h-full px-5 py-6">{barra}</div>
+          </PanelMovil>
         </header>
 
-        <main className="w-full px-6 py-8 md:px-10 md:py-10">{children}</main>
+        <main className="w-full px-5 py-8 md:px-12 md:py-12">{children}</main>
       </div>
     </div>
   )

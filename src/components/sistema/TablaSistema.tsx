@@ -19,10 +19,13 @@ const CHIP: Record<Quien, string> = {
   revisar: 'bg-[var(--banana)] text-[var(--ink)]',
   equipo: 'bg-[var(--banana)] text-[var(--ink)]',
   claude: 'bg-[var(--ink)] text-white',
-  cliente: 'bg-[var(--superficie)] text-[var(--secundario)] border border-[var(--line)]',
-  pausa: 'bg-[var(--superficie)] text-[var(--secundario)] border border-dashed border-[var(--rotulo)]',
-  listo: 'bg-[var(--aprobado)] text-[var(--ink)]',
+  cliente: 'text-[var(--secundario)] pl-0',
+  pausa: 'border border-dashed border-[var(--rotulo)] text-[var(--secundario)]',
+  listo: 'bg-[var(--papel-hondo)] text-[var(--ink)]',
 }
+
+/** Lo que va antes del texto del chip cuando no lleva fondo: se lee sin depender del color. */
+const MARCA: Partial<Record<Quien, string>> = { cliente: '○ ', pausa: '‖ ', listo: '✓ ' }
 
 /** Lo que nos toca va primero; lo terminado, al final. */
 const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, cliente: 3, pausa: 4, listo: 5 }
@@ -41,15 +44,15 @@ async function guardar(id: string, cambios: Record<string, unknown>) {
 /** Los cinco tramos del recorrido. Amarillo lo terminado, tinta lo que está en curso. */
 function Recorrido({ fases, actual }: { fases: FaseConEstado[]; actual: FaseSistema }) {
   return (
-    <span className="flex items-center gap-[3px]" aria-hidden="true">
+    <span className="flex items-center gap-1" aria-hidden="true">
       {fases.map(f => (
         <span
           key={f.key}
           title={`${f.label}: ${f.detalle}`}
-          className={`h-[6px] flex-1 rounded-full ${
+          className={`h-[4px] w-[22px] rounded-[2px] ${
             f.estado === 'completa' ? 'bg-[var(--banana)] ring-1 ring-inset ring-[#d9cf2f]'
               : f.key === actual ? 'bg-[var(--ink)]'
-              : f.estado === 'en_curso' ? 'bg-[var(--rotulo)]'
+              : f.estado === 'en_curso' ? 'bg-[#A39E91]'
               : 'bg-[var(--line)]'
           }`}
         />
@@ -80,7 +83,7 @@ function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }: {
       setEstado('error')
     }
   }
-  const clase = 'w-full resize-none rounded-[8px] border border-transparent bg-transparent px-2 py-1.5 text-[13.5px] leading-[1.5] text-[var(--ink)] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--ink)] focus:bg-white focus:outline-none'
+  const clase = 'w-full resize-none rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] leading-[1.5] text-[var(--ink)] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--ink)] focus:bg-white focus:outline-none'
   return (
     <div className="relative">
       {multilinea ? (
@@ -143,9 +146,9 @@ function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }
             setError(true)
           }
         }}
-        className={`w-full rounded-[8px] border border-transparent bg-transparent px-2 py-1.5 text-[13.5px] hover:border-[var(--line)] focus:border-[var(--ink)] focus:outline-none ${fecha ? 'text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}
+        className={`w-full rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] hover:border-[var(--line)] focus:border-[var(--ink)] focus:outline-none ${fecha ? 'text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}
       />
-      {resto && <p className={`px-2 text-[11.5px] ${resto.vencida ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>{resto.texto}</p>}
+      {resto && <p className={`px-2 text-[12.5px] ${resto.vencida ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>{resto.texto}</p>}
       {error && <p className="px-2 text-[11.5px] text-[var(--error)]">No se guardó</p>}
     </div>
   )
@@ -236,12 +239,12 @@ function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
   const [editando, setEditando] = useState(false)
   const fase = fila.fases.find(f => f.key === fila.actual)!
   const celda = 'min-w-0'
-  const rotuloMovil = 'text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)] lg:hidden'
+  const rotuloMovil = 'pb-1 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:hidden'
   return (
-    <li className="grid gap-x-5 gap-y-3 border-b border-[var(--line)] px-1 py-4 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1.2fr)_minmax(150px,.9fr)_minmax(190px,1.2fr)_minmax(110px,.7fr)_minmax(130px,.7fr)_minmax(180px,1.3fr)] lg:items-start lg:py-3.5">
+    <li className="grid gap-x-7 gap-y-3 border-b border-[var(--line)] py-6 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(190px,1.3fr)_minmax(110px,.7fr)_minmax(130px,.75fr)_minmax(180px,1.3fr)] lg:items-start">
       <div className={celda}>
-        <Link href={fila.href} className="font-serif text-[17px] leading-tight text-[var(--ink)] hover:underline">{fila.nombre}</Link>
-        <p className="mt-1 text-[12px] leading-[1.45] text-[var(--secundario)]">
+        <Link href={fila.href} className="font-serif text-[20px] leading-tight tracking-[-.01em] text-[var(--ink)] hover:underline">{fila.nombre}</Link>
+        <p className="mt-1.5 text-[13px] leading-[1.45] text-[var(--rotulo)]">
           {fila.ultimo ? <>{fila.ultimo.texto} · {fila.ultimo.cuando}</> : `Inicio ${fila.inicio}`}
         </p>
       </div>
@@ -249,27 +252,27 @@ function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
       <div className={`relative ${celda}`}>
         <p className={rotuloMovil}>Fase</p>
         <button type="button" onClick={() => setEditando(true)}
-          className="w-full rounded-[10px] px-2 py-1.5 text-left transition-colors hover:bg-[var(--superficie)]"
+          className="-mx-2 -my-1 w-[calc(100%+16px)] rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-[var(--superficie)]"
           aria-label={`Fase de ${fila.nombre}: ${fase.label}. Cambiar fases`}>
           <span className="flex items-baseline justify-between gap-2">
-            <span className="text-[14px] font-semibold text-[var(--ink)]">{fase.label}</span>
+            <span className="text-[15px] font-semibold text-[var(--ink)]">{fase.label}</span>
             <span className="text-[11px] text-[var(--rotulo)]" aria-hidden="true">✎</span>
           </span>
-          <span className="mt-1.5 block"><Recorrido fases={fila.fases} actual={fila.actual} /></span>
-          <span className="mt-1 block truncate text-[11.5px] text-[var(--secundario)]">{fase.detalle}</span>
+          <span className="mt-2 block"><Recorrido fases={fila.fases} actual={fila.actual} /></span>
+          <span className="mt-1.5 block truncate text-[13px] text-[var(--secundario)]">{fase.detalle}</span>
         </button>
         {editando && <EditorFases fila={fila} onCerrar={() => setEditando(false)} onCambio={onCambio} />}
       </div>
 
       <div className={celda}>
         <p className={rotuloMovil}>Qué sigue</p>
-        <p className="pt-1.5">
-          <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[12px] font-semibold ${CHIP[fila.sigue.quien]}`}>{fila.sigue.texto}</span>
+        <p>
+          <span className={`inline-flex rounded-[3px] px-[7px] py-[2px] text-[12.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
         </p>
         {fila.sigue.detalle && (
           fila.sigue.href
-            ? <Link href={fila.sigue.href} className="mt-1 block text-[13px] leading-[1.45] text-[var(--ink)] underline-offset-2 hover:underline">{fila.sigue.detalle} →</Link>
-            : <p className="mt-1 text-[13px] leading-[1.45] text-[var(--cuerpo)]">{fila.sigue.detalle}</p>
+            ? <Link href={fila.sigue.href} className="mt-1.5 block text-[14.5px] leading-[1.45] text-[var(--ink)] underline decoration-[var(--line)] underline-offset-[3px] hover:decoration-[var(--ink)]">{fila.sigue.detalle} →</Link>
+            : <p className="mt-1.5 text-[14.5px] leading-[1.45] text-[var(--cuerpo)]">{fila.sigue.detalle}</p>
         )}
       </div>
 
@@ -303,39 +306,39 @@ export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
   const nosToca = filas.filter(f => f.sigue.quien === 'revisar' || f.sigue.quien === 'equipo').length
 
   const pestaña = (activa: boolean) =>
-    `inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors ${
-      activa ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] text-[var(--cuerpo)] hover:border-[var(--ink)]'
+    `-mb-px inline-flex items-baseline gap-1.5 border-b-2 pb-3 text-[14.5px] transition-colors ${
+      activa ? 'border-[var(--ink)] font-medium text-[var(--ink)]' : 'border-transparent text-[var(--secundario)] hover:text-[var(--ink)]'
     }`
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Filtrar por fase" className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-[var(--line)]">
+        <nav aria-label="Filtrar por fase" className="flex flex-wrap gap-x-7 gap-y-2">
           <button type="button" className={pestaña(filtro === 'todas')} aria-pressed={filtro === 'todas'} onClick={() => setFiltro('todas')}>
-            Todos <span className="tabular-nums opacity-60">{filas.length}</span>
+            Todos <span className="font-mono text-[12px] tabular-nums text-[var(--rotulo)]">{filas.length}</span>
           </button>
           {FASES.map(f => (
             <button key={f} type="button" className={pestaña(filtro === f)} aria-pressed={filtro === f} onClick={() => setFiltro(f)}>
-              {FASE_LABEL[f]} <span className="tabular-nums opacity-60">{porFase.get(f) ?? 0}</span>
+              {FASE_LABEL[f]} <span className="font-mono text-[12px] tabular-nums text-[var(--rotulo)]">{porFase.get(f) ?? 0}</span>
             </button>
           ))}
         </nav>
         {nosToca > 0 && (
-          <p className="text-[13px] text-[var(--secundario)]">
+          <p className="pb-3 text-[13.5px] text-[var(--secundario)]">
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[var(--banana)] ring-1 ring-[var(--ink)]" aria-hidden="true" />
             {nosToca} {nosToca === 1 ? 'cliente espera' : 'clientes esperan'} al equipo
           </p>
         )}
       </div>
 
-      <div className="mt-6 hidden gap-x-5 border-b border-[var(--ink)] px-1 pb-2 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)] lg:grid lg:grid-cols-[minmax(170px,1.2fr)_minmax(150px,.9fr)_minmax(190px,1.2fr)_minmax(110px,.7fr)_minmax(130px,.7fr)_minmax(180px,1.3fr)]">
-        <span>Cliente</span><span className="px-2">Fase</span><span>Qué sigue</span><span className="px-2">Encargado</span><span className="px-2">Entrega</span><span className="px-2">Notas</span>
+      <div className="hidden gap-x-7 border-b border-[var(--line)] pb-3 pt-6 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:grid lg:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(190px,1.3fr)_minmax(110px,.7fr)_minmax(130px,.75fr)_minmax(180px,1.3fr)]">
+        <span>Cliente</span><span>Fase</span><span>Qué sigue</span><span className="px-2">Encargado</span><span className="px-2">Entrega</span><span className="px-2">Notas</span>
       </div>
 
       {visibles.length === 0 ? (
         <p className="py-12 text-center text-[14px] text-[var(--secundario)]">No hay clientes en {filtro === 'todas' ? 'la plataforma' : FASE_LABEL[filtro]}.</p>
       ) : (
-        <ul aria-label="Clientes" className="mt-2 border-t border-[var(--line)] lg:mt-0 lg:border-t-0">
+        <ul aria-label="Clientes">
           {visibles.map(f => <Fila key={f.id} fila={f} onCambio={() => router.refresh()} />)}
         </ul>
       )}

@@ -23,7 +23,7 @@ afterEach(() => {
 describe('CabeceraProyecto', () => {
   it('siempre ofrece la vuelta al panel general', () => {
     montar()
-    const volver = screen.getByRole('link', { name: /Proyectos/ })
+    const volver = screen.getByRole('link', { name: /Sistema M&B/ })
     expect(volver.getAttribute('href')).toBe('/admin')
   })
 

@@ -51,7 +51,8 @@ export interface ProjectSignals {
 }
 
 const FASE_LABEL: Record<FaseKey, string> = {
-  'propuesta-valor': 'Entrevistas / Propuesta de valor',
+  // “Taller” como en el Sistema M&B: la fase agrupa entrevistas, propuesta y el taller.
+  'propuesta-valor': 'Taller',
   landscape: 'Landscape',
   estrategia: 'Estrategia',
 }

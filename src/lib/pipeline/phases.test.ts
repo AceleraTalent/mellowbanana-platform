@@ -93,7 +93,7 @@ describe('pantallaActual', () => {
     // está, `pantallaActual` no se queda pegado en 'propuesta-valor'.
     const s = projectSignals({ sessions: [{ status: 'completed' }], tieneEntregable: true }) // landscape sin empezar
     const faseUnoCompleta: Fase = {
-      key: 'propuesta-valor', label: 'Entrevistas / Propuesta de valor', status: 'completa',
+      key: 'propuesta-valor', label: 'Taller', status: 'completa',
       detalle: 'Conclusiones transcritas', href: '/admin/projects/p1/entrevistas',
     }
     const fases = [faseUnoCompleta, ...deriveFases('p1', s).slice(1)]
@@ -105,7 +105,7 @@ describe('pantallaActual', () => {
     const s = projectSignals({ sessions: [{ status: 'completed' }], tieneEntregable: true, landscape: { aprobadas: 6, total: 6 } })
     const [, landscapeCompleto, estrategia] = deriveFases('p1', s)
     const faseUnoCompleta: Fase = {
-      key: 'propuesta-valor', label: 'Entrevistas / Propuesta de valor', status: 'completa',
+      key: 'propuesta-valor', label: 'Taller', status: 'completa',
       detalle: 'Conclusiones transcritas', href: '/admin/projects/p1/entrevistas',
     }
     const fases = [faseUnoCompleta, landscapeCompleto, estrategia]
@@ -118,7 +118,7 @@ describe('pantallaActual', () => {
 
   it('cuando las tres sub-pantallas de la fase 1 están completas, cae por defecto en taller', () => {
     const faseUnoSola: Fase = {
-      key: 'propuesta-valor', label: 'Entrevistas / Propuesta de valor', status: 'completa',
+      key: 'propuesta-valor', label: 'Taller', status: 'completa',
       detalle: 'Conclusiones transcritas', href: '/admin/projects/p1/entrevistas',
     }
     const s: ProjectSignals = {

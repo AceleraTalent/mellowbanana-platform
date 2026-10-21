@@ -2,16 +2,20 @@
 
 :root {
   --cream: #fffdf2;        /* sólo la entrevista pública */
+  /* Dirección “Papel”: el panel interno se lee como un informe impreso. Fondo de papel,
+     líneas finas y el amarillo como resaltador, no como relleno. */
+  --papel: #F6F4EE;        /* el fondo de todo el panel */
+  --papel-hondo: #ECE8DD;  /* lo que se hunde en el papel: interpretaciones, avisos suaves */
   --ink: #15120C;
   --banana: #fcf251;
-  --line: #EDEAE1;
+  --line: #E2DED3;
   --aprobado: #FEFBCE;   /* el mismo amarillo diluido en blanco, para chips y fondos suaves */
   --cuerpo: #2C281F;
-  --secundario: #5C5648;
-  --rotulo: #A8A296;
-  --apagado: #B5AF9F;
-  --superficie: #F8F6F0; /* cabecera de la columna “vigente” en el comparador de versiones */
-  --error: #ff9c8a;      /* lo que falló al guardar o aprobar, al lado de la acción */
+  --secundario: #5A5448;
+  --rotulo: #6B6559;     /* rótulos chicos: oscuro a propósito, para que pasen 4.5:1 sobre el papel */
+  --apagado: #B5AF9F;    /* sólo trazos y puntos decorativos, nunca texto */
+  --superficie: #EFECE4; /* hover y cabeceras sobre el papel */
+  --error: #B3261E;      /* lo que falló al guardar o aprobar, al lado de la acción */
 }
 
 @theme inline {

@@ -50,7 +50,7 @@ function TendenciaElegible({ t, selected, onToggle }: { t: TendenciaCandidata; s
       onClick={onToggle}
       aria-pressed={selected}
       className={`flex w-full min-w-0 items-start gap-3 rounded-[12px] border p-4 text-left transition-colors duration-200 motion-reduce:transition-none
-        ${selected ? 'border-[var(--ink)] bg-[var(--aprobado)]' : 'border-[var(--line)] bg-white hover:border-[var(--rotulo)]'}`}
+        ${selected ? 'border-[var(--ink)] bg-[var(--aprobado)]' : 'border-[var(--line)] bg-[#FBFAF6] hover:border-[var(--rotulo)]'}`}
     >
       <span
         className={`mt-[2px] flex h-[18px] w-[18px] flex-none items-center justify-center rounded-[5px] border transition-colors duration-200 motion-reduce:transition-none
@@ -99,7 +99,7 @@ function Actividad({ actividad }: { actividad: ActividadVista[] }) {
 /** Lo que se ve en el centro cuando el paso todavía no tiene nada. */
 function Vacio({ titulo, texto }: { titulo: string; texto: string }) {
   return (
-    <div className="rounded-[16px] border border-dashed border-[var(--line)] px-6 py-10 text-center">
+    <div className="rounded-[4px] border border-dashed border-[#CFC9BA] px-6 py-12 text-center">
       <p className="font-serif text-[19px] text-[var(--ink)]">{titulo}</p>
       <p className="mx-auto mt-2 max-w-[46ch] text-[14.5px] leading-[1.6] text-[var(--secundario)]">{texto}</p>
     </div>
@@ -236,7 +236,7 @@ export function LandscapeWorkspace({
     if (paso.donde !== 'plataforma') {
       return (
         <div className="space-y-4">
-          <div className="rounded-[16px] bg-[var(--superficie)] px-6 py-6">
+          <div className="rounded-[4px] bg-[var(--papel-hondo)] px-7 py-6">
             <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
               {paso.donde === 'chat' ? 'Se trabaja en el chat con Claude' : 'Se hace fuera de la plataforma'}
             </p>
@@ -331,7 +331,7 @@ export function LandscapeWorkspace({
               <AvisoVersionNueva autor={borradorNuevo.autor} cuando={borradorNuevo.cuando} onVer={() => setSoloAprobada(false)} />
             </div>
           )}
-          <p className="mb-7 text-[12.5px] text-[var(--secundario)]">{contenido.procedencia}</p>
+          <p className="mb-9 text-[13px] text-[var(--rotulo)]">{contenido.procedencia}</p>
           <DocumentoDelPaso paso={paso} content={contenido.content} hrefPaso={hrefPaso} />
         </>
       )
@@ -343,35 +343,37 @@ export function LandscapeWorkspace({
   })()
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-12">
-      <article className="order-2 min-w-0 xl:order-1">
-        <p className="text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)]">
+    <div className="-my-8 grid md:-my-12 xl:min-h-screen xl:grid-cols-[minmax(0,1fr)_330px]">
+      <article className="order-2 min-w-0 py-8 md:py-12 xl:order-1 xl:pr-14">
+        <div className="max-w-[820px]">
+        <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">
           Etapa {numeroEtapa} · {STAGE_LABEL[etapaActiva]}
         </p>
-        <h1 className="mt-2 flex items-baseline gap-3 font-serif text-[30px] font-normal leading-[1.15] tracking-[-.02em] text-[var(--ink)]">
-          <span className="font-mono text-[15px] tabular-nums text-[var(--rotulo)]">{paso.id}</span>
-          <span>{paso.titulo}</span>
+        <h1 className="mt-3.5 flex items-baseline gap-4 font-serif text-[42px] leading-[1.08] tracking-[-.025em] text-[var(--ink)]">
+          <span className="font-mono text-[19px] tabular-nums tracking-normal text-[var(--rotulo)]">{paso.id}</span>
+          <span className="underline-banana">{paso.titulo}</span>
         </h1>
-        <p className="mt-2 max-w-[62ch] text-[15px] leading-[1.6] text-[var(--secundario)]">{paso.queEs}</p>
+        <p className="mt-4 max-w-[58ch] text-[17px] leading-[1.6] text-[var(--secundario)]">{paso.queEs}</p>
         {/* La dependencia de la fase es del Panorama (los competidores del Taller): en otro paso confunde. */}
         {dependencia && etapaActiva === 'panorama' && <NotaDependencia texto={dependencia} />}
 
-        <div className="mt-9">{centro}</div>
+        <div className="mt-10">{centro}</div>
 
-        <nav aria-label="Pasos vecinos" className="mt-12 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
+        <nav aria-label="Pasos vecinos" className="mt-14 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-5">
           {anterior
-            ? <Link href={hrefPaso(anterior.id)} className="rounded-full border border-[var(--line)] px-3.5 py-1.5 text-[13px] text-[var(--secundario)] transition-colors hover:border-[var(--ink)] hover:text-[var(--ink)]">‹ {anterior.id} {anterior.titulo}</Link>
+            ? <Link href={hrefPaso(anterior.id)} className="text-[14px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] transition-colors hover:text-[var(--ink)] hover:decoration-[var(--ink)]">‹ {anterior.id} {anterior.titulo}</Link>
             : <span />}
           {proximo
-            ? <Link href={hrefPaso(proximo.id)} className="rounded-full border border-[var(--line)] px-3.5 py-1.5 text-[13px] text-[var(--secundario)] transition-colors hover:border-[var(--ink)] hover:text-[var(--ink)]">{proximo.id} {proximo.titulo} ›</Link>
+            ? <Link href={hrefPaso(proximo.id)} className="text-[14px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] transition-colors hover:text-[var(--ink)] hover:decoration-[var(--ink)]">{proximo.id} {proximo.titulo} ›</Link>
             : <span />}
         </nav>
 
         <Actividad actividad={actividad} />
+        </div>
       </article>
 
-      <aside className="order-1 xl:order-2">
-        <div className="xl:sticky xl:top-8">
+      <aside className="order-1 border-b border-[var(--line)] py-8 xl:order-2 xl:-mr-12 xl:border-b-0 xl:border-l xl:py-12 xl:pl-9 xl:pr-10">
+        <div className="xl:sticky xl:top-12">
           <PanelTurno
             paso={paso}
             etapaLabel={STAGE_LABEL[etapaActiva]}

@@ -15,8 +15,8 @@ const INSIGNIA: Record<Turno, { texto: string; icono: string; clase: string }> =
   claude: { texto: 'Le toca a Claude', icono: '✦', clase: 'bg-[var(--ink)] text-white' },
   revisar: { texto: 'Te toca revisar', icono: '!', clase: 'bg-[var(--banana)] text-[var(--ink)]' },
   equipo: { texto: 'Te toca a ti', icono: '●', clase: 'bg-[var(--banana)] text-[var(--ink)]' },
-  listo: { texto: 'Listo', icono: '✓', clase: 'bg-[var(--aprobado)] text-[var(--ink)]' },
-  no_aplica: { texto: 'No aplica', icono: '–', clase: 'bg-[var(--superficie)] text-[var(--secundario)]' },
+  listo: { texto: 'Listo', icono: '✓', clase: 'bg-[var(--papel-hondo)] text-[var(--ink)]' },
+  no_aplica: { texto: 'No aplica', icono: '–', clase: 'border border-dashed border-[var(--rotulo)] text-[var(--secundario)]' },
 }
 
 const TURNO_CORTO: Record<Turno, string> = {
@@ -27,9 +27,9 @@ const TURNO_CORTO: Record<Turno, string> = {
   no_aplica: 'No aplica',
 }
 
-const BOTON = 'inline-flex w-full items-center justify-center gap-2 rounded-[9px] px-4 py-2.5 text-[14px] font-semibold transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none'
-const PRIMARIO = `${BOTON} bg-[var(--banana)] text-[var(--ink)] hover:opacity-90`
-const SECUNDARIO = `${BOTON} border border-[var(--line)] bg-white font-medium text-[var(--ink)] hover:border-[var(--ink)]`
+const BOTON = 'inline-flex w-full items-center justify-center gap-2 rounded-[6px] px-4 py-3 text-[14.5px] font-semibold transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none'
+const PRIMARIO = `${BOTON} bg-[var(--ink)] text-white hover:opacity-90`
+const SECUNDARIO = `${BOTON} border border-[var(--ink)] font-medium text-[var(--ink)] hover:bg-[var(--superficie)]`
 
 function BotonCopiar({ texto, etiqueta, principal }: { texto: string; etiqueta: string; principal?: boolean }) {
   const [copiado, setCopiado] = useState(false)
@@ -52,8 +52,8 @@ function BotonCopiar({ texto, etiqueta, principal }: { texto: string; etiqueta: 
 function Paso({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="mt-[1px] flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full border border-[var(--line)] bg-white font-mono text-[11px] text-[var(--ink)]">{n}</span>
-      <div className="min-w-0 flex-1 text-[14px] leading-[1.55] text-[var(--cuerpo)]">{children}</div>
+      <span className="w-4 flex-none pt-[2px] font-mono text-[12px] text-[var(--rotulo)]">{n}</span>
+      <div className="min-w-0 flex-1 text-[14.5px] leading-[1.55] text-[var(--cuerpo)]">{children}</div>
     </li>
   )
 }
@@ -92,25 +92,26 @@ export function PanelTurno(props: {
   return (
     <div className="space-y-4">
       <div>
-        <div className="flex items-baseline justify-between text-[12px] text-[var(--secundario)]">
-          <span>Landscape</span>
+        <div className="flex items-baseline justify-between text-[12.5px] text-[var(--secundario)]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[.12em] text-[var(--rotulo)]">Landscape</span>
           <span className="tabular-nums"><b className="font-semibold text-[var(--ink)]">{avance.hechos}</b> de {avance.total} pasos listos</span>
         </div>
-        <div className="mt-1.5 h-[5px] overflow-hidden rounded-full bg-[var(--line)]" aria-hidden="true">
+        <div className="mt-2 h-[3px] overflow-hidden rounded-full bg-[var(--line)]" aria-hidden="true">
           <div className="h-full rounded-full bg-[var(--ink)]" style={{ width: `${porcentaje}%` }} />
         </div>
       </div>
 
-      <section aria-label="Qué te toca ahora" className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[0_1px_0_rgba(21,18,12,.03)]">
-        <p className="text-[11px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">Paso {paso.id} · {etapaLabel}</p>
-        <p className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold ${insignia.clase}`}>
+      <section aria-label="Qué te toca ahora" className="pt-5">
+        <p className="font-mono text-[10.5px] uppercase tracking-[.12em] text-[var(--rotulo)]">Qué te toca ahora · paso {paso.id}</p>
+        <p className={`mt-4 inline-flex items-center gap-1.5 rounded-[3px] px-2 py-[3px] text-[13px] font-semibold ${insignia.clase}`}>
           <span aria-hidden="true">{insignia.icono}</span>{insignia.texto}
         </p>
-        <h2 className="mt-3 font-serif text-[21px] leading-[1.25] tracking-[-.01em] text-[var(--ink)]">{paso.titulo}</h2>
+        <h2 className="mt-3 font-serif text-[22px] leading-[1.2] tracking-[-.01em] text-[var(--ink)]">{paso.titulo}</h2>
+        <p className="sr-only">{etapaLabel}</p>
 
         {paso.turno === 'claude' && (
           <div className="mt-4">
-            <p className="text-[12px] font-semibold text-[var(--ink)]">Cómo hacerlo</p>
+            <p className="font-mono text-[10.5px] uppercase tracking-[.12em] text-[var(--rotulo)]">Cómo hacerlo</p>
             <ol className="mt-3 space-y-3.5">
               <Paso n={1}>
                 Copia la instrucción para Claude.
@@ -163,8 +164,8 @@ export function PanelTurno(props: {
                     Se aprueban juntos los pasos {apruebaJuntos.join(' y ')}: Claude los guardó en un solo borrador.
                   </p>
                 )}
-                <div className="border-t border-[var(--line)] pt-4">
-                  <p className="text-[13px] font-semibold text-[var(--ink)]">¿Hay que cambiar algo?</p>
+                <div className="border-t border-[var(--line)] pt-5">
+                  <p className="text-[14px] font-semibold text-[var(--ink)]">¿Hay que cambiar algo?</p>
                   <p className="mt-1 text-[13px] leading-[1.5] text-[var(--secundario)]">Copia el pedido, pégalo en claude.ai y escribe qué cambiar.</p>
                   <div className="mt-2.5"><BotonCopiar texto={instruccionCambios} etiqueta="Pedirle cambios a Claude" /></div>
                 </div>
@@ -183,7 +184,7 @@ export function PanelTurno(props: {
                 {guardando ? 'Guardando…' : 'Marcar como hecho'}
               </button>
             ) : (
-              <p className="rounded-[10px] bg-[var(--superficie)] px-3.5 py-3 text-[13.5px] leading-[1.5] text-[var(--cuerpo)]">
+              <p className="rounded-[4px] bg-[var(--papel-hondo)] px-3.5 py-3 text-[13.5px] leading-[1.5] text-[var(--cuerpo)]">
                 Elige en el centro y confirma con el botón de abajo.
               </p>
             )}
@@ -200,14 +201,14 @@ export function PanelTurno(props: {
                   : `El equipo lo aprobó${cuando ? ` ${cuando}` : ''}.`}
             </p>
             {siguiente ? (
-              <div className="rounded-[12px] bg-[var(--superficie)] p-3.5">
+              <div className="rounded-[4px] bg-[var(--papel-hondo)] p-4">
                 <p className="text-[11px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)]">Lo que sigue</p>
                 <p className="mt-1.5 text-[14.5px] font-semibold leading-snug text-[var(--ink)]">{siguiente.id} · {siguiente.titulo}</p>
                 <p className="mt-0.5 text-[12.5px] text-[var(--secundario)]">{TURNO_CORTO[siguiente.turno]}</p>
                 <Link href={siguiente.href} className={`${PRIMARIO} mt-3`}>Ir al paso <span aria-hidden="true">→</span></Link>
               </div>
             ) : (
-              <p className="rounded-[12px] bg-[var(--aprobado)] p-3.5 text-[14px] font-medium text-[var(--ink)]">No queda nada pendiente en el Landscape.</p>
+              <p className="rounded-[4px] bg-[var(--papel-hondo)] p-4 text-[14px] font-medium text-[var(--ink)]">No queda nada pendiente en el Landscape.</p>
             )}
             {manual && paso.turno === 'listo' && (
               <button type="button" onClick={() => onMarcar?.(false)} disabled={guardando}
@@ -220,11 +221,11 @@ export function PanelTurno(props: {
 
         {error && <p className="mt-3 text-[13px] text-[var(--error)]">{error}</p>}
 
-        <details className="group mt-5 border-t border-[var(--line)] pt-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-[13px] font-medium text-[var(--secundario)] hover:text-[var(--ink)]">
+        <details className="group mt-7 border-t border-[var(--line)] pt-4">
+          <summary className="flex cursor-pointer list-none items-center justify-between font-mono text-[10.5px] uppercase tracking-[.12em] text-[var(--rotulo)] hover:text-[var(--ink)]">
             Sobre este paso <span aria-hidden="true" className="transition-transform group-open:rotate-180">▾</span>
           </summary>
-          <dl className="mt-3 space-y-2.5 text-[13px] leading-[1.5]">
+          <dl className="mt-3 space-y-2.5 text-[13.5px] leading-[1.55]">
             {([['Qué es', paso.queEs], ['Quién', paso.quienTexto], ['Necesita', paso.necesita], ['Listo cuando', paso.listoCuando]] as const).map(([r, v]) => (
               <div key={r}>
                 <dt className="text-[var(--rotulo)]">{r}</dt>

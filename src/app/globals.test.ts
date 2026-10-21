@@ -9,10 +9,11 @@ describe('tokens del panel', () => {
     for (const [token, valor] of [
       ['--banana', '#fcf251'],
       ['--ink', '#15120C'],
-      ['--line', '#EDEAE1'],
+      ['--papel', '#F6F4EE'],
+      ['--line', '#E2DED3'],
       ['--aprobado', '#FEFBCE'],
-      ['--superficie', '#F8F6F0'],
-      ['--error', '#ff9c8a'],
+      ['--superficie', '#EFECE4'],
+      ['--error', '#B3261E'],
     ]) {
       expect(css).toContain(`${token}: ${valor}`)
     }

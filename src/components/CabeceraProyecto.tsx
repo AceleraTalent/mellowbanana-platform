@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { useCerrarConEscape } from './BarraProyectos'
+import { useCerrarConEscape } from './PanelMovil'
 
 /**
  * La cabecera del índice del proyecto: la vuelta al panel general y las dos acciones
@@ -62,15 +62,13 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
   }
 
   return (
-    <div className={portada ? 'border-b border-[var(--line)] pb-6' : 'border-b border-[var(--line)] px-3 py-3'}>
+    <div className={portada ? 'border-b border-[var(--line)] pb-6' : ''}>
       <Link
         href="/admin"
-        className="inline-flex items-center gap-1 text-[10px] font-bold font-mono uppercase tracking-[.14em] text-[var(--rotulo)] transition-colors duration-200 hover:text-ink"
+        className="inline-flex items-center gap-1.5 text-[13px] text-[var(--secundario)] transition-colors duration-200 hover:text-ink"
       >
-        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M15 6l-6 6 6 6" />
-        </svg>
-        Proyectos
+        <span aria-hidden="true">←</span>
+        Sistema M&amp;B
       </Link>
 
       {modo === 'renombrando' ? (
@@ -102,21 +100,21 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
           {error && <p className="mt-1.5 text-[11px] leading-snug text-[var(--error)]">{error}</p>}
         </form>
       ) : (
-        <div className={portada ? 'mt-2 flex items-start gap-2' : 'mt-1 flex items-start gap-1.5'}>
+        <div className={portada ? 'mt-2 flex items-start gap-2' : 'mt-4 flex items-start gap-1.5'}>
           <div className="min-w-0 flex-1">
             <p className={portada
               ? 'font-serif text-[30px] font-normal leading-tight tracking-[-.02em] text-[var(--ink)]'
-              : 'font-serif text-[16px] font-medium text-[var(--ink)]'}>
+              : 'font-serif text-[21px] leading-tight tracking-[-.015em] text-[var(--ink)]'}>
               {nombre}
             </p>
-            <p className={portada ? 'mt-1 text-[13px] text-[var(--rotulo)]' : 'text-[11.5px] text-[var(--rotulo)]'}>{subtitulo}</p>
+            <p className={portada ? 'mt-1 text-[13px] text-[var(--rotulo)]' : 'mt-1.5 text-[13px] leading-snug text-[var(--secundario)]'}>{subtitulo}</p>
           </div>
           <button
             type="button"
             title="Renombrar el proyecto"
             aria-label={`Renombrar el proyecto ${nombre}`}
             onClick={() => setModo('renombrando')}
-            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-md text-[var(--apagado)] transition-colors duration-200 hover:bg-[var(--superficie)] hover:text-ink"
+            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-md text-[var(--rotulo)] transition-colors duration-200 hover:bg-[var(--superficie)] hover:text-ink"
           >
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
@@ -127,7 +125,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
             title="Borrar el proyecto"
             aria-label={`Borrar el proyecto ${nombre}`}
             onClick={() => setModo('borrando')}
-            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-md text-[var(--apagado)] transition-colors duration-200 hover:bg-[var(--superficie)] hover:text-[var(--error)]"
+            className="mt-0.5 grid h-6 w-6 flex-none place-items-center rounded-md text-[var(--rotulo)] transition-colors duration-200 hover:bg-[var(--superficie)] hover:text-[var(--error)]"
           >
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
@@ -172,7 +170,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo, portada = false
                 type="button"
                 disabled={confirmacion.trim() !== nombre || ocupado}
                 onClick={() => void borrar()}
-                className="rounded-xl bg-[var(--error)] px-4 py-2 text-[13px] font-semibold text-[var(--ink)] transition-opacity disabled:opacity-40"
+                className="rounded-xl bg-[var(--error)] px-4 py-2 text-[13px] font-semibold text-white transition-opacity disabled:opacity-40"
               >
                 {ocupado ? 'Borrando…' : 'Borrar el proyecto'}
               </button>

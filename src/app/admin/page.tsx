@@ -11,22 +11,27 @@ export const dynamic = 'force-dynamic'
  */
 export default async function Admin() {
   const filas = await cargarSistema(db)
+  // La fecha de hoy en Bogotá, como encabezado de un diario: “Martes 20 de octubre”.
+  const hoy = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 
   return (
     <AdminShell sistema={filas}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-serif text-3xl font-medium leading-tight text-ink">
+      <header>
+        <p className="font-mono text-[12px] uppercase tracking-[.12em] text-[var(--rotulo)]">{hoy}</p>
+        <h1 className="mt-3 font-serif text-[46px] leading-[1.05] tracking-[-.025em] text-[var(--ink)]">
           <span className="underline-banana">Sistema M&amp;B</span>
         </h1>
-        <p className="text-[13px] text-[var(--rotulo)]">Cada cliente: en qué fase va, qué sigue y quién lo lleva</p>
-      </div>
+        <p className="mt-3.5 max-w-[60ch] text-[17px] leading-[1.55] text-[var(--secundario)]">
+          Cada cliente, en qué fase va y qué sigue.
+        </p>
+      </header>
 
       {filas.length === 0 ? (
         <p className="mt-16 text-center text-[15px] text-[var(--secundario)]">
           Todavía no hay proyectos. Se crean al completarse una entrevista.
         </p>
       ) : (
-        <div className="mt-8"><TablaSistema filas={filas} /></div>
+        <div className="mt-10"><TablaSistema filas={filas} /></div>
       )}
     </AdminShell>
   )

@@ -20,6 +20,7 @@ function fila(id: string, actual: FaseSistema, quien: Quien, texto: string): Fil
     actual,
     sigue: { quien, texto },
     seguimiento: SEGUIMIENTO_VACIO,
+    pasos: [],
   }
 }
 

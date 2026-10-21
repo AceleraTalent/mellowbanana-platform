@@ -20,7 +20,7 @@ const base = () => ({
 describe('construirIndice', () => {
   it('agrupa entrevistas, propuesta y taller como tres entradas de una sola fase', () => {
     const [primera] = construirIndice(base())
-    expect(primera.label).toBe('Entrevistas / Propuesta de valor')
+    expect(primera.label).toBe('Taller')
     expect(primera.entradas.map(e => e.key)).toEqual(['entrevistas', 'propuesta', 'taller'])
   })
 

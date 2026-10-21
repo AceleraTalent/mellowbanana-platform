@@ -23,6 +23,8 @@ export interface FilaSistema {
   sigue: QueSigue
   seguimiento: Seguimiento
   ultimo?: { texto: string; cuando: string }
+  /** Los pasos del Landscape, para el buscador. */
+  pasos: { id: string; titulo: string; estado: string }[]
 }
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -111,6 +113,7 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       sigue: queSigue(senales, fases),
       seguimiento,
       ultimo: ultimo && { texto: ultimo.texto, cuando: haceCuanto(ultimo.cuando, ahora) },
+      pasos: senales.pasos.map(p => ({ id: p.id, titulo: p.titulo, estado: p.estado })),
     }
   }))
 }
