@@ -17,8 +17,13 @@ Entradas nuevas arriba. Formato: ver CONVENCION.md.
 - **Importación desde Notion:** el export del Sistema M&B (espacio de Valentina) quedó en
   `.superpowers/notion-sistema-mb/` (ignorado). `plan.py` traduce los 28 del Tráfico; `importar.py`
   los carga por la API. Probado en la demo local; en producción falta que el equipo apruebe la tabla.
+- **Segunda vuelta de calidad (pedido del usuario: "que tenga calidad"):** el editor de cliente pasó
+  a un modal con fondo desenfocado y un solo "Guardar" (la fase se elige en el recorrido); el tablero,
+  a carriles horizontales (Diseño tenía 23 contra 2 de Taller); los clientes por fuera ya no ven el
+  menú de la plataforma; se quitaron los clientes de ejemplo de la demo y las notas "OK" de Notion.
+  Detalle técnico: Lightning CSS dejaba sólo `-webkit-backdrop-filter` si se escribían las dos.
 - **Demo local:** la base se volvió a dañar al cerrar la sesión (el proceso murió sin señal); se
-  rehízo desde el respaldo y se recreó la cuenta de prueba.
+  rehízo desde el respaldo. Apagarla con `kill -TERM` al `next-server` guarda todo; TaskStop no.
 
 ## 2026-10-21 (bis) — Que funcione de verdad: cuentas, avisos, el deck desde la plataforma y Estrategia
 
