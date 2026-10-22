@@ -2,6 +2,24 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-10-21 (ter) — Entrar fácil y el tablero tipo Notion
+
+- **Login de emergencia:** el equipo no tenía cuentas y el panel pedía usuario. El ingreso volvió a
+  ser un solo campo con la clave del equipo; la cuenta propia queda en "Tengo usuario propio". La
+  clave del equipo entra aunque venga con un usuario. Desplegado (25d6a33).
+- **Clientes que "desaparecieron":** no fue el deploy. Entre el 6 y el 14 de octubre se borraron
+  desde el panel los 4 proyectos marcados como prueba o vacíos (M&B, el Heroica duplicado, Grupo lsc,
+  Global Connect). Producción tiene los 6 reales.
+- **Clientes por fuera y tablero:** ver DECISIONES. Vista Tablero (`/admin?vista=tablero`) con
+  columnas por fase y tarjetas que se arrastran; "+ Nuevo cliente"; ficha editable para los clientes
+  por fuera; `actualizar_cliente` en el conector y `listar_proyectos` con el tablero. Migración 0007
+  (`por_fuera`), sólo agrega.
+- **Importación desde Notion:** el export del Sistema M&B (espacio de Valentina) quedó en
+  `.superpowers/notion-sistema-mb/` (ignorado). `plan.py` traduce los 28 del Tráfico; `importar.py`
+  los carga por la API. Probado en la demo local; en producción falta que el equipo apruebe la tabla.
+- **Demo local:** la base se volvió a dañar al cerrar la sesión (el proceso murió sin señal); se
+  rehízo desde el respaldo y se recreó la cuenta de prueba.
+
 ## 2026-10-21 (bis) — Que funcione de verdad: cuentas, avisos, el deck desde la plataforma y Estrategia
 
 - **Hecho:** revisión funcional contra producción (el conector real devuelve `sigue`) y con los

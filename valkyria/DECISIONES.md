@@ -2,6 +2,26 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-10-21 — Clientes por fuera: el panel reemplaza al Tráfico de Notion
+
+**Qué:** un cliente puede llevar su proceso por fuera de la plataforma (`project_seguimiento.por_fuera`).
+Esos clientes se crean desde el panel o desde el chat (`actualizar_cliente`) sin entrevista, sus cinco
+fases son las que marca el equipo y se mueven como en Notion: arrastrando la tarjeta en la vista
+Tablero, con "Mover a" o desde su ficha. Mover a una fase deja lo anterior terminado y lo siguiente
+sin empezar. Los clientes que hacen su proceso acá no cambian: Landscape y Estrategia se calculan
+solos y no se mueven a mano. El orden de las fases pasó a Taller → Landscape → Estrategia → Naming
+→ Diseño, el del cronograma del estudio en Notion (el Naming va después de la Estrategia).
+
+**Por qué:** el estudio pidió traer sus clientes de Notion y la mayoría (Viajero, GWS, Smile, Píntala…)
+nunca pasó por la plataforma. Calcularles fases desde datos vacíos los mostraba como "Sin
+entrevistas"; dejarlos afuera mantenía dos tableros. Marcarlos "por fuera" deja un solo tablero con
+dos tipos de cliente honestos.
+
+**Qué se descartó:** fases manuales para todos los clientes (el tablero podría decir algo distinto de
+lo que de verdad se aprobó), una fase "Artes finales" aparte (Feedback, Entregables y Campaña de Notion
+quedan en Diseño con la nota que dice en qué andaban; se suma si el estudio la pide) y un importador
+de CSV en el panel (la carga fue una vez; para lo demás está el chat).
+
 ## 2026-10-21 — Una cuenta por persona, sin correo, y la llave maestra de respaldo
 
 **Qué:** cada persona del equipo entra con usuario y clave (tabla `usuarios`, clave derivada
