@@ -16,7 +16,8 @@ Entradas nuevas arriba. Formato: ver CONVENCION.md.
   (`por_fuera`), sólo agrega.
 - **Importación desde Notion:** el export del Sistema M&B (espacio de Valentina) quedó en
   `.superpowers/notion-sistema-mb/` (ignorado). `plan.py` traduce los 28 del Tráfico; `importar.py`
-  los carga por la API. Probado en la demo local; en producción falta que el equipo apruebe la tabla.
+  los carga por la API. Cargados en producción el 2026-10-22 con la aprobación del usuario, desde su
+  sesión en Chrome (28 de 28; el conector de claude.ai todavía no listaba `actualizar_cliente`).
 - **Segunda vuelta de calidad (pedido del usuario: "que tenga calidad"):** el editor de cliente pasó
   a un modal con fondo desenfocado y un solo "Guardar" (la fase se elige en el recorrido); el tablero,
   a carriles horizontales (Diseño tenía 23 contra 2 de Taller); los clientes por fuera ya no ven el
