@@ -4,6 +4,7 @@ import { AdminShell } from '@/components/AdminShell'
 import { TablaSistema } from '@/components/sistema/TablaSistema'
 import { TableroSistema } from '@/components/sistema/TableroSistema'
 import { NuevoCliente } from '@/components/sistema/NuevoCliente'
+import { encargadosConocidos } from '@/components/sistema/cliente'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
               </Link>
             ))}
           </nav>
-          <NuevoCliente />
+          <NuevoCliente encargados={encargadosConocidos(filas.map(f => f.seguimiento.encargado))} />
         </div>
       </header>
 

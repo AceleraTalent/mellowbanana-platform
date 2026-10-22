@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { TablaSistema } from './TablaSistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
@@ -9,6 +9,8 @@ import { SEGUIMIENTO_VACIO } from '@/lib/db/seguimiento-store'
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
 afterEach(() => vi.unstubAllGlobals())
+// jsdom no implementa el modal nativo.
+beforeAll(() => { HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') } })
 
 function fila(id: string, actual: FaseSistema, quien: Quien, texto: string): FilaSistema {
   return {
@@ -63,11 +65,11 @@ describe('TablaSistema', () => {
     })
   })
 
-  it('las fases que calcula la plataforma no se pueden mover a mano', () => {
+  it('un clic en la fase abre el cliente en el modal; lo que calcula la plataforma no se mueve a mano', () => {
     render(<TablaSistema filas={filas} />)
     fireEvent.click(screen.getByRole('button', { name: /Fase de Cliente a/ }))
-    const dialogo = screen.getByRole('dialog', { name: 'Fases de Cliente a' })
-    expect(within(dialogo).queryByRole('radiogroup', { name: 'Estado de Landscape' })).toBeNull()
-    expect(within(dialogo).getByRole('radiogroup', { name: 'Estado de Naming' })).toBeTruthy()
+    const dialogo = screen.getByRole('dialog', { name: 'Editar Cliente a' })
+    expect(within(dialogo).queryByRole('radiogroup', { name: 'Fase' })).toBeNull()
+    expect(within(dialogo).getByRole('radiogroup', { name: 'Naming' })).toBeTruthy()
   })
 })

@@ -54,8 +54,9 @@ function buscables(proyectos: FilaSistema[], activeProjectId?: string): Buscable
   return ordenados.flatMap(p => {
     const fase = p.fases.find(f => f.key === p.actual)!
     return [
-      { tipo: 'cliente' as const, titulo: p.nombre, detalle: `${fase.label} · ${p.sigue.texto}`, href: p.href },
-      ...p.pasos.map(paso => ({
+      { tipo: 'cliente' as const, titulo: p.nombre, detalle: p.sigue.quien === 'listo' ? 'Terminado' : `${fase.label} · ${p.sigue.texto}`, href: p.href },
+      // Un cliente por fuera no tiene Landscape acá: sus pasos no se buscan.
+      ...(p.seguimiento.porFuera ? [] : p.pasos).map(paso => ({
         tipo: 'paso' as const,
         titulo: `${paso.id} ${paso.titulo}`,
         detalle: `${p.nombre} · ${ESTADO_PASO[paso.estado] ?? paso.estado}`,
@@ -98,7 +99,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, children }:
   const indiceConFase = fila && faseDeFila && isValidElement<{ subtitulo?: string; sistema?: SistemaDelProyecto }>(indice)
     ? cloneElement(indice, {
         subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}`,
-        sistema: { fases: fila.fases, actual: fila.actual, sigue: fila.sigue, pasos: fila.pasos },
+        sistema: { fases: fila.fases, actual: fila.actual, sigue: fila.sigue, pasos: fila.pasos, porFuera: fila.seguimiento.porFuera },
       })
     : indice
 

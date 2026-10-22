@@ -10,9 +10,9 @@ export const CHIP: Record<Quien, string> = {
   claude: 'bg-[var(--ink)] text-white',
   cliente: 'text-[var(--secundario)] pl-0',
   pausa: 'border border-dashed border-[var(--rotulo)] text-[var(--secundario)]',
-  fuera: 'border border-[var(--line)] text-[var(--secundario)]',
+  fuera: 'text-[var(--secundario)] pl-0 font-medium',
   listo: 'bg-[var(--papel-hondo)] text-[var(--ink)]',
 }
 
 /** Lo que va antes del texto del chip cuando no lleva fondo: se lee sin depender del color. */
-export const MARCA: Partial<Record<Quien, string>> = { cliente: '○ ', pausa: '‖ ', fuera: '↗ ', listo: '✓ ' }
+export const MARCA: Partial<Record<Quien, string>> = { cliente: '○ ', pausa: '‖ ', listo: '✓ ' }

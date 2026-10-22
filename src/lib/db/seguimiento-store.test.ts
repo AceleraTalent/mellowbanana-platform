@@ -49,6 +49,13 @@ describe('clientes por fuera', () => {
     expect(Object.values((await actualizarSeguimiento(db, p.id, { moverA: 'terminado' })).fases)).toEqual(Array(5).fill('completa'))
     expect((await seguimientosPorProyecto(db)).get(p.id)?.porFuera).toBe(true)
   })
+
+  it('mover y dejarlo sin empezar va en un solo cambio; volver a la plataforma descarta lo marcado', async () => {
+    const p = await findOrCreateProject(db, 'Arbo')
+    const s = await actualizarSeguimiento(db, p.id, { porFuera: true, moverA: 'diseno', fase: { key: 'diseno', estado: 'pendiente' } })
+    expect(s.fases).toMatchObject({ naming: 'completa', diseno: 'pendiente' })
+    expect((await actualizarSeguimiento(db, p.id, { porFuera: false })).fases).toEqual({})
+  })
 })
 
 describe('validarCambios', () => {

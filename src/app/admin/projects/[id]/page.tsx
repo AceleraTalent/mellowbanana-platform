@@ -18,6 +18,7 @@ import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { EncabezadoPagina } from '@/components/EncabezadoPagina'
 import { FichaPorFuera } from '@/components/sistema/FichaPorFuera'
+import { encargadosConocidos } from '@/components/sistema/cliente'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,9 +106,12 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
       indice={<ProjectIndex enResumen projectId={id} nombre={project.name} subtitulo={bajada} fases={indice} />}
     >
       <div className="max-w-3xl">
-        <EncabezadoPagina rotulo={`Resumen · ${bajada}`} titulo={project.name} />
+        <EncabezadoPagina
+          rotulo={fila?.seguimiento.porFuera ? `Ficha · ${fila.sigue.quien === 'listo' ? 'Terminado' : bajada}` : `Resumen · ${bajada}`}
+          titulo={project.name}
+        />
 
-        {fila?.seguimiento.porFuera ? <FichaPorFuera fila={fila} /> : <>
+        {fila?.seguimiento.porFuera ? <FichaPorFuera fila={fila} encargados={encargadosConocidos(sistema.map(f => f.seguimiento.encargado))} /> : <>
         <Zona titulo="Nos toca">
           {nosToca.length === 0 ? (
             <p className="border-t border-[var(--line)] pt-3 text-[14px] text-[var(--secundario)]">

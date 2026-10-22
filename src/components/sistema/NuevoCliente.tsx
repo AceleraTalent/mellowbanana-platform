@@ -1,18 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FASES, FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO } from '@/components/paso/piezas'
+import { CerrarModal, Modal } from '@/components/Modal'
 
-const CAMPO = 'w-full rounded-[8px] border border-[var(--line)] bg-white px-3 py-2 text-[14.5px] text-[var(--ink)] outline-none focus:border-[var(--ink)]'
+const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[#CFC9BB] focus:border-[var(--ink)]'
+const ETIQUETA = 'text-[13px] font-medium text-[var(--secundario)]'
 
 /**
  * Agregar un cliente desde el panel, como una tarjeta nueva en Notion. Lo normal es que
  * lleve su proceso por fuera; si va a hacer entrevistas, Landscape y Estrategia acá, se
  * marca y la plataforma lo sigue sola.
  */
-export function NuevoCliente() {
+export function NuevoCliente({ encargados = [] }: { encargados?: string[] }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [nombre, setNombre] = useState('')
@@ -22,12 +24,9 @@ export function NuevoCliente() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!abierto) return
-    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false) }
-    window.addEventListener('keydown', alTeclear)
-    return () => window.removeEventListener('keydown', alTeclear)
-  }, [abierto])
+  function cerrar() {
+    setAbierto(false); setError(null)
+  }
 
   async function crear(e: React.FormEvent) {
     e.preventDefault()
@@ -38,51 +37,58 @@ export function NuevoCliente() {
       body: JSON.stringify({ nombre, porFuera: !enPlataforma, fase, ...(encargado.trim() ? { encargado } : {}) }),
     })
     setBusy(false)
-    if (!res.ok) { setError(((await res.json()) as { error?: string }).error ?? 'No se pudo crear'); return }
-    setAbierto(false); setNombre(''); setEncargado(''); setFase('taller'); setEnPlataforma(false)
+    if (!res.ok) { setError(((await res.json()) as { error?: string }).error ?? 'No se pudo crear el cliente'); return }
+    setNombre(''); setEncargado(''); setFase('taller'); setEnPlataforma(false)
+    cerrar()
     router.refresh()
   }
 
   return (
-    <div className="relative">
-      <button type="button" onClick={() => setAbierto(true)} className={BOTON_PRIMARIO}>+ Nuevo cliente</button>
+    <>
+      <button type="button" onClick={() => setAbierto(true)} className={BOTON_PRIMARIO}>Nuevo cliente</button>
       {abierto && (
-        <>
-          <button type="button" aria-label="Cerrar" className="fixed inset-0 z-20 cursor-default bg-[rgba(21,18,12,.12)]" onClick={() => setAbierto(false)} />
-          <form role="dialog" aria-label="Nuevo cliente" onSubmit={crear}
-            className="fixed inset-x-4 top-24 z-30 mx-auto flex max-w-[400px] flex-col gap-3.5 rounded-[14px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_32px_rgba(21,18,12,.14)] md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-[380px]">
-            <p className="font-serif text-[20px] text-[var(--ink)]">Nuevo cliente</p>
-            <label className="flex flex-col gap-1.5 text-[12px] font-medium text-[var(--secundario)]">
-              Nombre
-              <input required autoFocus value={nombre} onChange={e => setNombre(e.target.value)} className={CAMPO} placeholder="Ej. Viajero" />
-            </label>
-            {!enPlataforma && (
-              <label className="flex flex-col gap-1.5 text-[12px] font-medium text-[var(--secundario)]">
-                ¿En qué fase va?
-                <select value={fase} onChange={e => setFase(e.target.value as FaseSistema)} className={CAMPO}>
-                  {FASES.map(f => <option key={f} value={f}>{FASE_LABEL[f]}</option>)}
-                </select>
+        <Modal titulo="Nuevo cliente" onCerrar={cerrar} ancho={480}>
+          <form onSubmit={crear} className="flex flex-col">
+            <div className="flex items-start justify-between gap-4 px-5 pt-5 sm:px-7 sm:pt-6">
+              <h2 className="font-serif text-[26px] leading-[1.15] tracking-[-.02em] text-[var(--ink)]">Nuevo cliente</h2>
+              <CerrarModal onCerrar={cerrar} />
+            </div>
+            <div className="flex flex-col gap-5 px-5 py-5 sm:px-7">
+              <label className="flex flex-col gap-2">
+                <span className={ETIQUETA}>Nombre</span>
+                <input required autoFocus value={nombre} onChange={e => setNombre(e.target.value)} maxLength={120} className={CAMPO} placeholder="Como lo llama el estudio" />
               </label>
-            )}
-            <label className="flex flex-col gap-1.5 text-[12px] font-medium text-[var(--secundario)]">
-              Encargado <span className="sr-only">(opcional)</span>
-              <input value={encargado} onChange={e => setEncargado(e.target.value)} className={CAMPO} placeholder="Opcional" />
-            </label>
-            <label className="flex items-start gap-2.5 rounded-[8px] bg-[var(--papel)] p-3 text-[13px] leading-[1.45] text-[var(--cuerpo)]">
-              <input type="checkbox" checked={enPlataforma} onChange={e => setEnPlataforma(e.target.checked)} className="mt-0.5 accent-[var(--ink)]" />
-              <span>
-                <span className="font-medium text-[var(--ink)]">Hace su proceso en la plataforma</span>
-                <span className="block text-[12.5px] text-[var(--secundario)]">Entrevistas, Landscape y Estrategia con Claude. Si no, se lleva a mano, como en Notion.</span>
-              </span>
-            </label>
-            {error && <p role="alert" className="text-[13px] text-[var(--error)]">{error}</p>}
-            <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={() => setAbierto(false)} className={BOTON_SECUNDARIO}>Cancelar</button>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="flex flex-col gap-2">
+                  <span className={ETIQUETA}>Fase en la que va</span>
+                  <select value={fase} onChange={e => setFase(e.target.value as FaseSistema)} disabled={enPlataforma} className={`${CAMPO} disabled:opacity-50`}>
+                    {FASES.map(f => <option key={f} value={f}>{FASE_LABEL[f]}</option>)}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={ETIQUETA}>Encargado</span>
+                  <input value={encargado} onChange={e => setEncargado(e.target.value)} list="encargados-nuevo" maxLength={80} className={CAMPO} placeholder="Opcional" />
+                  <datalist id="encargados-nuevo">{encargados.map(n => <option key={n} value={n} />)}</datalist>
+                </label>
+              </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-[var(--line)] p-3.5 transition-colors hover:border-[#CFC9BB]">
+                <input type="checkbox" checked={enPlataforma} onChange={e => setEnPlataforma(e.target.checked)} className="mt-0.5 h-4 w-4 flex-none accent-[var(--ink)]" />
+                <span>
+                  <span className="block text-[14px] font-medium text-[var(--ink)]">Hace su proceso en la plataforma</span>
+                  <span className="mt-0.5 block text-[13px] leading-[1.45] text-[var(--secundario)]">
+                    Entrevistas, Landscape y Estrategia con Claude, y la fase avanza sola. Si no, se lleva a mano, como en Notion.
+                  </span>
+                </span>
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[#FBFAF7] px-5 py-4 sm:px-7">
+              {error && <p role="alert" className="mr-auto text-[13px] text-[var(--error)]">{error}</p>}
+              <button type="button" onClick={cerrar} className={BOTON_SECUNDARIO}>Cancelar</button>
               <button disabled={busy} className={`${BOTON_PRIMARIO} disabled:opacity-50`}>{busy ? 'Creando…' : 'Crear cliente'}</button>
             </div>
           </form>
-        </>
+        </Modal>
       )}
-    </div>
+    </>
   )
 }

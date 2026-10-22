@@ -148,10 +148,13 @@ export async function actualizarSeguimiento(db: AnyDb, projectId: string, cambio
   if (fase && !porFuera && !FASES_MANUALES.includes(fase.key))
     throw new ErrorDeValidacion(`${fase.key} se calcula sola en la plataforma; sólo se marca a mano en un cliente por fuera`)
   if (moverA && !porFuera) throw new ErrorDeValidacion('Sólo un cliente por fuera se mueve de fase a mano')
+  // Mover y marcar van juntos: "pasa a Diseño, pero todavía no arrancó" es un solo cambio.
+  // Al volver a la plataforma, las fases marcadas a mano se descartan: desde ahí se calculan.
+  const base = previo.porFuera && !porFuera ? {} : moverA ? fasesAlMover(moverA) : previo.fases
   const nuevo: Seguimiento = {
     ...previo,
     ...resto,
-    fases: moverA ? fasesAlMover(moverA) : fase ? { ...previo.fases, [fase.key]: fase.estado } : previo.fases,
+    fases: fase ? { ...base, [fase.key]: fase.estado } : base,
   }
 
   const valores = { ...nuevo, updatedAt: new Date() }

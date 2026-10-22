@@ -8,7 +8,10 @@ import { FaseManual } from './FaseManual'
 import { CHIP, MARCA } from './sistema/chips'
 
 /** Lo que el menú usa del Sistema M&B. Lo inyecta `AdminShell`, que ya lo tiene cargado. */
-export type SistemaDelProyecto = Pick<FilaSistema, 'fases' | 'actual' | 'sigue' | 'pasos'>
+export type SistemaDelProyecto = Pick<FilaSistema, 'fases' | 'actual' | 'sigue' | 'pasos'> & {
+  /** Lleva su proceso fuera de la plataforma: no hay pantallas que ofrecerle. */
+  porFuera?: boolean
+}
 
 /** Las tres fases que tienen pantallas, con la key que usa el índice. */
 const DEL_INDICE: Partial<Record<FaseSistema, FaseIndice['key']>> = {
@@ -203,6 +206,56 @@ function LoQueSigue({ sigue }: { sigue: SistemaDelProyecto['sigue'] }) {
 }
 
 /**
+ * El menú de un cliente que lleva su proceso por fuera: su ficha y el recorrido para mirar.
+ * Taller, Landscape y Estrategia no le abren nada, porque no los hace acá; las fases se
+ * mueven desde la ficha o el tablero.
+ */
+function IndicePorFuera({ projectId, nombre, subtitulo, sistema, enFicha }: {
+  projectId: string
+  nombre: string
+  subtitulo: string
+  sistema: SistemaDelProyecto
+  enFicha: boolean
+}) {
+  const terminado = sistema.sigue.quien === 'listo'
+  return (
+    <nav aria-label="Índice del proyecto" className="flex flex-col gap-5">
+      <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} />
+      <div>
+        <Link
+          href={`/admin/projects/${projectId}`}
+          aria-current={enFicha ? 'page' : undefined}
+          className={`flex items-center gap-2.5 rounded-[6px] py-1.5 text-[14px] ${
+            enFicha ? 'font-semibold text-[var(--ink)]' : 'text-[var(--cuerpo)] hover:text-[var(--ink)]'
+          }`}
+        >
+          <svg viewBox="0 0 18 18" className="h-[18px] w-[18px] flex-none text-[var(--rotulo)]" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="13" height="13" rx="3" />
+            <path d="M6 7h6M6 10h6M6 13h3.5" />
+          </svg>
+          Ficha
+        </Link>
+        <ol className="mt-2 border-t border-[var(--line)] pt-2" aria-label="Recorrido">
+          {sistema.fases.map((f, i) => {
+            const enCurso = !terminado && f.key === sistema.actual
+            return (
+              <li key={f.key} className="flex items-center gap-2.5 py-[7px] text-[var(--cuerpo)]">
+                <NumeroDeFase n={i + 1} estado={f.estado} enCurso={enCurso} />
+                <span className={`min-w-0 flex-1 text-[14.5px] ${enCurso ? 'font-semibold text-[var(--ink)]' : ''}`}>{f.label}</span>
+                <span className="flex-none font-mono text-[11px] tabular-nums text-[var(--rotulo)]">{derecha(f)}</span>
+              </li>
+            )
+          })}
+        </ol>
+        <p className="mt-3 text-[12.5px] leading-[1.5] text-[var(--secundario)]">
+          Lleva su proceso por fuera de la plataforma. Su fase se mueve desde la ficha o el tablero.
+        </p>
+      </div>
+    </nav>
+  )
+}
+
+/**
  * El menú de un cliente: el mismo en todas sus pantallas. Arriba, lo que sigue; después el
  * resumen y las cinco fases del Sistema M&B, numeradas y en orden. Sólo se abre la fase en
  * la que uno está parado; las otras quedan en una línea con su avance, y un clic lleva a
@@ -225,6 +278,8 @@ export function ProjectIndex({
   /** La pantalla es el resumen del cliente: no hay etapa activa, se abre la fase en curso. */
   enResumen?: boolean
 }) {
+  if (sistema?.porFuera) return <IndicePorFuera projectId={projectId} nombre={nombre} subtitulo={subtitulo} sistema={sistema} enFicha={enResumen} />
+
   const menu = fasesDelMenu(projectId, fases, sistema)
   const activas = fases.flatMap(f => f.entradas).filter(e => e.estado === 'actual')
   const abierta = menu.find(f => f.indice?.entradas.some(e => e.estado === 'actual'))?.key

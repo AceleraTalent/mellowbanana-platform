@@ -56,6 +56,42 @@ body {
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .animate-fade { animation: fade-in 0.25s ease both; }
 
+/* El modal del panel: un <dialog> nativo sobre el papel desenfocado. En el celular sube
+   como hoja desde abajo, a todo el ancho. */
+.modal {
+  margin: auto;
+  width: calc(100% - 32px);
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--cuerpo);
+  box-shadow: 0 24px 64px rgba(21, 18, 12, 0.18), 0 2px 6px rgba(21, 18, 12, 0.06);
+  overscroll-behavior: contain;
+}
+.modal::backdrop {
+  background: rgba(36, 31, 22, 0.26);
+  backdrop-filter: blur(7px) saturate(0.9);
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.modal[open] { animation: modal-in 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+.modal[open]::backdrop { animation: fade-in 0.24s ease; }
+@media (max-width: 639px) {
+  .modal {
+    margin: auto 0 0;
+    width: 100%;
+    max-width: none !important;
+    max-height: calc(100dvh - 24px);
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-q, .animate-q-late, .animate-fade { animation: none; }
+  .modal[open], .modal[open]::backdrop { animation: none; }
 }

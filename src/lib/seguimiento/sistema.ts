@@ -140,6 +140,19 @@ export function fasesAlMover(destino: FaseSistema | 'terminado'): Record<FaseSis
   return Object.fromEntries(FASES.map((f, j) => [f, j < i ? 'completa' : j === i ? 'en_curso' : 'pendiente'])) as Record<FaseSistema, EstadoFase>
 }
 
+/**
+ * El estado de un cliente por fuera, como el Status de Notion: en qué anda dentro de su
+ * fase. Frenado manda sobre la fase; si no, se lee de la fase actual.
+ */
+export type EstadoCliente = 'en_curso' | 'sin_empezar' | 'cliente' | 'pausa'
+export const ESTADO_CLIENTE_LABEL: Record<EstadoCliente, string> = {
+  en_curso: 'En curso', sin_empezar: 'Sin empezar', cliente: 'Esperando al cliente', pausa: 'En pausa',
+}
+export function estadoDelCliente(fases: FaseConEstado[], actual: FaseSistema, frenado: EstadoManual | null | undefined): EstadoCliente {
+  if (frenado) return frenado
+  return fases.find(f => f.key === actual)?.estado === 'pendiente' ? 'sin_empezar' : 'en_curso'
+}
+
 /** De quién es la pelota en este proyecto. Es el “status” de la tabla. */
 export type Quien = 'equipo' | 'revisar' | 'claude' | 'cliente' | 'pausa' | 'fuera' | 'listo'
 
@@ -161,8 +174,7 @@ export function queSigue(s: SenalesProyecto, fases: FaseConEstado[]): QueSigue {
   const actual = faseActual(fases)
   const fase = fases.find(f => f.key === actual)!
   if (fase.estado === 'completa') return { quien: 'listo', texto: 'Terminado' }
-  if (s.porFuera)
-    return { quien: 'fuera', texto: 'Por fuera', detalle: fase.estado === 'en_curso' ? `${fase.label} en curso` : `${fase.label} sin empezar` }
+  if (s.porFuera) return { quien: 'fuera', texto: fase.estado === 'en_curso' ? 'En curso' : 'Sin empezar' }
 
   switch (actual) {
     case 'taller': {

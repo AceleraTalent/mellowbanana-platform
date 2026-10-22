@@ -1,25 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  FASES, FASE_LABEL, FASES_MANUALES,
-  type EstadoFase, type EstadoManual, type FaseConEstado, type FaseSistema, type Quien,
-} from '@/lib/seguimiento/sistema'
+import { FASES, FASE_LABEL, type FaseConEstado, type FaseSistema, type Quien } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { CHIP, MARCA } from './chips'
+import { EditorCliente } from './EditorCliente'
+import { cuandoVence, encargadosConocidos } from './cliente'
 
 /**
  * El Sistema M&B dentro de la plataforma: una fila por cliente con su fase, qué sigue,
  * quién lo lleva, la fecha de entrega y las notas del equipo. Lo calculado (fase, qué
- * sigue, último movimiento) no se edita; lo del equipo se edita ahí mismo, sin abrir nada.
+ * sigue, último movimiento) no se edita; encargado, entrega y notas se editan ahí mismo, y
+ * un clic en la fase abre el cliente entero en el modal, el mismo que usa el tablero.
  */
 
 /** Lo que nos toca va primero; lo terminado, al final. */
 export const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, fuera: 3, cliente: 4, pausa: 5, listo: 6 }
-
-const ESTADO_FASE_LABEL: Record<EstadoFase, string> = { pendiente: 'Sin empezar', en_curso: 'En curso', completa: 'Terminado' }
 
 export async function guardar(id: string, cambios: Record<string, unknown>) {
   const res = await fetch(`/api/projects/${id}/seguimiento`, {
@@ -72,13 +70,15 @@ export function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }
       setEstado('error')
     }
   }
-  const clase = 'w-full resize-none rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] leading-[1.5] text-[var(--ink)] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--ink)] focus:bg-white focus:outline-none'
+  // `field-sizing: content`: el campo crece con lo que tiene, así un encargado con dos
+  // nombres o una nota larga se leen enteros sin abrir nada.
+  const clase = 'w-full resize-none rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] leading-[1.5] text-[var(--ink)] [field-sizing:content] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--ink)] focus:bg-white focus:outline-none'
   return (
     <div className="relative">
       {multilinea ? (
         <textarea
           aria-label={etiqueta}
-          rows={2}
+          rows={1}
           value={texto}
           placeholder={placeholder}
           onChange={e => setTexto(e.target.value)}
@@ -105,19 +105,10 @@ export function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }
   )
 }
 
-/** Cuánto falta para la entrega, dicho en días. */
-export function faltan(fecha: string, hoy: Date): { texto: string; vencida: boolean } {
-  const [a, m, d] = fecha.split('-').map(Number)
-  const dias = Math.round((Date.UTC(a, m - 1, d) - Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86_400_000)
-  if (dias === 0) return { texto: 'Es hoy', vencida: false }
-  if (dias < 0) return { texto: `Vencida hace ${-dias} ${dias === -1 ? 'día' : 'días'}`, vencida: true }
-  return { texto: `En ${dias} ${dias === 1 ? 'día' : 'días'}`, vencida: false }
-}
-
 export function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
   const [fecha, setFecha] = useState(fila.seguimiento.fechaEntrega ?? '')
   const [error, setError] = useState(false)
-  const resto = fecha ? faltan(fecha, new Date()) : null
+  const resto = fecha ? cuandoVence(fecha) : null
   return (
     <div>
       <input
@@ -143,134 +134,13 @@ export function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () =>
   )
 }
 
-export const opcion = (activa: boolean) =>
-  `flex-1 rounded-[7px] border px-2 py-1 text-[12px] ${activa ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] text-[var(--secundario)] hover:border-[var(--ink)]'}`
-
-/** Por fuera, la fase se elige de una, como mover la tarjeta en Notion. */
-export function FaseActualPorFuera({ fila, cambiar }: { fila: FilaSistema; cambiar: (c: Record<string, unknown>) => void }) {
-  const terminado = fila.sigue.quien === 'listo'
-  return (
-    <div role="radiogroup" aria-label={`Fase de ${fila.nombre}`} className="mt-3 grid grid-cols-2 gap-1">
-      {[...FASES, 'terminado' as const].map(f => {
-        const activa = f === 'terminado' ? terminado : !terminado && fila.actual === f
-        return (
-          <button key={f} type="button" role="radio" aria-checked={activa} onClick={() => cambiar({ moverA: f })}
-            className={`${opcion(activa)} py-1.5 text-left text-[12.5px]`}>
-            {f === 'terminado' ? '✓ Terminado' : FASE_LABEL[f]}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/**
- * Las cinco fases del cliente, para mirar y para marcar las que pasan afuera. Las que
- * calcula la plataforma se muestran pero no se tocan: si se pudieran mover a mano, el
- * tablero podría decir algo distinto de lo que de verdad pasó. Un cliente por fuera no
- * tiene nada calculado: se mueve de fase con un clic.
- */
-function EditorFases({ fila, onCerrar, onCambio }: { fila: FilaSistema; onCerrar: () => void; onCambio: () => void }) {
-  const [manual, setManual] = useState(fila.seguimiento.fases)
-  const [frenado, setFrenado] = useState<EstadoManual | null>(fila.seguimiento.estadoManual)
-  const [error, setError] = useState<string | null>(null)
-  const porFuera = fila.seguimiento.porFuera
-
-  useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }
-    window.addEventListener('keydown', alTeclear)
-    return () => window.removeEventListener('keydown', alTeclear)
-  }, [onCerrar])
-
-  async function cambiar(cambios: Record<string, unknown>, aplicar: () => void) {
-    try {
-      await guardar(fila.id, cambios)
-      aplicar()
-      setError(null)
-      onCambio()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar')
-    }
-  }
-
-  return (
-    <>
-      <button type="button" aria-label="Cerrar" className="fixed inset-0 z-20 cursor-default" onClick={onCerrar} />
-      <div role="dialog" aria-label={`Fases de ${fila.nombre}`}
-        className="absolute left-0 top-full z-30 mt-2 w-[340px] rounded-[14px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_32px_rgba(21,18,12,.14)]">
-        <p className="text-[13px] font-semibold text-[var(--ink)]">{porFuera ? `¿En qué va ${fila.nombre}?` : `Fases de ${fila.nombre}`}</p>
-        {porFuera ? <FaseActualPorFuera fila={fila} cambiar={c => cambiar(c, () => {})} /> : (
-        <ul className="mt-3 space-y-2.5">
-          {fila.fases.map(f => {
-            const editable = FASES_MANUALES.includes(f.key)
-            // El taller se calcula solo hasta el final; lo único manual es cerrarlo.
-            const opciones: EstadoFase[] = f.key === 'taller' ? ['en_curso', 'completa'] : ['pendiente', 'en_curso', 'completa']
-            const valor: EstadoFase = f.key === 'taller' ? (manual.taller === 'completa' ? 'completa' : 'en_curso') : (manual[f.key] ?? 'pendiente')
-            return (
-              <li key={f.key}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[13px] font-medium text-[var(--ink)]">{f.label}</span>
-                  {!editable && <span className="text-[11px] text-[var(--rotulo)]">se calcula solo</span>}
-                </div>
-                {editable ? (
-                  <div className="mt-1 flex gap-1" role="radiogroup" aria-label={`Estado de ${f.label}`}>
-                    {opciones.map(o => (
-                      <button key={o} type="button" role="radio" aria-checked={valor === o}
-                        onClick={() => cambiar({ fase: { key: f.key, estado: o } }, () => setManual(m => ({ ...m, [f.key]: o })))}
-                        className={`flex-1 rounded-[7px] border px-2 py-1 text-[12px] ${valor === o ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] text-[var(--secundario)] hover:border-[var(--ink)]'}`}>
-                        {f.key === 'taller' && o === 'en_curso' ? 'Abierto' : f.key === 'taller' && o === 'completa' ? 'Taller hecho' : ESTADO_FASE_LABEL[o]}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-0.5 text-[12.5px] text-[var(--secundario)]">{f.detalle}</p>
-                )}
-                {editable && f.key === 'taller' && <p className="mt-1 text-[11.5px] text-[var(--rotulo)]">{f.detalle}</p>}
-              </li>
-            )
-          })}
-        </ul>
-        )}
-        <div className="mt-4 border-t border-[var(--line)] pt-3">
-          <p className="text-[13px] font-medium text-[var(--ink)]">¿Está frenado?</p>
-          <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Frenado">
-            {([[null, 'No'], ['cliente', 'Esperando al cliente'], ['pausa', 'En pausa']] as const).map(([v, l]) => (
-              <button key={l} type="button" role="radio" aria-checked={frenado === v}
-                onClick={() => cambiar({ estadoManual: v }, () => setFrenado(v))}
-                className={opcion(frenado === v)}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4 border-t border-[var(--line)] pt-3">
-          <p className="text-[13px] font-medium text-[var(--ink)]">¿Dónde lleva su proceso?</p>
-          <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Dónde lleva su proceso">
-            {([[false, 'En la plataforma'], [true, 'Por fuera']] as const).map(([v, l]) => (
-              <button key={l} type="button" role="radio" aria-checked={porFuera === v}
-                onClick={() => cambiar({ porFuera: v }, () => {})}
-                className={opcion(porFuera === v)}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11.5px] leading-[1.45] text-[var(--rotulo)]">
-            {porFuera ? 'Sus fases se mueven a mano, como en Notion.' : 'Landscape y Estrategia avanzan solos con lo que se hace acá.'}
-          </p>
-        </div>
-        {error && <p className="mt-2 text-[12px] text-[var(--error)]">{error}</p>}
-      </div>
-    </>
-  )
-}
-
-function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
+function Fila({ fila, encargados, onCambio }: { fila: FilaSistema; encargados: string[]; onCambio: () => void }) {
   const [editando, setEditando] = useState(false)
   const fase = fila.fases.find(f => f.key === fila.actual)!
   const celda = 'min-w-0'
   const rotuloMovil = 'pb-1 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:hidden'
   return (
-    <li className="grid gap-x-7 gap-y-3 border-b border-[var(--line)] py-6 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(190px,1.3fr)_minmax(110px,.7fr)_minmax(130px,.75fr)_minmax(180px,1.3fr)] lg:items-start">
+    <li className="grid gap-x-7 gap-y-3 border-b border-[var(--line)] py-6 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1.2fr)_minmax(140px,.95fr)_minmax(170px,1.15fr)_minmax(150px,1fr)_minmax(140px,.8fr)_minmax(170px,1.2fr)] lg:items-start">
       <div className={celda}>
         <Link href={fila.href} className="font-serif text-[20px] leading-tight tracking-[-.01em] text-[var(--ink)] hover:underline">{fila.nombre}</Link>
         <p className="mt-1.5 text-[13px] leading-[1.45] text-[var(--rotulo)]">
@@ -282,7 +152,7 @@ function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
         <p className={rotuloMovil}>Fase</p>
         <button type="button" onClick={() => setEditando(true)}
           className="-mx-2 -my-1 w-[calc(100%+16px)] rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-[var(--superficie)]"
-          aria-label={`Fase de ${fila.nombre}: ${fase.label}. Cambiar fases`}>
+          aria-label={`Fase de ${fila.nombre}: ${fase.label}. Editar el cliente`}>
           <span className="flex items-baseline justify-between gap-2">
             <span className="text-[15px] font-semibold text-[var(--ink)]">{fase.label}</span>
             <span className="text-[11px] text-[var(--rotulo)]" aria-hidden="true">✎</span>
@@ -290,14 +160,17 @@ function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
           <span className="mt-2 block"><Recorrido fases={fila.fases} actual={fila.actual} /></span>
           <span className="mt-1.5 block truncate text-[13px] text-[var(--secundario)]">{fase.detalle}</span>
         </button>
-        {editando && <EditorFases fila={fila} onCerrar={() => setEditando(false)} onCambio={onCambio} />}
+        {editando && <EditorCliente fila={fila} encargados={encargados} onCerrar={() => setEditando(false)} />}
       </div>
 
       <div className={celda}>
         <p className={rotuloMovil}>Qué sigue</p>
-        <p>
-          <span className={`inline-flex rounded-[3px] px-[7px] py-[2px] text-[12.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
-        </p>
+        {/* Por fuera y andando, la columna Fase ya lo dice todo: repetirlo sería ruido. */}
+        {fila.sigue.quien !== 'fuera' && (
+          <p>
+            <span className={`inline-flex rounded-[3px] px-[7px] py-[2px] text-[12.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
+          </p>
+        )}
         {fila.sigue.detalle && (
           fila.sigue.href
             ? <Link href={fila.sigue.href} className="mt-1.5 block text-[14.5px] leading-[1.45] text-[var(--ink)] underline decoration-[var(--line)] underline-offset-[3px] hover:decoration-[var(--ink)]">{fila.sigue.detalle} →</Link>
@@ -307,7 +180,7 @@ function Fila({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
 
       <div className={celda}>
         <p className={rotuloMovil}>Encargado</p>
-        <Editable etiqueta={`Encargado de ${fila.nombre}`} valor={fila.seguimiento.encargado} placeholder="Asignar"
+        <Editable etiqueta={`Encargado de ${fila.nombre}`} valor={fila.seguimiento.encargado} placeholder="Asignar" multilinea
           onGuardar={async v => { await guardar(fila.id, { encargado: v }); onCambio() }} />
       </div>
 
@@ -333,6 +206,7 @@ export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
     .filter(f => filtro === 'todas' || f.actual === filtro)
     .sort((a, b) => URGENCIA[a.sigue.quien] - URGENCIA[b.sigue.quien] || a.nombre.localeCompare(b.nombre))
   const nosToca = filas.filter(f => f.sigue.quien === 'revisar' || f.sigue.quien === 'equipo').length
+  const encargados = useMemo(() => encargadosConocidos(filas.map(f => f.seguimiento.encargado)), [filas])
 
   const pestaña = (activa: boolean) =>
     `-mb-px inline-flex items-baseline gap-1.5 border-b-2 pb-3 text-[14.5px] transition-colors ${
@@ -360,7 +234,7 @@ export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
         )}
       </div>
 
-      <div className="hidden gap-x-7 border-b border-[var(--line)] pb-3 pt-6 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:grid lg:grid-cols-[minmax(180px,1.3fr)_minmax(150px,1fr)_minmax(190px,1.3fr)_minmax(110px,.7fr)_minmax(130px,.75fr)_minmax(180px,1.3fr)]">
+      <div className="hidden gap-x-7 border-b border-[var(--line)] pb-3 pt-6 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:grid lg:grid-cols-[minmax(170px,1.2fr)_minmax(140px,.95fr)_minmax(170px,1.15fr)_minmax(150px,1fr)_minmax(140px,.8fr)_minmax(170px,1.2fr)]">
         <span>Cliente</span><span>Fase</span><span>Qué sigue</span><span className="px-2">Encargado</span><span className="px-2">Entrega</span><span className="px-2">Notas</span>
       </div>
 
@@ -368,7 +242,7 @@ export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
         <p className="py-12 text-center text-[14px] text-[var(--secundario)]">No hay clientes en {filtro === 'todas' ? 'la plataforma' : FASE_LABEL[filtro]}.</p>
       ) : (
         <ul aria-label="Clientes">
-          {visibles.map(f => <Fila key={f.id} fila={f} onCambio={() => router.refresh()} />)}
+          {visibles.map(f => <Fila key={f.id} fila={f} encargados={encargados} onCambio={() => router.refresh()} />)}
         </ul>
       )}
     </div>

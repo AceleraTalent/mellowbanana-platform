@@ -125,9 +125,11 @@ describe('clientes por fuera', () => {
     expect(faseActual(estadoDeFases(s))).toBe('estrategia')
   })
 
-  it('qué sigue dice que va por fuera y en qué fase, sin mandar a pantallas de la plataforma', () => {
+  it('qué sigue dice en qué anda dentro de su fase, sin mandar a pantallas de la plataforma', () => {
     const s = fuera({ manual: fasesAlMover('diseno') })
-    expect(queSigue(s, estadoDeFases(s))).toEqual({ quien: 'fuera', texto: 'Por fuera', detalle: 'Diseño en curso' })
+    expect(queSigue(s, estadoDeFases(s))).toEqual({ quien: 'fuera', texto: 'En curso' })
+    const quieto = fuera({ manual: { ...fasesAlMover('diseno'), diseno: 'pendiente' } })
+    expect(queSigue(quieto, estadoDeFases(quieto))).toEqual({ quien: 'fuera', texto: 'Sin empezar' })
   })
 
   it('frenado o terminado se ve igual que en cualquier cliente', () => {
