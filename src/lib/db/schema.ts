@@ -93,6 +93,7 @@ export const projectSeguimiento = pgTable('project_seguimiento', {
   estadoManual: text('estado_manual'),                     // 'pausa' | 'cliente' | null
   fases: jsonb('fases').notNull().default({}),             // { naming: 'en_curso', ... }
   conclusionesTaller: text('conclusiones_taller'),         // lo que volvió del Miro, si alguien lo pegó
+  porFuera: boolean('por_fuera').notNull().default(false), // lleva su proceso fuera de la plataforma: todo a mano
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

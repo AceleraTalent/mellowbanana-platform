@@ -17,11 +17,11 @@ import { CHIP, MARCA } from './chips'
  */
 
 /** Lo que nos toca va primero; lo terminado, al final. */
-const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, cliente: 3, pausa: 4, listo: 5 }
+export const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, fuera: 3, cliente: 4, pausa: 5, listo: 6 }
 
 const ESTADO_FASE_LABEL: Record<EstadoFase, string> = { pendiente: 'Sin empezar', en_curso: 'En curso', completa: 'Terminado' }
 
-async function guardar(id: string, cambios: Record<string, unknown>) {
+export async function guardar(id: string, cambios: Record<string, unknown>) {
   const res = await fetch(`/api/projects/${id}/seguimiento`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -51,7 +51,7 @@ function Recorrido({ fases, actual }: { fases: FaseConEstado[]; actual: FaseSist
 }
 
 /** Texto editable que se ve como texto: se guarda al salir del campo. */
-function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }: {
+export function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }: {
   valor: string | null
   placeholder: string
   multilinea?: boolean
@@ -106,7 +106,7 @@ function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }: {
 }
 
 /** Cuánto falta para la entrega, dicho en días. */
-function faltan(fecha: string, hoy: Date): { texto: string; vencida: boolean } {
+export function faltan(fecha: string, hoy: Date): { texto: string; vencida: boolean } {
   const [a, m, d] = fecha.split('-').map(Number)
   const dias = Math.round((Date.UTC(a, m - 1, d) - Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86_400_000)
   if (dias === 0) return { texto: 'Es hoy', vencida: false }
@@ -114,7 +114,7 @@ function faltan(fecha: string, hoy: Date): { texto: string; vencida: boolean } {
   return { texto: `En ${dias} ${dias === 1 ? 'día' : 'días'}`, vencida: false }
 }
 
-function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
+export function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }) {
   const [fecha, setFecha] = useState(fila.seguimiento.fechaEntrega ?? '')
   const [error, setError] = useState(false)
   const resto = fecha ? faltan(fecha, new Date()) : null
@@ -143,15 +143,38 @@ function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () => void }
   )
 }
 
+export const opcion = (activa: boolean) =>
+  `flex-1 rounded-[7px] border px-2 py-1 text-[12px] ${activa ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] text-[var(--secundario)] hover:border-[var(--ink)]'}`
+
+/** Por fuera, la fase se elige de una, como mover la tarjeta en Notion. */
+export function FaseActualPorFuera({ fila, cambiar }: { fila: FilaSistema; cambiar: (c: Record<string, unknown>) => void }) {
+  const terminado = fila.sigue.quien === 'listo'
+  return (
+    <div role="radiogroup" aria-label={`Fase de ${fila.nombre}`} className="mt-3 grid grid-cols-2 gap-1">
+      {[...FASES, 'terminado' as const].map(f => {
+        const activa = f === 'terminado' ? terminado : !terminado && fila.actual === f
+        return (
+          <button key={f} type="button" role="radio" aria-checked={activa} onClick={() => cambiar({ moverA: f })}
+            className={`${opcion(activa)} py-1.5 text-left text-[12.5px]`}>
+            {f === 'terminado' ? '✓ Terminado' : FASE_LABEL[f]}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 /**
  * Las cinco fases del cliente, para mirar y para marcar las que pasan afuera. Las que
  * calcula la plataforma se muestran pero no se tocan: si se pudieran mover a mano, el
- * tablero podría decir algo distinto de lo que de verdad pasó.
+ * tablero podría decir algo distinto de lo que de verdad pasó. Un cliente por fuera no
+ * tiene nada calculado: se mueve de fase con un clic.
  */
 function EditorFases({ fila, onCerrar, onCambio }: { fila: FilaSistema; onCerrar: () => void; onCambio: () => void }) {
   const [manual, setManual] = useState(fila.seguimiento.fases)
   const [frenado, setFrenado] = useState<EstadoManual | null>(fila.seguimiento.estadoManual)
   const [error, setError] = useState<string | null>(null)
+  const porFuera = fila.seguimiento.porFuera
 
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }
@@ -175,7 +198,8 @@ function EditorFases({ fila, onCerrar, onCambio }: { fila: FilaSistema; onCerrar
       <button type="button" aria-label="Cerrar" className="fixed inset-0 z-20 cursor-default" onClick={onCerrar} />
       <div role="dialog" aria-label={`Fases de ${fila.nombre}`}
         className="absolute left-0 top-full z-30 mt-2 w-[340px] rounded-[14px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_32px_rgba(21,18,12,.14)]">
-        <p className="text-[13px] font-semibold text-[var(--ink)]">Fases de {fila.nombre}</p>
+        <p className="text-[13px] font-semibold text-[var(--ink)]">{porFuera ? `¿En qué va ${fila.nombre}?` : `Fases de ${fila.nombre}`}</p>
+        {porFuera ? <FaseActualPorFuera fila={fila} cambiar={c => cambiar(c, () => {})} /> : (
         <ul className="mt-3 space-y-2.5">
           {fila.fases.map(f => {
             const editable = FASES_MANUALES.includes(f.key)
@@ -206,17 +230,33 @@ function EditorFases({ fila, onCerrar, onCambio }: { fila: FilaSistema; onCerrar
             )
           })}
         </ul>
+        )}
         <div className="mt-4 border-t border-[var(--line)] pt-3">
           <p className="text-[13px] font-medium text-[var(--ink)]">¿Está frenado?</p>
           <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Frenado">
             {([[null, 'No'], ['cliente', 'Esperando al cliente'], ['pausa', 'En pausa']] as const).map(([v, l]) => (
               <button key={l} type="button" role="radio" aria-checked={frenado === v}
                 onClick={() => cambiar({ estadoManual: v }, () => setFrenado(v))}
-                className={`flex-1 rounded-[7px] border px-2 py-1 text-[12px] ${frenado === v ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] text-[var(--secundario)] hover:border-[var(--ink)]'}`}>
+                className={opcion(frenado === v)}>
                 {l}
               </button>
             ))}
           </div>
+        </div>
+        <div className="mt-4 border-t border-[var(--line)] pt-3">
+          <p className="text-[13px] font-medium text-[var(--ink)]">¿Dónde lleva su proceso?</p>
+          <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Dónde lleva su proceso">
+            {([[false, 'En la plataforma'], [true, 'Por fuera']] as const).map(([v, l]) => (
+              <button key={l} type="button" role="radio" aria-checked={porFuera === v}
+                onClick={() => cambiar({ porFuera: v }, () => {})}
+                className={opcion(porFuera === v)}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11.5px] leading-[1.45] text-[var(--rotulo)]">
+            {porFuera ? 'Sus fases se mueven a mano, como en Notion.' : 'Landscape y Estrategia avanzan solos con lo que se hace acá.'}
+          </p>
         </div>
         {error && <p className="mt-2 text-[12px] text-[var(--error)]">{error}</p>}
       </div>

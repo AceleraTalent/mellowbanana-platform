@@ -1,0 +1,1 @@
+ALTER TABLE "project_seguimiento" ADD COLUMN "por_fuera" boolean DEFAULT false NOT NULL;

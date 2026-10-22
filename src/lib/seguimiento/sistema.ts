@@ -2,18 +2,21 @@
  * El Sistema M&B: el seguimiento por cliente que el estudio llevaba en Notion (cliente,
  * fase actual, notas, encargado, fechas y status), ahora dentro de la plataforma.
  *
- * Las cinco fases son las del estudio. Tres las ve la plataforma y se calculan solas con lo
- * que el equipo y Claude van haciendo (Landscape, Estrategia y casi todo el Taller); las
- * otras dos (Naming y Diseño) pasan fuera, así que el equipo dice en qué van. El Taller es
- * mixto: entrevistas y propuesta de valor viven acá, pero el taller en sí es en Miro y el
- * equipo lo marca como hecho.
+ * Las cinco fases son las del estudio, en el orden de su cronograma (el Naming va después
+ * de la Estrategia). Tres las ve la plataforma y se calculan solas con lo que el equipo y
+ * Claude van haciendo (Landscape, Estrategia y casi todo el Taller); las otras dos (Naming
+ * y Diseño) pasan fuera, así que el equipo dice en qué van. El Taller es mixto: entrevistas
+ * y propuesta de valor viven acá, pero el taller en sí es en Miro y el equipo lo marca.
+ *
+ * Un cliente “por fuera” lleva todo su proceso fuera de la plataforma: no hay nada que
+ * calcular, así que sus cinco fases son las que marca el equipo, como en Notion.
  */
 
 import { pasoQueSigue, type PasoConEstado } from '@/lib/landscape/pasos'
 
 export type FaseSistema = 'taller' | 'landscape' | 'naming' | 'estrategia' | 'diseno'
 
-export const FASES: FaseSistema[] = ['taller', 'landscape', 'naming', 'estrategia', 'diseno']
+export const FASES: FaseSistema[] = ['taller', 'landscape', 'estrategia', 'naming', 'diseno']
 
 export const FASE_LABEL: Record<FaseSistema, string> = {
   taller: 'Taller',
@@ -53,6 +56,8 @@ export interface SenalesProyecto {
   /** Lo que el equipo marcó a mano para las fases manuales. */
   manual: Partial<Record<FaseSistema, EstadoFase>>
   estadoManual?: EstadoManual | null
+  /** Lleva su proceso fuera de la plataforma: todas las fases son las que marca el equipo. */
+  porFuera?: boolean
 }
 
 export interface FaseConEstado {
@@ -93,14 +98,15 @@ function estrategia(s: SenalesProyecto): Omit<FaseConEstado, 'key' | 'label'> {
   return { estado: 'pendiente', detalle: 'Sin empezar', avance }
 }
 
-function manual(estado: EstadoFase | undefined): Omit<FaseConEstado, 'key' | 'label'> {
+function manual(estado: EstadoFase | undefined, porFuera = false): Omit<FaseConEstado, 'key' | 'label'> {
   if (estado === 'completa') return { estado, detalle: 'Terminado' }
-  if (estado === 'en_curso') return { estado, detalle: 'En curso, fuera de la plataforma' }
+  if (estado === 'en_curso') return { estado, detalle: porFuera ? 'En curso' : 'En curso, fuera de la plataforma' }
   return { estado: 'pendiente', detalle: 'Sin empezar' }
 }
 
 /** Las cinco fases del proyecto, cada una con su estado y una línea que lo explica. */
 export function estadoDeFases(s: SenalesProyecto): FaseConEstado[] {
+  if (s.porFuera) return FASES.map(key => ({ key, label: FASE_LABEL[key], ...manual(s.manual[key], true) }))
   const por: Record<FaseSistema, Omit<FaseConEstado, 'key' | 'label'>> = {
     taller: taller(s),
     landscape: landscape(s),
@@ -124,8 +130,18 @@ export function faseActual(fases: FaseConEstado[]): FaseSistema {
   return fases[i].key
 }
 
+/**
+ * Las fases como quedan al mover un cliente por fuera a `destino`, igual que arrastrar una
+ * tarjeta en Notion: lo anterior queda terminado, el destino en curso y lo que sigue sin
+ * empezar. `terminado` cierra todo.
+ */
+export function fasesAlMover(destino: FaseSistema | 'terminado'): Record<FaseSistema, EstadoFase> {
+  const i = destino === 'terminado' ? FASES.length : FASES.indexOf(destino)
+  return Object.fromEntries(FASES.map((f, j) => [f, j < i ? 'completa' : j === i ? 'en_curso' : 'pendiente'])) as Record<FaseSistema, EstadoFase>
+}
+
 /** De quién es la pelota en este proyecto. Es el “status” de la tabla. */
-export type Quien = 'equipo' | 'revisar' | 'claude' | 'cliente' | 'pausa' | 'listo'
+export type Quien = 'equipo' | 'revisar' | 'claude' | 'cliente' | 'pausa' | 'fuera' | 'listo'
 
 export interface QueSigue {
   quien: Quien
@@ -145,6 +161,8 @@ export function queSigue(s: SenalesProyecto, fases: FaseConEstado[]): QueSigue {
   const actual = faseActual(fases)
   const fase = fases.find(f => f.key === actual)!
   if (fase.estado === 'completa') return { quien: 'listo', texto: 'Terminado' }
+  if (s.porFuera)
+    return { quien: 'fuera', texto: 'Por fuera', detalle: fase.estado === 'en_curso' ? `${fase.label} en curso` : `${fase.label} sin empezar` }
 
   switch (actual) {
     case 'taller': {

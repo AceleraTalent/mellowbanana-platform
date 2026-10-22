@@ -1,7 +1,7 @@
 import { listProjectsWithCounts, landscapeState, listLandscapeActivity, type AnyDb } from '@/lib/db/store'
 import { strategyState, listStrategyActivity } from '@/lib/db/strategy-store'
 import { pasosMarcados } from '@/lib/db/pasos-store'
-import { seguimientosPorProyecto, SEGUIMIENTO_VACIO, type Seguimiento } from '@/lib/db/seguimiento-store'
+import { seguimientosPorProyecto, ultimosCambiosDeSeguimiento, SEGUIMIENTO_VACIO, type Seguimiento } from '@/lib/db/seguimiento-store'
 import { estadoDePasos } from '@/lib/landscape/pasos'
 import { STAGE_LABEL, haceCuanto } from '@/lib/landscape/stages'
 import { ETAPA_LABEL } from '@/lib/estrategia/stages'
@@ -54,6 +54,7 @@ async function leerOVacio<T>(lectura: () => Promise<T>, vacio: T, que: string): 
 export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<FilaSistema[]> {
   const rows = await listProjectsWithCounts(db)
   const seguimientos = await leerOVacio(() => seguimientosPorProyecto(db), new Map<string, Seguimiento>(), 'el seguimiento')
+  const cambiosDeSeguimiento = await leerOVacio(() => ultimosCambiosDeSeguimiento(db), new Map<string, Date>(), 'el seguimiento')
 
   // Una lectura por proyecto: con la cantidad de clientes de un estudio, N+1 no pesa.
   return Promise.all(rows.map(async r => {
@@ -90,6 +91,7 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       })),
       manual: seguimiento.fases,
       estadoManual: seguimiento.estadoManual,
+      porFuera: seguimiento.porFuera,
     }
     const fases = estadoDeFases(senales)
 
@@ -100,7 +102,11 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       candidatos.push({ cuando: a.cuando, texto: `${quien(a.autor, a.quien)} ${a.tipo === 'aprobado' ? 'aprobó' : 'guardó'} ${STAGE_LABEL[a.stage]}` })
     for (const a of actEstrategia)
       candidatos.push({ cuando: a.cuando, texto: a.quien === AUTOR_SINCRONIZADO ? 'Se generó la personalidad desde las entrevistas' : `${quien(a.autor, a.quien)} ${a.tipo === 'aprobado' ? 'aprobó' : 'guardó'} ${ETAPA_LABEL[a.stage]}` })
-    if (r.ultimaActividad) candidatos.push({ cuando: r.ultimaActividad, texto: 'Movimiento en entrevistas o propuesta' })
+    // Sin entrevistas ni propuesta, la fecha que trae es la de creación: no fue un movimiento.
+    if (r.ultimaActividad && (r.sessionsTotal > 0 || r.tieneEntregable))
+      candidatos.push({ cuando: r.ultimaActividad, texto: 'Movimiento en entrevistas o propuesta' })
+    const tocado = cambiosDeSeguimiento.get(r.id)
+    if (tocado) candidatos.push({ cuando: tocado, texto: 'Actualizado en el tablero' })
     const ultimo = candidatos.sort((a, b) => b.cuando.getTime() - a.cuando.getTime())[0]
 
     return {

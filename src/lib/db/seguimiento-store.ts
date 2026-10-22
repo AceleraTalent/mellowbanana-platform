@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { projectSeguimiento } from './schema'
 import { existeProyecto, ErrorDeValidacion, ErrorNoEncontrado, type AnyDb } from './store'
 import {
-  ESTADOS_FASE, ESTADOS_MANUALES, FASES_MANUALES,
+  ESTADOS_FASE, ESTADOS_MANUALES, FASES, FASES_MANUALES, fasesAlMover,
   type EstadoFase, type EstadoManual, type FaseSistema,
 } from '@/lib/seguimiento/sistema'
 
@@ -18,9 +18,11 @@ export interface Seguimiento {
    * igual, y Claude lo pide cuando hace falta.
    */
   conclusionesTaller: string | null
+  /** Lleva su proceso fuera de la plataforma: sus fases se mueven a mano, como en Notion. */
+  porFuera: boolean
 }
 
-export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null }
+export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null, porFuera: false }
 
 type Fila = typeof projectSeguimiento.$inferSelect
 
@@ -32,6 +34,7 @@ function desdeFila(f: Fila): Seguimiento {
     estadoManual: (f.estadoManual as EstadoManual | null) ?? null,
     fases: (f.fases ?? {}) as Seguimiento['fases'],
     conclusionesTaller: f.conclusionesTaller ?? null,
+    porFuera: !!f.porFuera,
   }
 }
 
@@ -51,10 +54,22 @@ export async function conclusionesDelTaller(db: AnyDb, projectId: string): Promi
   return f?.c ?? null
 }
 
+/** El seguimiento de un proyecto, o el vacío si nadie lo tocó todavía. */
+export async function seguimientoDe(db: AnyDb, projectId: string): Promise<Seguimiento> {
+  const [f] = (await db.select().from(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))) as Fila[]
+  return f ? desdeFila(f) : SEGUIMIENTO_VACIO
+}
+
 /** El seguimiento de todos los proyectos que lo tienen, por id. Los que no, no aparecen. */
 export async function seguimientosPorProyecto(db: AnyDb): Promise<Map<string, Seguimiento>> {
   const filas = (await db.select().from(projectSeguimiento)) as Fila[]
   return new Map(filas.map(f => [f.projectId, desdeFila(f)]))
+}
+
+/** Cuándo se tocó por última vez el seguimiento de cada proyecto: mover, anotar, asignar. */
+export async function ultimosCambiosDeSeguimiento(db: AnyDb): Promise<Map<string, Date>> {
+  const filas = (await db.select({ id: projectSeguimiento.projectId, cuando: projectSeguimiento.updatedAt }).from(projectSeguimiento)) as { id: string; cuando: Date | string }[]
+  return new Map(filas.map(f => [f.id, new Date(f.cuando)]))
 }
 
 export interface CambiosSeguimiento {
@@ -64,6 +79,9 @@ export interface CambiosSeguimiento {
   estadoManual?: EstadoManual | null
   fase?: { key: FaseSistema; estado: EstadoFase }
   conclusionesTaller?: string | null
+  porFuera?: boolean
+  /** Sólo por fuera: lleva el cliente a esa fase, como arrastrar la tarjeta en Notion. */
+  moverA?: FaseSistema | 'terminado'
 }
 
 const LARGO_MAXIMO = { encargado: 80, notas: 2000, conclusionesTaller: 30000 }
@@ -100,9 +118,19 @@ export function validarCambios(body: Record<string, unknown>): CambiosSeguimient
   }
   if ('fase' in body) {
     const f = body.fase as { key?: unknown; estado?: unknown } | null
-    if (!f || !FASES_MANUALES.includes(f.key as FaseSistema) || !ESTADOS_FASE.includes(f.estado as EstadoFase))
-      throw new ErrorDeValidacion(`fase tiene que ser { key: ${FASES_MANUALES.join(' | ')}, estado: ${ESTADOS_FASE.join(' | ')} }`)
+    if (!f || !FASES.includes(f.key as FaseSistema) || !ESTADOS_FASE.includes(f.estado as EstadoFase))
+      throw new ErrorDeValidacion(`fase tiene que ser { key: ${FASES.join(' | ')}, estado: ${ESTADOS_FASE.join(' | ')} }`)
     c.fase = { key: f.key as FaseSistema, estado: f.estado as EstadoFase }
+  }
+  if ('porFuera' in body) {
+    if (typeof body.porFuera !== 'boolean') throw new ErrorDeValidacion('porFuera tiene que ser true o false')
+    c.porFuera = body.porFuera
+  }
+  if ('moverA' in body) {
+    const m = body.moverA
+    if (m !== 'terminado' && !FASES.includes(m as FaseSistema))
+      throw new ErrorDeValidacion(`moverA tiene que ser ${FASES.join(', ')} o terminado`)
+    c.moverA = m as FaseSistema | 'terminado'
   }
   return c
 }
@@ -113,11 +141,17 @@ export async function actualizarSeguimiento(db: AnyDb, projectId: string, cambio
 
   const [fila] = (await db.select().from(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))) as Fila[]
   const previo = fila ? desdeFila(fila) : SEGUIMIENTO_VACIO
-  const { fase, ...resto } = cambios
+  const { fase, moverA, ...resto } = cambios
+  const porFuera = resto.porFuera ?? previo.porFuera
+  // Landscape y Estrategia se calculan con lo que pasa en la plataforma: marcarlas a mano
+  // sólo tiene sentido si el cliente lleva su proceso por fuera.
+  if (fase && !porFuera && !FASES_MANUALES.includes(fase.key))
+    throw new ErrorDeValidacion(`${fase.key} se calcula sola en la plataforma; sólo se marca a mano en un cliente por fuera`)
+  if (moverA && !porFuera) throw new ErrorDeValidacion('Sólo un cliente por fuera se mueve de fase a mano')
   const nuevo: Seguimiento = {
     ...previo,
     ...resto,
-    fases: fase ? { ...previo.fases, [fase.key]: fase.estado } : previo.fases,
+    fases: moverA ? fasesAlMover(moverA) : fase ? { ...previo.fases, [fase.key]: fase.estado } : previo.fases,
   }
 
   const valores = { ...nuevo, updatedAt: new Date() }

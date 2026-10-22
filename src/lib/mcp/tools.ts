@@ -13,6 +13,8 @@ import { actualizarSeguimiento, conclusionesDelTaller } from '@/lib/db/seguimien
 import { queSigueEstrategia, queSigueEstrategiaParaClaude } from '@/lib/estrategia/sigue'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
+import { resumen } from './clientes'
+import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { validarContenidoEtapa, validarPieza } from './validar'
 import { PIEZA_LABEL, esPieza, etapaDePieza, type PiezaKey } from '@/lib/landscape/piezas'
 import { validarContenidoEstrategia } from './validar-estrategia'
@@ -25,14 +27,21 @@ type AnswerRow = typeof answers.$inferSelect
 
 export async function listarProyectos(db: AnyDb) {
   const proyectos = await listProjectsWithCounts(db)
-  return Promise.all(proyectos.map(async p => ({
-    id: p.id,
-    nombre: p.name,
-    entrevistas: p.sessionsTotal,
-    entrevistasCompletas: p.sessionsCompleted,
-    tienePropuestaDeValor: p.tieneEntregable,
-    landscape: summarizeLandscape(await landscapeState(db, p.id)),
-  })))
+  // El tablero del estudio: en qué va cada cliente, quién lo lleva y qué falta, igual que
+  // el inicio del panel. Así Claude contesta "¿qué tiene Lina?" sin abrir cada proyecto.
+  const tablero = new Map((await cargarSistema(db)).map(f => [f.id, resumen(f)]))
+  return Promise.all(proyectos.map(async p => {
+    const { cliente: _, ...fila } = tablero.get(p.id) ?? { cliente: p.name }
+    return {
+      id: p.id,
+      nombre: p.name,
+      ...fila,
+      entrevistas: p.sessionsTotal,
+      entrevistasCompletas: p.sessionsCompleted,
+      tienePropuestaDeValor: p.tieneEntregable,
+      landscape: summarizeLandscape(await landscapeState(db, p.id)),
+    }
+  }))
 }
 
 /**

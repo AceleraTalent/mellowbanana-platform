@@ -32,6 +32,25 @@ describe('actualizarSeguimiento', () => {
   })
 })
 
+describe('clientes por fuera', () => {
+  it('Landscape y Estrategia sólo se marcan a mano si el cliente lleva su proceso por fuera', async () => {
+    const p = await findOrCreateProject(db, 'Viajero')
+    await expect(actualizarSeguimiento(db, p.id, { fase: { key: 'landscape', estado: 'completa' } })).rejects.toThrow(ErrorDeValidacion)
+    const s = await actualizarSeguimiento(db, p.id, { porFuera: true, fase: { key: 'landscape', estado: 'completa' } })
+    expect(s).toMatchObject({ porFuera: true, fases: { landscape: 'completa' } })
+  })
+
+  it('moverlo a una fase deja lo anterior terminado y lo siguiente sin empezar, como en Notion', async () => {
+    const p = await findOrCreateProject(db, 'Píntala')
+    await expect(actualizarSeguimiento(db, p.id, { moverA: 'diseno' })).rejects.toThrow(ErrorDeValidacion)
+    await actualizarSeguimiento(db, p.id, { porFuera: true })
+    expect((await actualizarSeguimiento(db, p.id, { moverA: 'naming' })).fases)
+      .toEqual({ taller: 'completa', landscape: 'completa', estrategia: 'completa', naming: 'en_curso', diseno: 'pendiente' })
+    expect(Object.values((await actualizarSeguimiento(db, p.id, { moverA: 'terminado' })).fases)).toEqual(Array(5).fill('completa'))
+    expect((await seguimientosPorProyecto(db)).get(p.id)?.porFuera).toBe(true)
+  })
+})
+
 describe('validarCambios', () => {
   it('recorta, y lo vacío se guarda como sin valor', () => {
     expect(validarCambios({ encargado: '  Isa  ', notas: '   ' })).toEqual({ encargado: 'Isa', notas: null })
@@ -40,7 +59,9 @@ describe('validarCambios', () => {
   it('rechaza fechas, estados y fases que no existen', () => {
     expect(() => validarCambios({ fechaEntrega: '20/10/2026' })).toThrow(ErrorDeValidacion)
     expect(() => validarCambios({ estadoManual: 'archivado' })).toThrow(ErrorDeValidacion)
-    expect(() => validarCambios({ fase: { key: 'landscape', estado: 'completa' } })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ fase: { key: 'artes', estado: 'completa' } })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ moverA: 'artes' })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ porFuera: 'si' })).toThrow(ErrorDeValidacion)
   })
 
   it('lo que no vino no aparece, para no borrarlo', () => {

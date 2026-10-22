@@ -17,6 +17,7 @@ import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { EncabezadoPagina } from '@/components/EncabezadoPagina'
+import { FichaPorFuera } from '@/components/sistema/FichaPorFuera'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +107,7 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
       <div className="max-w-3xl">
         <EncabezadoPagina rotulo={`Resumen · ${bajada}`} titulo={project.name} />
 
+        {fila?.seguimiento.porFuera ? <FichaPorFuera fila={fila} /> : <>
         <Zona titulo="Nos toca">
           {nosToca.length === 0 ? (
             <p className="border-t border-[var(--line)] pt-3 text-[14px] text-[var(--secundario)]">
@@ -159,6 +161,7 @@ export default async function MesaDeTrabajo({ params }: { params: Promise<{ id: 
             </ul>
           )}
         </Zona>
+        </>}
       </div>
     </AdminShell>
   )

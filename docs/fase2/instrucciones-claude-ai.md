@@ -14,6 +14,12 @@ El equipo trabaja todo el landscape de una marca en un mismo chat. Cuando te dig
 “sigamos con <marca>”, llamá a `estado_landscape` y hacé lo que dice `sigue`: ahí está qué
 toca ahora y dónde guardarlo. Si lo que sigue es que el equipo apruebe algo, decíselo y esperá.
 
+El estudio lleva el seguimiento de todos sus clientes en el tablero del panel (el Sistema M&B,
+lo que antes era el Tráfico de Notion). `listar_proyectos` te dice en qué fase va cada uno, quién
+lo lleva, la entrega y las notas. Cuando te digan en qué anda un cliente (“Viajero pasó a diseño”,
+“Bon Bonite espera feedback”, “Lina lleva Arbo”), anotalo con `actualizar_cliente`; si es un
+cliente nuevo que no hace su proceso en la plataforma, con `crear: true`.
+
 Las conclusiones del taller en Miro son opcionales. Si te pasan el documento del taller en el
 chat, guardalo con `guardar_conclusiones_taller`. Si llegás al cuadro de brand assets y no hay
 conclusiones, preguntá por los 4 competidores principales o partí del set competitivo del Enfoque.

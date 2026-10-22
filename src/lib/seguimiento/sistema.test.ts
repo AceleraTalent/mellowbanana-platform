@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estadoDeFases, faseActual, queSigue, type SenalesProyecto } from './sistema'
+import { estadoDeFases, faseActual, fasesAlMover, queSigue, FASES, type SenalesProyecto } from './sistema'
 import { estadoDePasos, type EtapaParaPasos } from '@/lib/landscape/pasos'
 import { STAGE_ORDER } from '@/lib/landscape/stages'
 
@@ -107,7 +107,33 @@ describe('queSigue', () => {
   })
 
   it('en estrategia, un borrador esperando decisión es lo primero', () => {
-    const s = senales({ manual: { taller: 'completa', naming: 'completa' }, estrategia: estrategia(2, { espera: true }) })
+    const s = senales({ manual: { taller: 'completa' }, estrategia: estrategia(2, { espera: true }) })
     expect(queSigue(s, estadoDeFases(s))).toMatchObject({ quien: 'revisar', detalle: 'Etapa 2', href: '/admin/projects/p1/estrategia?etapa=e2' })
+  })
+})
+
+describe('clientes por fuera', () => {
+  const fuera = (cambios: Partial<SenalesProyecto> = {}) => senales({ porFuera: true, sesionesTotal: 0, sesionesCompletas: 0, ...cambios })
+
+  it('el Naming va después de la Estrategia, como en el cronograma del estudio', () => {
+    expect(FASES).toEqual(['taller', 'landscape', 'estrategia', 'naming', 'diseno'])
+  })
+
+  it('sus cinco fases son las que marcó el equipo: no hay nada que calcular', () => {
+    const s = fuera({ manual: fasesAlMover('estrategia') })
+    expect(estadoDeFases(s).map(f => f.estado)).toEqual(['completa', 'completa', 'en_curso', 'pendiente', 'pendiente'])
+    expect(faseActual(estadoDeFases(s))).toBe('estrategia')
+  })
+
+  it('qué sigue dice que va por fuera y en qué fase, sin mandar a pantallas de la plataforma', () => {
+    const s = fuera({ manual: fasesAlMover('diseno') })
+    expect(queSigue(s, estadoDeFases(s))).toEqual({ quien: 'fuera', texto: 'Por fuera', detalle: 'Diseño en curso' })
+  })
+
+  it('frenado o terminado se ve igual que en cualquier cliente', () => {
+    const esperando = fuera({ manual: fasesAlMover('naming'), estadoManual: 'cliente' })
+    expect(queSigue(esperando, estadoDeFases(esperando)).quien).toBe('cliente')
+    const listo = fuera({ manual: fasesAlMover('terminado') })
+    expect(queSigue(listo, estadoDeFases(listo)).quien).toBe('listo')
   })
 })

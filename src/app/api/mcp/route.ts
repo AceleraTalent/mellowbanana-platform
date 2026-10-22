@@ -6,6 +6,7 @@ import { ErrorDeHerramienta } from '@/lib/mcp/errores'
 import {
   listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa, guardarConclusionesTaller,
 } from '@/lib/mcp/tools'
+import { actualizarCliente } from '@/lib/mcp/clientes'
 
 /**
  * Devuelve el error como resultado de herramienta y no como excepción: así Claude lo
@@ -26,9 +27,12 @@ const handler = createMcpHandler(
     server.registerTool('listar_proyectos', {
       title: 'Listar proyectos',
       description:
-        'Devuelve todos los proyectos del estudio con su marca, cuántas entrevistas tienen y ' +
-        'cuánto avanzó su landscape. Llamá a esto primero cuando la persona mencione una marca ' +
-        'o un proyecto y no sepas cuál es, en vez de suponer el nombre.',
+        'Devuelve todos los clientes del estudio como están en el tablero (Sistema M&B): en qué ' +
+        'fase va cada uno, qué sigue, quién lo lleva, la fecha de entrega y las notas, y si lleva ' +
+        'su proceso por fuera de la plataforma. Para los que lo hacen acá, también cuántas ' +
+        'entrevistas tienen y cuánto avanzó su landscape. Llamá a esto primero cuando la persona ' +
+        'mencione una marca o pregunte por el trabajo del equipo ("¿qué tiene Lina?", "¿qué se ' +
+        'vence esta semana?"), en vez de suponer.',
       inputSchema: z.object({}),
     }, async () => responder(() => listarProyectos(db)))
 
@@ -70,6 +74,32 @@ const handler = createMcpHandler(
         proyecto: z.string().describe('Nombre de la marca o id del proyecto'),
       }),
     }, async ({ proyecto }) => responder(() => estadoEstrategia(db, proyecto)))
+
+    server.registerTool('actualizar_cliente', {
+      title: 'Actualizar un cliente en el tablero',
+      description:
+        'Mueve, asigna y anota clientes en el Sistema M&B, el tablero del estudio (lo que antes ' +
+        'llevaban en Notion). Usalo cuando el equipo te diga en qué va un cliente: "Viajero pasó a ' +
+        'diseño", "Bon Bonite está esperando feedback", "Lina lleva Arbo", "la entrega de Glas es el ' +
+        '30". Mandá sólo lo que cambia: lo que no mandes queda como estaba, y null borra. Con ' +
+        'crear: true, si el cliente no existe lo crea como cliente por fuera (sin entrevistas ni ' +
+        'Landscape en la plataforma); sin crear, un nombre que no existe es un error y te lista ' +
+        'los que hay, para que no dupliques uno mal escrito. Un cliente que hace su proceso en la ' +
+        'plataforma avanza solo en Taller, Landscape y Estrategia: a mano sólo se le marcan Naming ' +
+        'y Diseño. Al terminar, dale al equipo el link verEnElPanel.',
+      inputSchema: z.object({
+        cliente: z.string().describe('Nombre del cliente (como está en el panel) o su id'),
+        crear: z.boolean().optional().describe('Crearlo como cliente por fuera si no existe'),
+        fase: z.enum(['taller', 'landscape', 'estrategia', 'naming', 'diseno', 'terminado']).optional()
+          .describe('La fase en la que va ahora: lo anterior queda terminado'),
+        sinEmpezar: z.boolean().optional().describe('La fase a la que pasa todavía no arrancó'),
+        frenado: z.enum(['no', 'cliente', 'pausa']).optional()
+          .describe('"cliente" si espera algo del cliente, "pausa" si está en pausa, "no" para destrabarlo'),
+        encargado: z.string().nullable().optional().describe('Quién o quiénes lo llevan'),
+        fechaEntrega: z.string().nullable().optional().describe('AAAA-MM-DD'),
+        notas: z.string().nullable().optional().describe('Qué falta o qué se acordó; reemplaza la nota anterior'),
+      }),
+    }, async pedido => responder(() => actualizarCliente(db, pedido)))
 
     server.registerTool('guardar_conclusiones_taller', {
       title: 'Guardar las conclusiones del taller',

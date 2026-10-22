@@ -139,6 +139,22 @@ export async function findOrCreateProject(db: AnyDb, name: string) {
   return after
 }
 
+/**
+ * Un cliente nuevo, creado desde el panel y no por una entrevista. Si ya hay uno con ese
+ * nombre no se crea otro: dos filas para la misma marca es justo lo que hay que evitar.
+ */
+export async function crearProyecto(db: AnyDb, name: string) {
+  const nombre = (name ?? '').trim()
+  if (!nombre) throw new ErrorDeValidacion('El cliente necesita un nombre')
+  if (nombre.length > 120) throw new ErrorDeValidacion('El nombre no puede pasar de 120 caracteres')
+  const [row] = await db.insert(projects)
+    .values({ name: nombre, normalizedName: normalizeCompanyName(nombre) })
+    .onConflictDoNothing({ target: projects.normalizedName })
+    .returning()
+  if (!row) throw new ErrorDeValidacion(`Ya hay un cliente que se llama ${nombre}`)
+  return row as typeof projects.$inferSelect
+}
+
 export async function assignSessionToProject(db: AnyDb, sessionId: string, projectId: string) {
   let rows: unknown[]
   try {

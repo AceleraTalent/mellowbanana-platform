@@ -50,6 +50,13 @@
       "when": 1792586642054,
       "tag": "0006_conclusiones_taller",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792636597259,
+      "tag": "0007_clientes_por_fuera",
+      "breakpoints": true
     }
   ]
 }
