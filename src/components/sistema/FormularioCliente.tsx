@@ -10,6 +10,7 @@ import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { CerrarModal } from '@/components/Modal'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO } from '@/components/paso/piezas'
 import { cuandoVence } from './cliente'
+import { Comentarios } from './Comentarios'
 
 export type Destino = FaseSistema | 'terminado'
 
@@ -105,9 +106,9 @@ function Interruptor({ encendido, onCambiar, children }: { encendido: boolean; o
 /**
  * Todo lo que el equipo cambia de un cliente, en un solo lugar y con un solo “Guardar”: en
  * qué fase va, en qué anda (el Status de Notion), quién lo lleva, para cuándo y qué falta.
- * Es el mismo en el modal del tablero, de la tabla y en la ficha. Un cliente que hace su
- * proceso en la plataforma no se mueve a mano en Taller, Landscape ni Estrategia: eso sale
- * de lo que de verdad se aprobó.
+ * Es el mismo en el modal del tablero, de la tabla y en la ficha. Cualquier cliente se mueve
+ * de fase; en uno que hace su proceso en la plataforma, moverlo deja la fase a mano hasta que
+ * alguien pida volver a calcularla con lo aprobado.
  */
 export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, enModal = false }: {
   fila: FilaSistema
@@ -120,11 +121,10 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
   const s = fila.seguimiento
   const inicial = {
     porFuera: s.porFuera,
-    destino: (fila.sigue.quien === 'listo' && s.porFuera ? 'terminado' : fila.actual) as Destino,
-    estado: s.porFuera ? estadoDelCliente(fila.fases, fila.actual, s.estadoManual) : (s.estadoManual ?? 'en_curso') as EstadoCliente,
-    tallerHecho: s.fases.taller === 'completa',
-    naming: s.fases.naming ?? 'pendiente',
-    diseno: s.fases.diseno ?? 'pendiente',
+    destino: (fila.sigue.quien === 'listo' ? 'terminado' : fila.actual) as Destino,
+    estado: estadoDelCliente(fila.fases, fila.actual, s.estadoManual),
+    /** En la plataforma: que la fase vuelva a salir de lo aprobado. */
+    calcular: false,
     encargado: s.encargado ?? '',
     fecha: s.fechaEntrega ?? '',
     notas: s.notas ?? '',
@@ -138,33 +138,29 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
 
   const sucio = (Object.keys(inicial) as (keyof typeof inicial)[]).some(k => d[k] !== inicial[k])
   const vence = d.fecha ? cuandoVence(d.fecha) : null
-  const estadosCalculados = Object.fromEntries(fila.fases.map(f => [f.key, f.estado])) as Record<FaseSistema, EstadoFase>
 
   async function guardar() {
     if (!sucio) { onListo(); return }
     setGuardando(true); setError(null)
     const cambios: Record<string, unknown> = {}
-    const extra: Record<string, unknown>[] = []
     if (d.porFuera !== inicial.porFuera) cambios.porFuera = d.porFuera
-    if (d.porFuera) {
-      if (d.destino !== inicial.destino || d.estado !== inicial.estado || d.porFuera !== inicial.porFuera) {
-        cambios.moverA = d.destino
-        if (d.destino !== 'terminado' && d.estado === 'sin_empezar') cambios.fase = { key: d.destino, estado: 'pendiente' }
-      }
-    } else if (!inicial.porFuera) {
-      if (d.tallerHecho !== inicial.tallerHecho) extra.push({ fase: { key: 'taller', estado: d.tallerHecho ? 'completa' : 'en_curso' } })
-      if (d.naming !== inicial.naming) extra.push({ fase: { key: 'naming', estado: d.naming } })
-      if (d.diseno !== inicial.diseno) extra.push({ fase: { key: 'diseno', estado: d.diseno } })
+    // Moverlo de fase (o marcar que no arrancó) lo deja a mano; "esperando al cliente" o
+    // "en pausa" no tocan la fase, así un cliente de la plataforma sigue calculándose solo.
+    const sinEmpezar = (e: EstadoCliente) => e === 'sin_empezar'
+    const mueve = d.destino !== inicial.destino || sinEmpezar(d.estado) !== sinEmpezar(inicial.estado) || (d.porFuera && !inicial.porFuera)
+    if (d.calcular && !d.porFuera) cambios.calcular = true
+    else if (mueve) {
+      cambios.moverA = d.destino
+      if (d.destino !== 'terminado' && sinEmpezar(d.estado)) cambios.fase = { key: d.destino, estado: 'pendiente' }
     }
     const frenado = (e: EstadoCliente, destino: Destino) => (destino !== 'terminado' && (e === 'cliente' || e === 'pausa') ? e : null)
-    if (frenado(d.estado, d.destino) !== frenado(inicial.estado, inicial.destino) || d.porFuera !== inicial.porFuera)
-      cambios.estadoManual = d.porFuera ? frenado(d.estado, d.destino) : (d.estado === 'cliente' || d.estado === 'pausa' ? d.estado : null)
+    if (frenado(d.estado, d.destino) !== frenado(inicial.estado, inicial.destino))
+      cambios.estadoManual = frenado(d.estado, d.destino)
     if (d.encargado !== inicial.encargado) cambios.encargado = d.encargado.trim() || null
     if (d.fecha !== inicial.fecha) cambios.fechaEntrega = d.fecha || null
     if (d.notas !== inicial.notas) cambios.notas = d.notas.trim() || null
     try {
       if (Object.keys(cambios).length) await patch(fila.id, cambios)
-      for (const e of extra) await patch(fila.id, e)
       setGuardado(true)
       onListo()
     } catch (e) {
@@ -196,42 +192,32 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
       <div className={`flex flex-col gap-6 overflow-y-auto py-5 ${px}`}>
         <fieldset>
           <legend className={`${ETIQUETA} mb-3`}>Fase</legend>
-          {d.porFuera ? (
-            <Recorrido destino={d.destino} sinEmpezar={d.estado === 'sin_empezar'} onElegir={destino => cambiar({ destino })} />
-          ) : (
-            <>
-              <Recorrido destino={fila.actual} sinEmpezar={false} estados={estadosCalculados} />
-              <p className="mt-3 text-[13px] leading-[1.5] text-[var(--secundario)]">
-                El Landscape y la Estrategia avanzan solos con lo que se aprueba en la plataforma. A mano van el taller, el Naming y el Diseño.
-              </p>
-              <div className="mt-3 flex flex-col gap-2.5">
-                <label className="flex items-center gap-2.5 text-[13.5px] text-[var(--cuerpo)]">
-                  <input type="checkbox" checked={d.tallerHecho} onChange={e => cambiar({ tallerHecho: e.target.checked })} className="h-4 w-4 accent-[var(--ink)]" />
-                  El taller en Miro ya se hizo
-                </label>
-                {(['naming', 'diseno'] as const).map(f => (
-                  <div key={f} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    <span className="w-[64px] text-[13.5px] text-[var(--cuerpo)]">{FASE_LABEL[f]}</span>
-                    <div role="radiogroup" aria-label={FASE_LABEL[f]} className="flex flex-wrap gap-1.5">
-                      {([['pendiente', 'Sin empezar'], ['en_curso', 'En curso'], ['completa', 'Terminado']] as const).map(([v, l]) => (
-                        <Opcion key={v} activa={d[f] === v} onClick={() => cambiar({ [f]: v })}>{l}</Opcion>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
+          <Recorrido destino={d.destino} sinEmpezar={d.estado === 'sin_empezar'} onElegir={destino => cambiar({ destino, calcular: false })} />
+          {!d.porFuera && (
+            <p className="mt-3 text-[13px] leading-[1.5] text-[var(--secundario)]">
+              {d.calcular ? (
+                <>Al guardar, la fase vuelve a salir de lo que se apruebe en la plataforma.</>
+              ) : s.faseAMano || d.destino !== inicial.destino ? (
+                <>
+                  La fase la pone el equipo.{' '}
+                  <button type="button" onClick={() => cambiar({ calcular: true, destino: inicial.destino })}
+                    className="text-[var(--ink)] underline decoration-[var(--line)] underline-offset-[3px] hover:decoration-[var(--ink)]">
+                    Volver a calcularla sola
+                  </button>
+                </>
+              ) : (
+                <>Se calcula sola con lo que se aprueba en la plataforma. Si la mueves, queda como la pongas.</>
+              )}
+            </p>
           )}
         </fieldset>
 
-        {(!d.porFuera || d.destino !== 'terminado') && (
+        {d.destino !== 'terminado' && (
           <fieldset>
-            <legend className={`${ETIQUETA} mb-2.5`}>{d.porFuera ? 'Cómo va' : '¿Está frenado?'}</legend>
-            <div role="radiogroup" aria-label={d.porFuera ? 'Cómo va' : 'Frenado'} className="flex flex-wrap gap-1.5">
-              {(d.porFuera ? (['en_curso', 'sin_empezar', 'cliente', 'pausa'] as const) : (['en_curso', 'cliente', 'pausa'] as const)).map(e => (
-                <Opcion key={e} activa={d.estado === e} onClick={() => cambiar({ estado: e })}>
-                  {!d.porFuera && e === 'en_curso' ? 'No' : ESTADO_CLIENTE_LABEL[e]}
-                </Opcion>
+            <legend className={`${ETIQUETA} mb-2.5`}>Cómo va</legend>
+            <div role="radiogroup" aria-label="Cómo va" className="flex flex-wrap gap-1.5">
+              {(['en_curso', 'sin_empezar', 'cliente', 'pausa'] as const).map(e => (
+                <Opcion key={e} activa={d.estado === e} onClick={() => cambiar({ estado: e })}>{ESTADO_CLIENTE_LABEL[e]}</Opcion>
               ))}
             </div>
           </fieldset>
@@ -253,13 +239,17 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
 
         <label className="flex flex-col gap-2">
           <span className={ETIQUETA}>Notas</span>
-          <textarea value={d.notas} onChange={e => cambiar({ notas: e.target.value })} rows={3} maxLength={2000}
-            placeholder="Qué falta, qué se acordó con el cliente" className={`${CAMPO} resize-y leading-[1.5]`} />
+          <textarea value={d.notas} onChange={e => cambiar({ notas: e.target.value })} rows={2} maxLength={2000}
+            placeholder="Lo que falta hoy" className={`${CAMPO} resize-y leading-[1.5]`} />
         </label>
+
+        <div className="border-t border-[var(--line)] pt-5">
+          <Comentarios projectId={fila.id} />
+        </div>
       </div>
 
       <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-[var(--line)] bg-[#FBFAF7] py-4 ${px}`}>
-        <Interruptor encendido={d.porFuera} onCambiar={porFuera => cambiar({ porFuera, ...(porFuera ? { destino: inicial.destino === 'terminado' ? 'terminado' : fila.actual } : {}) })}>
+        <Interruptor encendido={d.porFuera} onCambiar={porFuera => cambiar({ porFuera, calcular: false })}>
           Lleva su proceso por fuera
         </Interruptor>
         <div className="ml-auto flex items-center gap-2">

@@ -2,7 +2,7 @@ import { eq, ne, and, asc, desc, sql, inArray } from 'drizzle-orm'
 import {
   sessions, answers, projects, deliverables,
   landscapeStages, landscapeVersions, strategyStages, strategyVersions,
-  landscapePasos, projectSeguimiento,
+  landscapePasos, projectSeguimiento, clienteComentarios,
 } from './schema'
 import type { StageKey, StageStatus, TendenciaCandidata } from '@/lib/landscape/stages'
 import { MIN_TENDENCIAS, MAX_TENDENCIAS, PUEDEN_NO_APLICAR, STAGE_ORDER } from '@/lib/landscape/stages'
@@ -223,6 +223,7 @@ export async function deleteProject(db: AnyDb, projectId: string) {
   await db.delete(strategyStages).where(eq(strategyStages.projectId, projectId))
   await db.delete(landscapePasos).where(eq(landscapePasos.projectId, projectId))
   await db.delete(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))
+  await db.delete(clienteComentarios).where(eq(clienteComentarios.projectId, projectId))
   await db.delete(projects).where(eq(projects.id, projectId))
 
   return { proyecto: p as typeof projects.$inferSelect, sesionesBorradas: ids.length }

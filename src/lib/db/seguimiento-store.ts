@@ -20,9 +20,11 @@ export interface Seguimiento {
   conclusionesTaller: string | null
   /** Lleva su proceso fuera de la plataforma: sus fases se mueven a mano, como en Notion. */
   porFuera: boolean
+  /** Hace su proceso en la plataforma, pero el equipo puso la fase a mano: manda lo que dijo. */
+  faseAMano: boolean
 }
 
-export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null, porFuera: false }
+export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null, porFuera: false, faseAMano: false }
 
 type Fila = typeof projectSeguimiento.$inferSelect
 
@@ -35,6 +37,7 @@ function desdeFila(f: Fila): Seguimiento {
     fases: (f.fases ?? {}) as Seguimiento['fases'],
     conclusionesTaller: f.conclusionesTaller ?? null,
     porFuera: !!f.porFuera,
+    faseAMano: !!f.faseAMano,
   }
 }
 
@@ -80,8 +83,10 @@ export interface CambiosSeguimiento {
   fase?: { key: FaseSistema; estado: EstadoFase }
   conclusionesTaller?: string | null
   porFuera?: boolean
-  /** Sólo por fuera: lleva el cliente a esa fase, como arrastrar la tarjeta en Notion. */
+  /** Lleva el cliente a esa fase, como arrastrar la tarjeta en Notion. */
   moverA?: FaseSistema | 'terminado'
+  /** En la plataforma: dejar de mandar a mano y que la fase vuelva a salir de lo aprobado. */
+  calcular?: boolean
 }
 
 const LARGO_MAXIMO = { encargado: 80, notas: 2000, conclusionesTaller: 30000 }
@@ -132,6 +137,10 @@ export function validarCambios(body: Record<string, unknown>): CambiosSeguimient
       throw new ErrorDeValidacion(`moverA tiene que ser ${FASES.join(', ')} o terminado`)
     c.moverA = m as FaseSistema | 'terminado'
   }
+  if ('calcular' in body) {
+    if (body.calcular !== true) throw new ErrorDeValidacion('calcular sólo puede ser true')
+    c.calcular = true
+  }
   return c
 }
 
@@ -141,19 +150,21 @@ export async function actualizarSeguimiento(db: AnyDb, projectId: string, cambio
 
   const [fila] = (await db.select().from(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))) as Fila[]
   const previo = fila ? desdeFila(fila) : SEGUIMIENTO_VACIO
-  const { fase, moverA, ...resto } = cambios
+  const { fase, moverA, calcular, ...resto } = cambios
   const porFuera = resto.porFuera ?? previo.porFuera
-  // Landscape y Estrategia se calculan con lo que pasa en la plataforma: marcarlas a mano
-  // sólo tiene sentido si el cliente lleva su proceso por fuera.
-  if (fase && !porFuera && !FASES_MANUALES.includes(fase.key))
-    throw new ErrorDeValidacion(`${fase.key} se calcula sola en la plataforma; sólo se marca a mano en un cliente por fuera`)
-  if (moverA && !porFuera) throw new ErrorDeValidacion('Sólo un cliente por fuera se mueve de fase a mano')
+  // Cualquier cliente se mueve de fase a mano, como en Notion. En uno que hace su proceso
+  // en la plataforma, moverlo deja la fase "a mano": manda lo que dijo el equipo hasta que
+  // alguien pida volver a calcularla con lo aprobado.
+  const faseAMano = porFuera ? false : calcular ? false : moverA ? true : previo.faseAMano
+  if (fase && !porFuera && !faseAMano && !FASES_MANUALES.includes(fase.key))
+    throw new ErrorDeValidacion(`${fase.key} se calcula sola en la plataforma; para ponerla a mano, mové el cliente de fase`)
   // Mover y marcar van juntos: "pasa a Diseño, pero todavía no arrancó" es un solo cambio.
-  // Al volver a la plataforma, las fases marcadas a mano se descartan: desde ahí se calculan.
-  const base = previo.porFuera && !porFuera ? {} : moverA ? fasesAlMover(moverA) : previo.fases
+  // Al volver a la plataforma o a calcular, las fases marcadas a mano se descartan.
+  const base = (previo.porFuera && !porFuera) || calcular ? {} : moverA ? fasesAlMover(moverA) : previo.fases
   const nuevo: Seguimiento = {
     ...previo,
     ...resto,
+    faseAMano,
     fases: fase ? { ...base, [fase.key]: fase.estado } : base,
   }
 

@@ -16,9 +16,9 @@ import { cuandoVence, encargadosConocidos, fechaCorta, personas } from './client
  * El Sistema M&B como tablero, igual que el Tráfico en Notion pero de arriba abajo: un
  * carril por fase, en el orden del proceso. Los carriles crecen hacia abajo, así una fase
  * con veinte clientes no aplasta a la que tiene cuatro ni obliga a desplazarse de lado.
- * Las tarjetas de los clientes por fuera se arrastran de un carril a otro; un clic abre el
- * cliente para editarlo. Los que hacen su proceso en la plataforma están en el carril que
- * les toca y no se arrastran: su fase sale de lo que de verdad se aprobó.
+ * Cualquier tarjeta se arrastra de un carril a otro, y un clic abre el cliente para
+ * editarlo. En un cliente que hace su proceso en la plataforma, moverlo deja la fase a mano
+ * (manda lo que dijo el equipo); desde el editor se vuelve a calcular con lo aprobado.
  */
 
 type Carril = FaseSistema | 'terminado'
@@ -78,16 +78,15 @@ function Personas({ encargado }: { encargado: string | null }) {
 }
 
 function Tarjeta({ fila, onAbrir, onArrastrar }: { fila: FilaSistema; onAbrir: () => void; onArrastrar: (id: string | null) => void }) {
-  const movible = fila.seguimiento.porFuera
   const fecha = fila.seguimiento.fechaEntrega
   const vence = fecha ? cuandoVence(fecha) : null
   return (
     <li
-      draggable={movible}
+      draggable
       onDragStart={e => { e.dataTransfer.setData('text/plain', fila.id); e.dataTransfer.effectAllowed = 'move'; onArrastrar(fila.id) }}
       onDragEnd={() => onArrastrar(null)}
       aria-label={fila.nombre}
-      className={movible ? 'cursor-grab active:cursor-grabbing' : ''}
+      className="cursor-grab active:cursor-grabbing"
     >
       <button type="button" onClick={onAbrir}
         className="flex h-full w-full flex-col rounded-[12px] border border-[var(--line)] bg-white p-3.5 text-left transition-[border-color,box-shadow] duration-150 hover:border-[#CFC9BB] hover:shadow-[0_3px_12px_rgba(21,18,12,.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]">
@@ -137,7 +136,7 @@ export function TableroSistema({ filas }: { filas: FilaSistema[] }) {
 
   async function mover(id: string, a: Carril) {
     const fila = porId.get(id)
-    if (!fila?.seguimiento.porFuera || carril(fila) === a) return
+    if (!fila || carril(fila) === a) return
     setMovidos(m => ({ ...m, [id]: a }))
     setError(null)
     try {
@@ -149,7 +148,7 @@ export function TableroSistema({ filas }: { filas: FilaSistema[] }) {
     }
   }
 
-  const arrastraMovible = !!arrastrado && !!porId.get(arrastrado)?.seguimiento.porFuera
+  const arrastraMovible = !!arrastrado
   const filaAbierta = abierto ? porId.get(abierto) : undefined
 
   return (

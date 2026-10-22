@@ -92,6 +92,7 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       manual: seguimiento.fases,
       estadoManual: seguimiento.estadoManual,
       porFuera: seguimiento.porFuera,
+      faseAMano: seguimiento.faseAMano,
     }
     const fases = estadoDeFases(senales)
 

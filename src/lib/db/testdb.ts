@@ -51,6 +51,15 @@ const DDL = `
     approved_by text
   );
   CREATE INDEX landscape_versions_project_stage ON landscape_versions (project_id, stage);
+  CREATE TABLE cliente_comentarios (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id uuid NOT NULL REFERENCES projects(id),
+    autor text NOT NULL,
+    texto text NOT NULL,
+    desde text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX cliente_comentarios_project ON cliente_comentarios (project_id, created_at);
   CREATE TABLE usuarios (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre text NOT NULL,
@@ -77,6 +86,7 @@ const DDL = `
     fases jsonb NOT NULL DEFAULT '{}',
     conclusiones_taller text,
     por_fuera boolean NOT NULL DEFAULT false,
+    fase_a_mano boolean NOT NULL DEFAULT false,
     updated_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE TABLE strategy_stages (

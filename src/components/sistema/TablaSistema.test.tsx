@@ -65,11 +65,11 @@ describe('TablaSistema', () => {
     })
   })
 
-  it('un clic en la fase abre el cliente en el modal; lo que calcula la plataforma no se mueve a mano', () => {
+  it('un clic en la fase abre el cliente en el modal, con la fase para mover', () => {
     render(<TablaSistema filas={filas} />)
     fireEvent.click(screen.getByRole('button', { name: /Fase de Cliente a/ }))
     const dialogo = screen.getByRole('dialog', { name: 'Editar Cliente a' })
-    expect(within(dialogo).queryByRole('radiogroup', { name: 'Fase' })).toBeNull()
-    expect(within(dialogo).getByRole('radiogroup', { name: 'Naming' })).toBeTruthy()
+    expect(within(dialogo).getByRole('radio', { name: 'Landscape' }).getAttribute('aria-checked')).toBe('true')
+    expect(within(dialogo).getByText(/Se calcula sola con lo que se aprueba/)).toBeTruthy()
   })
 })

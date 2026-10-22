@@ -91,9 +91,15 @@ describe('TableroSistema · un carril por fase', () => {
     expect(carril('Diseño').getByText('Viajero')).toBeTruthy()
   })
 
-  it('un cliente de la plataforma no se arrastra; un clic abre cualquier cliente para editarlo', () => {
+  it('un cliente de la plataforma también se arrastra; un clic abre cualquier cliente para editarlo', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
     render(<TableroSistema filas={filas} />)
-    expect(carril('Taller').getByRole('listitem', { name: 'Grupo Heroica' }).getAttribute('draggable')).toBe('false')
+    const dt = arrastre()
+    fireEvent.dragStart(carril('Taller').getByRole('listitem', { name: 'Grupo Heroica' }), { dataTransfer: dt })
+    fireEvent.drop(screen.getByRole('region', { name: 'Diseño' }), { dataTransfer: dt })
+    expect(carril('Diseño').getByText('Grupo Heroica')).toBeTruthy()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects/c/seguimiento', expect.objectContaining({ body: JSON.stringify({ moverA: 'diseno' }) })))
     fireEvent.click(within(carril('Diseño').getByRole('listitem', { name: 'Viajero' })).getByRole('button'))
     expect(screen.getByRole('dialog', { name: 'Editar Viajero' })).toBeTruthy()
   })

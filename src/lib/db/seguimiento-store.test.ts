@@ -42,12 +42,20 @@ describe('clientes por fuera', () => {
 
   it('moverlo a una fase deja lo anterior terminado y lo siguiente sin empezar, como en Notion', async () => {
     const p = await findOrCreateProject(db, 'Píntala')
-    await expect(actualizarSeguimiento(db, p.id, { moverA: 'diseno' })).rejects.toThrow(ErrorDeValidacion)
     await actualizarSeguimiento(db, p.id, { porFuera: true })
     expect((await actualizarSeguimiento(db, p.id, { moverA: 'naming' })).fases)
       .toEqual({ taller: 'completa', landscape: 'completa', estrategia: 'completa', naming: 'en_curso', diseno: 'pendiente' })
     expect(Object.values((await actualizarSeguimiento(db, p.id, { moverA: 'terminado' })).fases)).toEqual(Array(5).fill('completa'))
     expect((await seguimientosPorProyecto(db)).get(p.id)?.porFuera).toBe(true)
+  })
+
+  it('un cliente de la plataforma también se mueve: la fase queda a mano hasta que se pida calcularla', async () => {
+    const p = await findOrCreateProject(db, 'Grupo Heroica')
+    const movido = await actualizarSeguimiento(db, p.id, { moverA: 'diseno' })
+    expect(movido).toMatchObject({ porFuera: false, faseAMano: true, fases: { estrategia: 'completa', diseno: 'en_curso' } })
+    // Ya a mano, Landscape y Estrategia también se marcan una por una.
+    expect((await actualizarSeguimiento(db, p.id, { fase: { key: 'landscape', estado: 'en_curso' } })).fases.landscape).toBe('en_curso')
+    expect(await actualizarSeguimiento(db, p.id, { calcular: true })).toMatchObject({ faseAMano: false, fases: {} })
   })
 
   it('mover y dejarlo sin empezar va en un solo cambio; volver a la plataforma descarta lo marcado', async () => {

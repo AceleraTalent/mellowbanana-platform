@@ -31,7 +31,9 @@ export async function listarProyectos(db: AnyDb) {
   // el inicio del panel. Así Claude contesta "¿qué tiene Lina?" sin abrir cada proyecto.
   const tablero = new Map((await cargarSistema(db)).map(f => [f.id, resumen(f)]))
   return Promise.all(proyectos.map(async p => {
-    const { cliente: _, ...fila } = tablero.get(p.id) ?? { cliente: p.name }
+    // `cliente` repite el nombre: ya va en `nombre`.
+    const fila: Partial<ReturnType<typeof resumen>> = { ...tablero.get(p.id) }
+    delete fila.cliente
     return {
       id: p.id,
       nombre: p.name,

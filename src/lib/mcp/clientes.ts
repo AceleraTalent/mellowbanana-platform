@@ -1,7 +1,9 @@
-import { crearProyecto, ErrorDeValidacion, type AnyDb } from '@/lib/db/store'
+import { crearProyecto, renameProject, ErrorDeValidacion, type AnyDb } from '@/lib/db/store'
 import { actualizarSeguimiento, seguimientoDe, validarCambios, type CambiosSeguimiento } from '@/lib/db/seguimiento-store'
+import { agregarComentario, comentariosDe } from '@/lib/db/comentarios-store'
+import { haceCuanto } from '@/lib/landscape/stages'
 import { cargarSistema } from '@/lib/seguimiento/cargar'
-import { FASE_LABEL, FASES_MANUALES, type FaseSistema } from '@/lib/seguimiento/sistema'
+import type { FaseSistema } from '@/lib/seguimiento/sistema'
 import { ErrorDeHerramienta } from './errores'
 import { resolverProyecto } from './resolver'
 
@@ -22,6 +24,12 @@ export interface PedidoCliente {
   encargado?: string | null
   fechaEntrega?: string | null
   notas?: string | null
+  /** Cambiarle el nombre, como lo llama el estudio. */
+  nombre?: string
+  /** true: lleva su proceso por fuera (se mueve a mano); false: lo hace en la plataforma. */
+  porFuera?: boolean
+  /** En la plataforma: que la fase vuelva a salir de lo aprobado, no de lo que se movió a mano. */
+  calcularSola?: boolean
 }
 
 /**
@@ -62,20 +70,35 @@ export async function actualizarCliente(db: AnyDb, d: PedidoCliente) {
     creado = true
   }
 
-  const { porFuera } = await seguimientoDe(db, cliente.id)
+  const antes = await seguimientoDe(db, cliente.id)
+  const porFuera = d.porFuera ?? antes.porFuera
+  if (d.porFuera !== undefined && d.porFuera !== antes.porFuera) cambios.porFuera = d.porFuera
 
-  if (d.fase) {
-    if (porFuera) cambios.moverA = d.fase
-    else if (d.fase !== 'terminado' && FASES_MANUALES.includes(d.fase) && d.fase !== 'taller')
-      cambios.fase = { key: d.fase, estado: d.sinEmpezar ? 'pendiente' : 'en_curso' }
-    else
-      throw new ErrorDeHerramienta(
-        `${cliente.name} hace su proceso en la plataforma: su ${d.fase === 'terminado' ? 'avance' : FASE_LABEL[d.fase]} se mueve solo ` +
-        'con lo que el equipo aprueba en el panel. A mano sólo se marcan Naming y Diseño, o cualquier fase de un cliente por fuera.')
+  // Todo lo que puede fallar se decide antes de escribir: un pedido que no se puede cumplir
+  // no deja el nombre cambiado y la fase a medias.
+  if (d.fase && d.calcularSola) throw new ErrorDeHerramienta('Mandá fase o calcularSola, no las dos: una pone la fase a mano y la otra la devuelve a lo aprobado.')
+  if (d.calcularSola) {
+    if (porFuera) throw new ErrorDeHerramienta(`${cliente.name} lleva su proceso por fuera: no hay nada aprobado en la plataforma de donde calcular su fase.`)
+    cambios.calcular = true
+  } else if (d.fase) {
+    // Cualquier cliente se mueve de fase. En uno de la plataforma, la fase queda a mano.
+    cambios.moverA = d.fase
+    if (d.fase !== 'terminado' && d.sinEmpezar) cambios.fase = { key: d.fase, estado: 'pendiente' }
+  } else if (cambios.porFuera === true) {
+    // Pasa a llevarse a mano: arranca en la fase en la que va hoy, no desde cero.
+    const hoy = (await cargarSistema(db)).find(f => f.id === cliente.id)!
+    cambios.moverA = hoy.sigue.quien === 'listo' ? 'terminado' : hoy.actual
   }
-  await actualizarSeguimiento(db, cliente.id, cambios)
-  if (porFuera && d.fase && d.fase !== 'terminado' && d.sinEmpezar)
-    await actualizarSeguimiento(db, cliente.id, { fase: { key: d.fase, estado: 'pendiente' } })
+
+  if (d.nombre !== undefined && d.nombre.trim() !== cliente.name) {
+    try {
+      cliente = { id: cliente.id, name: (await renameProject(db, cliente.id, d.nombre)).name }
+    } catch (e) {
+      if (e instanceof ErrorDeValidacion) throw new ErrorDeHerramienta(e.message)
+      throw e
+    }
+  }
+  if (Object.keys(cambios).length) await actualizarSeguimiento(db, cliente.id, cambios)
 
   const fila = (await cargarSistema(db)).find(f => f.id === cliente.id)!
   return { ...resumen(fila), creado, verEnElPanel: linkAlCliente(cliente.id) }
@@ -92,5 +115,37 @@ export function resumen(f: Awaited<ReturnType<typeof cargarSistema>>[number]) {
     encargado: f.seguimiento.encargado,
     entrega: f.seguimiento.fechaEntrega,
     notas: f.seguimiento.notas,
+  }
+}
+
+/**
+ * La ficha de un cliente para el chat: lo mismo que ve el equipo al abrirlo en el panel,
+ * más los últimos comentarios. Es lo que Claude lee antes de contestar "¿cómo va Viajero?".
+ */
+export async function verCliente(db: AnyDb, ref: string) {
+  const { id } = await resolverProyecto(db, ref)
+  const fila = (await cargarSistema(db)).find(f => f.id === id)!
+  const ahora = new Date()
+  return {
+    ...resumen(fila),
+    ultimoMovimiento: fila.ultimo ? `${fila.ultimo.texto} (${fila.ultimo.cuando})` : null,
+    comentarios: (await comentariosDe(db, id, 15)).map(c => ({
+      autor: c.autor, texto: c.texto, cuando: haceCuanto(c.cuando, ahora), fecha: c.cuando.toISOString().slice(0, 10),
+    })),
+    verEnElPanel: linkAlCliente(id),
+  }
+}
+
+/** Deja un comentario en la bitácora del cliente, firmado por quien lo dijo en el chat. */
+export async function comentarCliente(db: AnyDb, d: { cliente: string; comentario: string; autor?: string }) {
+  const { id, name } = await resolverProyecto(db, d.cliente)
+  try {
+    const c = await agregarComentario(db, id, {
+      autor: d.autor?.trim() ? `${d.autor.trim()} (vía Claude)` : 'Claude', texto: d.comentario, desde: 'claude',
+    })
+    return { cliente: name, comentario: { autor: c.autor, texto: c.texto }, verEnElPanel: linkAlCliente(id) }
+  } catch (e) {
+    if (e instanceof ErrorDeValidacion) throw new ErrorDeHerramienta(e.message)
+    throw e
   }
 }

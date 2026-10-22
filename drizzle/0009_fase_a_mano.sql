@@ -1,0 +1,1 @@
+ALTER TABLE "project_seguimiento" ADD COLUMN "fase_a_mano" boolean DEFAULT false NOT NULL;

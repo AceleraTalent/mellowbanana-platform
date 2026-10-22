@@ -57,6 +57,20 @@
       "when": 1792636597259,
       "tag": "0007_clientes_por_fuera",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792677901817,
+      "tag": "0008_comentarios_de_clientes",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792678347066,
+      "tag": "0009_fase_a_mano",
+      "breakpoints": true
     }
   ]
 }

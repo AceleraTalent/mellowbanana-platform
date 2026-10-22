@@ -139,3 +139,13 @@ describe('clientes por fuera', () => {
     expect(queSigue(listo, estadoDeFases(listo)).quien).toBe('listo')
   })
 })
+
+describe('un cliente de la plataforma con la fase a mano', () => {
+  it('manda lo que dijo el equipo, pero en Landscape se sigue viendo cuánto va de verdad', () => {
+    const s = senales({ faseAMano: true, manual: fasesAlMover('landscape') })
+    const fases = estadoDeFases(s)
+    expect(faseActual(fases)).toBe('landscape')
+    expect(fases.find(f => f.key === 'landscape')).toMatchObject({ estado: 'en_curso', avance: expect.stringMatching(/^\d+\/\d+$/) })
+    expect(queSigue(s, fases).href).toMatch(/\/landscape\?paso=/)
+  })
+})

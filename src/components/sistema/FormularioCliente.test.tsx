@@ -25,7 +25,9 @@ const fetchOk = () => {
   vi.stubGlobal('fetch', f)
   return f
 }
-const cuerpos = (f: ReturnType<typeof vi.fn>) => f.mock.calls.map(c => JSON.parse((c[1] as RequestInit).body as string))
+// Sólo los guardados: el formulario también pide los comentarios del cliente al abrirse.
+const guardados = (f: ReturnType<typeof vi.fn>) => f.mock.calls.filter(c => (c[1] as RequestInit | undefined)?.method === 'PATCH')
+const cuerpos = (f: ReturnType<typeof vi.fn>) => guardados(f).map(c => JSON.parse((c[1] as RequestInit).body as string))
 
 describe('FormularioCliente · un cliente por fuera', () => {
   const porFuera = () => fila({ porFuera: true, manual: fasesAlMover('diseno') }, { encargado: 'Lina', notas: 'Piezas nuevas' })
@@ -42,14 +44,14 @@ describe('FormularioCliente · un cliente por fuera', () => {
     expect(cuerpos(f)).toEqual([{ moverA: 'naming', fase: { key: 'naming', estado: 'pendiente' } }])
   })
 
-  it('esperando al cliente queda como frenado; las notas y la fecha se mandan sólo si cambiaron', async () => {
+  it('esperando al cliente queda como frenado sin mover la fase; la fecha se manda sólo si cambió', async () => {
     const f = fetchOk()
     render(<FormularioCliente enModal fila={porFuera()} onListo={() => {}} onCancelar={() => {}} />)
     fireEvent.click(screen.getByRole('radio', { name: 'Esperando al cliente' }))
     fireEvent.change(screen.getByLabelText('Entrega'), { target: { value: '2026-11-07' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    await waitFor(() => expect(f).toHaveBeenCalledTimes(1))
-    expect(cuerpos(f)[0]).toEqual({ moverA: 'diseno', estadoManual: 'cliente', fechaEntrega: '2026-11-07' })
+    await waitFor(() => expect(guardados(f)).toHaveLength(1))
+    expect(cuerpos(f)[0]).toEqual({ estadoManual: 'cliente', fechaEntrega: '2026-11-07' })
   })
 
   it('sin cambios, guardar no toca el servidor', async () => {
@@ -58,7 +60,7 @@ describe('FormularioCliente · un cliente por fuera', () => {
     render(<FormularioCliente enModal fila={porFuera()} onListo={onListo} onCancelar={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     await waitFor(() => expect(onListo).toHaveBeenCalled())
-    expect(f).not.toHaveBeenCalled()
+    expect(guardados(f)).toHaveLength(0)
   })
 
   it('si el servidor dice que no, lo muestra y no cierra', async () => {
@@ -73,14 +75,27 @@ describe('FormularioCliente · un cliente por fuera', () => {
 })
 
 describe('FormularioCliente · un cliente de la plataforma', () => {
-  it('el recorrido es para mirar; a mano van el taller, el Naming y el Diseño', async () => {
+  const deLaPlataforma = (faseAMano = false) =>
+    fila({ sesionesTotal: 4, sesionesCompletas: 4, tienePropuesta: true, faseAMano, ...(faseAMano ? { manual: fasesAlMover('naming') } : {}) }, { faseAMano })
+
+  it('se mueve como cualquier cliente: la fase queda a mano', async () => {
     const f = fetchOk()
-    render(<FormularioCliente enModal fila={fila({ sesionesTotal: 4, sesionesCompletas: 4, tienePropuesta: true })} onListo={() => {}} onCancelar={() => {}} />)
-    expect(screen.queryByRole('radiogroup', { name: 'Fase' })).toBeNull()
-    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Naming' })).getByRole('radio', { name: 'En curso' }))
+    render(<FormularioCliente enModal fila={deLaPlataforma()} onListo={() => {}} onCancelar={() => {}} />)
+    expect(screen.getByText(/Se calcula sola con lo que se aprueba/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Diseño' }))
+    expect(screen.getByText(/La fase la pone el equipo/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    await waitFor(() => expect(f).toHaveBeenCalled())
-    expect(cuerpos(f)).toEqual([{ fase: { key: 'naming', estado: 'en_curso' } }])
+    await waitFor(() => expect(guardados(f)).toHaveLength(1))
+    expect(cuerpos(f)).toEqual([{ moverA: 'diseno' }])
+  })
+
+  it('con la fase puesta a mano, se puede volver a calcularla sola', async () => {
+    const f = fetchOk()
+    render(<FormularioCliente enModal fila={deLaPlataforma(true)} onListo={() => {}} onCancelar={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a calcularla sola' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(guardados(f)).toHaveLength(1))
+    expect(cuerpos(f)).toEqual([{ calcular: true }])
   })
 
   it('pasarlo a por fuera arranca en la fase en la que va', async () => {
@@ -89,7 +104,23 @@ describe('FormularioCliente · un cliente de la plataforma', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Lleva su proceso por fuera' }))
     expect(screen.getByRole('radio', { name: 'Taller' }).getAttribute('aria-checked')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    await waitFor(() => expect(f).toHaveBeenCalled())
-    expect(cuerpos(f)[0]).toMatchObject({ porFuera: true, moverA: 'taller', estadoManual: null })
+    await waitFor(() => expect(guardados(f)).toHaveLength(1))
+    expect(cuerpos(f)[0]).toEqual({ porFuera: true, moverA: 'taller' })
+  })
+})
+
+describe('FormularioCliente · comentarios', () => {
+  it('muestra la bitácora del cliente y publica un comentario sin esperar al Guardar', async () => {
+    const f = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return { ok: true, json: async () => ({ comentario: { id: 'c2', autor: 'Equipo M&B', texto: 'Aprobó la paleta', desde: 'panel', cuando: new Date().toISOString() } }) }
+      return { ok: true, json: async () => ({ comentarios: [{ id: 'c1', autor: 'Lina (vía Claude)', texto: 'Pidió mover la entrega', desde: 'claude', cuando: new Date().toISOString() }] }) }
+    })
+    vi.stubGlobal('fetch', f)
+    render(<FormularioCliente enModal fila={fila({ porFuera: true, manual: fasesAlMover('diseno') })} onListo={() => {}} onCancelar={() => {}} />)
+    expect(await screen.findByText('Pidió mover la entrega')).toBeTruthy()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nuevo comentario' }), { target: { value: 'Aprobó la paleta' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Comentar' }))
+    expect(await screen.findByText('Aprobó la paleta')).toBeTruthy()
+    expect(f).toHaveBeenCalledWith('/api/projects/p1/comentarios', expect.objectContaining({ method: 'POST', body: JSON.stringify({ texto: 'Aprobó la paleta' }) }))
   })
 })

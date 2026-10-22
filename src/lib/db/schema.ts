@@ -94,8 +94,23 @@ export const projectSeguimiento = pgTable('project_seguimiento', {
   fases: jsonb('fases').notNull().default({}),             // { naming: 'en_curso', ... }
   conclusionesTaller: text('conclusiones_taller'),         // lo que volvió del Miro, si alguien lo pegó
   porFuera: boolean('por_fuera').notNull().default(false), // lleva su proceso fuera de la plataforma: todo a mano
+  faseAMano: boolean('fase_a_mano').notNull().default(false), // en la plataforma, pero el equipo movió la fase a mano
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+/**
+ * Los comentarios de un cliente: la bitácora del equipo ("el cliente aprobó la paleta"),
+ * con quién lo dijo y cuándo. Las notas del seguimiento son lo que falta hoy; esto es lo
+ * que fue pasando. Sólo se agregan, desde el panel o desde Claude.
+ */
+export const clienteComentarios = pgTable('cliente_comentarios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').notNull().references(() => projects.id),
+  autor: text('autor').notNull(),                          // "Lina", "Equipo M&B", "Claude"
+  texto: text('texto').notNull(),
+  desde: text('desde').notNull(),                          // 'panel' | 'claude'
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index('cliente_comentarios_project').on(t.projectId, t.createdAt)])
 
 // Fase 3 · Estrategia. Ver valkyria/specs/2026-08-11-fase3-pipeline-estrategia-design.md
 // Espejo del patrón del landscape: estado por etapa + versiones append-only.

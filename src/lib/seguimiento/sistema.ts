@@ -58,6 +58,8 @@ export interface SenalesProyecto {
   estadoManual?: EstadoManual | null
   /** Lleva su proceso fuera de la plataforma: todas las fases son las que marca el equipo. */
   porFuera?: boolean
+  /** Hace su proceso en la plataforma, pero el equipo puso la fase a mano. */
+  faseAMano?: boolean
 }
 
 export interface FaseConEstado {
@@ -114,6 +116,14 @@ export function estadoDeFases(s: SenalesProyecto): FaseConEstado[] {
     estrategia: estrategia(s),
     diseno: manual(s.manual.diseno),
   }
+  // Fase puesta a mano: manda lo que dijo el equipo, pero en Landscape y Estrategia se
+  // sigue viendo cuánto va de verdad en la plataforma (“7 de 14 pasos”).
+  if (s.faseAMano)
+    return FASES.map(key => {
+      const m = manual(s.manual[key], true)
+      const calculada = por[key]
+      return { key, label: FASE_LABEL[key], ...m, ...((key === 'landscape' || key === 'estrategia') && m.estado === 'en_curso' ? { detalle: calculada.detalle, avance: calculada.avance } : {}) }
+    })
   return FASES.map(key => ({ key, label: FASE_LABEL[key], ...por[key] }))
 }
 
