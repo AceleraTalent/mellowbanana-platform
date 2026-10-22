@@ -2,6 +2,19 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-10-22 — La fase de cualquier cliente se puede poner a mano
+
+**Qué:** el tablero y el modal mueven cualquier cliente, también los que hacen su proceso en la
+plataforma. Moverlo deja `fase_a_mano`: la fase es la que puso el equipo (y Landscape y Estrategia
+siguen mostrando su avance real) hasta que alguien elija "Volver a calcularla sola".
+
+**Por qué:** el estudio usa el tablero como su CRM, igual que Notion; que algunas tarjetas no se
+pudieran mover se vivió como un error, no como una regla. La plataforma sigue siendo la verdad del
+avance, pero el que decide dónde está el cliente es el equipo.
+
+**Qué se descartó:** mantener la fase calculada intocable (la regla del 2026-10-21, revertida) y
+pasar a "por fuera" a todo cliente movido (perdía el menú de la plataforma y el cálculo).
+
 ## 2026-10-21 — Clientes por fuera: el panel reemplaza al Tráfico de Notion
 
 **Qué:** un cliente puede llevar su proceso por fuera de la plataforma (`project_seguimiento.por_fuera`).

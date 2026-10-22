@@ -2,6 +2,26 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-10-22 — El tablero se maneja desde Claude
+
+- **Diagnóstico del conector:** el servidor publicaba bien `actualizar_cliente` (prueba nueva que
+  pide `tools/list` y llama herramientas como claude.ai); claude.ai guarda la lista de herramientas
+  y no la refresca al reconectar desde Claude Code. Los "Task timed out after 300 seconds" (decenas
+  por hora) eran POST `subscriptions/listen` del protocolo 2026-07-28: el SDK deja ese canal de
+  avisos abierto para siempre y Vercel lo corta a los 5 min. Como el servidor nunca manda avisos,
+  ahora se contesta de una con -32601 antes de llegar al SDK (prueba que lo reproduce).
+- **Comentarios por cliente** (`cliente_comentarios`, migración 0008, sólo agrega): bitácora con
+  autor y fecha, separada de las notas (lo que falta hoy). Se ven y se escriben en el modal y la
+  ficha; desde Claude con `comentar_cliente`.
+- **Conector:** `ver_cliente` (ficha + comentarios), `comentar_cliente`, y `actualizar_cliente`
+  ahora cambia el nombre y pasa un cliente a por fuera o a la plataforma. Valida todo antes de
+  escribir: un pedido imposible no deja el nombre cambiado a medias.
+- **Cualquier cliente se mueve de fase** (pedido explícito que se había interpretado sólo para los
+  de por fuera): un cliente de la plataforma movido a mano queda con `fase_a_mano` (migración 0009)
+  y manda lo que dijo el equipo, mostrando igual el avance real del Landscape y la Estrategia;
+  "Volver a calcularla sola" (o `calcularSola` desde Claude) lo devuelve a lo aprobado. El modal
+  tiene las cuatro opciones de "Cómo va" para todos; "esperando" o "en pausa" no mueven la fase.
+
 ## 2026-10-21 (ter) — Entrar fácil y el tablero tipo Notion
 
 - **Login de emergencia:** el equipo no tenía cuentas y el panel pedía usuario. El ingreso volvió a
