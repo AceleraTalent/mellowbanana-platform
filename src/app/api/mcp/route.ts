@@ -6,7 +6,7 @@ import { ErrorDeHerramienta } from '@/lib/mcp/errores'
 import {
   listarProyectos, contextoProyecto, estadoLandscape, estadoEstrategia, guardarEtapa, guardarConclusionesTaller,
 } from '@/lib/mcp/tools'
-import { actualizarCliente } from '@/lib/mcp/clientes'
+import { actualizarCliente, comentarCliente, verCliente } from '@/lib/mcp/clientes'
 
 /**
  * Devuelve el error como resultado de herramienta y no como excepción: así Claude lo
@@ -84,9 +84,13 @@ const handler = createMcpHandler(
         '30". Mandá sólo lo que cambia: lo que no mandes queda como estaba, y null borra. Con ' +
         'crear: true, si el cliente no existe lo crea como cliente por fuera (sin entrevistas ni ' +
         'Landscape en la plataforma); sin crear, un nombre que no existe es un error y te lista ' +
-        'los que hay, para que no dupliques uno mal escrito. Un cliente que hace su proceso en la ' +
-        'plataforma avanza solo en Taller, Landscape y Estrategia: a mano sólo se le marcan Naming ' +
-        'y Diseño. Al terminar, dale al equipo el link verEnElPanel.',
+        'los que hay, para que no dupliques uno mal escrito. Cualquier cliente se mueve de fase; ' +
+        'en uno que hace su proceso en la plataforma la fase queda puesta a mano, y con ' +
+        'calcularSola: true vuelve a salir de lo que se aprobó. ' +
+        'También le cambia el nombre (nombre) o lo pasa a llevarse por fuera o en la ' +
+        'plataforma (porFuera). Para dejar constancia de algo que pasó ("el cliente aprobó la ' +
+        'paleta"), usá comentar_cliente; las notas son lo que falta hoy. Al terminar, dale al ' +
+        'equipo el link verEnElPanel.',
       inputSchema: z.object({
         cliente: z.string().describe('Nombre del cliente (como está en el panel) o su id'),
         crear: z.boolean().optional().describe('Crearlo como cliente por fuera si no existe'),
@@ -97,9 +101,41 @@ const handler = createMcpHandler(
           .describe('"cliente" si espera algo del cliente, "pausa" si está en pausa, "no" para destrabarlo'),
         encargado: z.string().nullable().optional().describe('Quién o quiénes lo llevan'),
         fechaEntrega: z.string().nullable().optional().describe('AAAA-MM-DD'),
-        notas: z.string().nullable().optional().describe('Qué falta o qué se acordó; reemplaza la nota anterior'),
+        notas: z.string().nullable().optional().describe('Lo que falta hoy; reemplaza la nota anterior'),
+        nombre: z.string().optional().describe('Nombre nuevo, si hay que cambiarlo'),
+        porFuera: z.boolean().optional()
+          .describe('true si lleva su proceso por fuera de la plataforma; false si lo hace en la plataforma'),
+        calcularSola: z.boolean().optional()
+          .describe('Sólo clientes de la plataforma: que la fase deje de estar a mano y salga de lo aprobado'),
       }),
     }, async pedido => responder(() => actualizarCliente(db, pedido)))
+
+    server.registerTool('ver_cliente', {
+      title: 'Ver un cliente',
+      description:
+        'La ficha de un cliente: en qué fase va, cómo va (en curso, sin empezar, esperando al ' +
+        'cliente, en pausa), quién lo lleva, la entrega, las notas, el último movimiento y los ' +
+        'últimos comentarios del equipo. Usalo antes de contestar "¿cómo va X?" o de moverlo, ' +
+        'para no pisar algo que el equipo ya anotó.',
+      inputSchema: z.object({
+        cliente: z.string().describe('Nombre del cliente (como está en el panel) o su id'),
+      }),
+    }, async ({ cliente }) => responder(() => verCliente(db, cliente)))
+
+    server.registerTool('comentar_cliente', {
+      title: 'Comentar un cliente',
+      description:
+        'Deja un comentario en la bitácora del cliente, con fecha: lo que pasó, lo que se decidió, ' +
+        'lo que dijo el cliente ("aprobó la paleta", "pidió mover la entrega al 30"). Los ' +
+        'comentarios no se editan ni se borran y el equipo los ve en el panel. Si sabés quién del ' +
+        'equipo lo está diciendo, mandalo en autor. Si además cambia la fase, la entrega o lo que ' +
+        'falta, usá también actualizar_cliente.',
+      inputSchema: z.object({
+        cliente: z.string().describe('Nombre del cliente (como está en el panel) o su id'),
+        comentario: z.string().describe('El comentario, en una o dos frases claras'),
+        autor: z.string().optional().describe('Quién del equipo lo dice, si lo sabés'),
+      }),
+    }, async pedido => responder(() => comentarCliente(db, pedido)))
 
     server.registerTool('guardar_conclusiones_taller', {
       title: 'Guardar las conclusiones del taller',
@@ -163,9 +199,31 @@ async function verificar(_req: Request, bearer?: string) {
   return { token: bearer, clientId: info.clientId, scopes: info.scope.split(' ') }
 }
 
-const protegido = withMcpAuth(handler, verificar, {
+/**
+ * Desde el protocolo 2026-07-28 el cliente abre su canal de avisos con un POST
+ * `subscriptions/listen`, y el SDK lo deja abierto para siempre con un latido cada 15 s:
+ * en Vercel eso termina cortado a los 5 minutos ("Task timed out", decenas por hora). Este
+ * servidor nunca manda avisos —cada pedido trae su respuesta—, así que se contesta de una
+ * que no hay nada que escuchar, antes de llegar al SDK.
+ */
+async function sinSuscripciones(req: Request) {
+  if (req.method === 'POST') {
+    const cuerpo = (await req.clone().json().catch(() => null)) as { id?: unknown; method?: unknown } | null
+    if (req.headers.get('mcp-method') === 'subscriptions/listen' || cuerpo?.method === 'subscriptions/listen')
+      return Response.json({
+        jsonrpc: '2.0',
+        id: cuerpo?.id ?? null,
+        error: { code: -32601, message: 'Method not found: este servidor no envía notificaciones' },
+      })
+  }
+  return handler(req)
+}
+
+const protegido = withMcpAuth(sinSuscripciones, verificar, {
   required: true,
   resourceMetadataPath: '/.well-known/oauth-protected-resource',
 })
 
+// GET pasa por la autenticación (un 401 le dice al cliente dónde está el OAuth) y el SDK
+// en modo sin estado lo contesta con 405: no hay canal de escucha.
 export { protegido as GET, protegido as POST }
