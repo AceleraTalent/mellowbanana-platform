@@ -2,6 +2,25 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md. Solo decisiones no triviales: si fue obvio o es fácilmente reversible, no va acá.
 
+## 2026-11-12 — Naming y copies entran como etapas de la Estrategia; el tablero no se toca
+
+**Qué:** el listado de entregables del estudio pone "Naming y Copies" dentro de la Fase 3. Se
+agregaron como dos etapas más de la Estrategia (`naming`, que el equipo puede marcar como que no
+aplica, y `copies`), junto con `objetivo` y `onlyness`. La Estrategia pasa de 14 a 18 etapas y está
+completa cuando todas las que aplican están aprobadas. La fase "Naming" del tablero sigue siendo
+manual.
+
+**Por qué:** el usuario pidió implementar los listados y delegó el cómo. Dos procesos distintos
+comparten la palabra: la propuesta de naming del listado es un entregable de la estrategia; la fase
+Naming del tablero es el trabajo con el cliente que el estudio hace por fuera. Mantenerlos separados
+no cambia ninguna tarjeta del tablero, y al momento del cambio ningún cliente de producción tenía
+más de 2 de 14 etapas aprobadas, así que nadie retrocede.
+
+**Qué se descartó:** calcular la fase Naming del tablero desde esas dos etapas (dos fuentes para
+una misma columna, y los clientes por fuera la siguen marcando a mano); mover los atributos
+diferenciales a una etapa propia (ya se piden en el Diagnóstico; se les cambió el título); rechazar
+un contexto del sector al que le falten bloques del checklist (se guarda por partes: es un aviso).
+
 ## 2026-10-22 — La fase de cualquier cliente se puede poner a mano
 
 **Qué:** el tablero y el modal mueven cualquier cliente, también los que hacen su proceso en la

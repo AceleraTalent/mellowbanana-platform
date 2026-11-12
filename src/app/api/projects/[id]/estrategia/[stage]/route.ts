@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
-import { saveStrategyVersion, approveStrategyVersion, reafirmarAprobadaEstrategia } from '@/lib/db/strategy-store'
+import { saveStrategyVersion, approveStrategyVersion, reafirmarAprobadaEstrategia, marcarNoAplicaEstrategia } from '@/lib/db/strategy-store'
 import { ETAPA_ORDER, type EstrategiaKey } from '@/lib/estrategia/stages'
 import { esUuidValido } from '@/lib/landscape/ids'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
@@ -63,6 +63,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // Sin conflicto no se appendeó nada, y el pedido no falló: no había nada que
         // ratificar. `reafirmada` lo dice sin obligar a adivinarlo desde un body vacío.
         return NextResponse.json({ reafirmada: version !== null, version })
+      }
+      case 'no-aplica': {
+        // El Naming sólo se hace cuando el proyecto lo pide: el equipo dice si aplica.
+        if (typeof body.noAplica !== 'boolean')
+          return NextResponse.json({ error: 'Falta noAplica (true o false)' }, { status: 400 })
+        await marcarNoAplicaEstrategia(db, id, stage as EstrategiaKey, body.noAplica)
+        return NextResponse.json({ stage, noAplica: body.noAplica })
       }
       default:
         return NextResponse.json({ error: `Acción desconocida: ${String(body.accion)}` }, { status: 400 })

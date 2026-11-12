@@ -41,6 +41,10 @@ export function queSigueEstrategiaParaClaude(sigue: QueSigueEstrategia | undefin
     return `El equipo tiene que revisar y aprobar ${etapa} en el panel. Si piden cambios, ajusta ese borrador; si no, espera.`
   const cuadros = sigue.key === 'cuadros'
     ? ' Los cuadros se arman con lo que la esencia ya tiene aprobado.'
+    : sigue.key === 'naming'
+      ? ' Sólo aplica si el proyecto necesita nombre nuevo: si la marca ya lo tiene, dile al equipo que la marque como que no aplica en el panel y sigue con los copies.'
+    : sigue.key === 'copies'
+      ? ' Arma la tabla de entregables de marca con el equipo: qué piezas son, sus especificaciones y los copies de cada una.'
     : ESENCIA.includes(sigue.key) && faltanDeEsencia > 1
       ? ` Quedan ${faltanDeEsencia} etapas de esencia; si el proyecto pide otro orden, puedes trabajarlas en ese orden.`
       : ''

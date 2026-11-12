@@ -2,10 +2,10 @@ import { eq, and, desc, sql } from 'drizzle-orm'
 import { strategyStages, strategyVersions } from './schema'
 import type { StageStatus } from '@/lib/landscape/stages'
 import type { EstrategiaKey } from '@/lib/estrategia/stages'
-import { ETAPA_ORDER } from '@/lib/estrategia/stages'
+import { ETAPA_ORDER, PUEDEN_NO_APLICAR_ESTRATEGIA } from '@/lib/estrategia/stages'
 import {
   type AnyDb, type ActivityEntry,
-  ErrorNoEncontrado, esViolacionDeForeignKey, existeProyecto, versionDeOrigen,
+  ErrorDeValidacion, ErrorNoEncontrado, esViolacionDeForeignKey, existeProyecto, versionDeOrigen,
 } from './store'
 
 // ── Estrategia (fase 3) ──────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export interface StrategyStageState {
   borradorNuevo: StrategyVersionRow | null
 }
 
-/** El estado completo de la estrategia de un proyecto. Siempre las catorce etapas. */
+/** El estado completo de la estrategia de un proyecto. Siempre todas las etapas. */
 export async function strategyState(db: AnyDb, projectId: string): Promise<StrategyStageState[]> {
   const filas = await db.select().from(strategyStages).where(eq(strategyStages.projectId, projectId))
   const versiones = await listStrategyVersions(db, projectId)
@@ -177,6 +177,21 @@ export async function reafirmarAprobadaEstrategia(
     authorLabel: autor,
   })
   return approveStrategyVersion(db, version.id, { projectId, stage }, autor)
+}
+
+/**
+ * El equipo dice que una etapa no aplica en este proyecto (el Naming, cuando la marca ya
+ * tiene nombre) o la vuelve a activar. Espejo de `marcarNoAplica` del Landscape: al
+ * reactivarla, el estado sale de lo que ya había guardado.
+ */
+export async function marcarNoAplicaEstrategia(db: AnyDb, projectId: string, stage: EstrategiaKey, noAplica: boolean) {
+  if (!PUEDEN_NO_APLICAR_ESTRATEGIA.includes(stage))
+    throw new ErrorDeValidacion(`La etapa ${stage} no se puede marcar como que no aplica`)
+  if (!(await existeProyecto(db, projectId))) throw new ErrorNoEncontrado(`No existe el proyecto ${projectId}`)
+  if (noAplica) return setStrategyStageStatus(db, projectId, stage, 'no_aplica')
+  const versiones = await listStrategyVersions(db, projectId, stage)
+  const status: StageStatus = versiones.some(v => v.approvedAt) ? 'aprobada' : versiones.length ? 'en_curso' : 'pendiente'
+  return setStrategyStageStatus(db, projectId, stage, status)
 }
 
 /**

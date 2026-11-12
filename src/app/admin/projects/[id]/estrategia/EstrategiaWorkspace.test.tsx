@@ -62,11 +62,12 @@ const seccion = (k: EstrategiaKey) => within(document.getElementById(k)!)
 const encabezado = (k: EstrategiaKey) => seccion(k).getByRole('button', { name: new RegExp(`^\\d+${ETAPA_LABEL[k]}`) })
 
 describe('EstrategiaWorkspace · toda la Estrategia en una página', () => {
-  it('las catorce etapas son secciones, agrupadas en los bloques del proceso', () => {
+  it('las dieciocho etapas son secciones, agrupadas en los bloques del proceso', () => {
     montar()
     expect(screen.getByRole('heading', { level: 1, name: 'Estrategia' })).toBeTruthy()
-    expect(document.querySelectorAll('section[aria-labelledby^="titulo-"]')).toHaveLength(14)
+    expect(document.querySelectorAll('section[aria-labelledby^="titulo-"]')).toHaveLength(18)
     expect(screen.getByText('Esencia de marca')).toBeTruthy()
+    expect(screen.getByText('Naming y copies')).toBeTruthy()
   })
 
   it('abre sólo lo que sigue; lo aprobado se abre con un clic y no tiene botón de aprobar', () => {
@@ -114,7 +115,7 @@ describe('EstrategiaWorkspace · lo que sigue', () => {
     expect(screen.getByText(/Lo que sigue · Le toca a Claude/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Seguir en Claude/ }))
     await waitFor(() => expect(open).toHaveBeenCalled())
-    expect(writeText.mock.calls[0][0]).toMatch(/^Sigamos con la Estrategia de Grupo Heroica\. Lo que sigue: rtbs\./)
+    expect(writeText.mock.calls[0][0]).toMatch(/^Sigamos con la Estrategia de Grupo Heroica\. Lo que sigue: objetivo de marca\./)
   })
 
   it('pedir cambios copia un pedido que nombra la etapa', async () => {
@@ -124,6 +125,19 @@ describe('EstrategiaWorkspace · lo que sigue', () => {
     fireEvent.click(seccion('consumidor').getByRole('button', { name: 'Pedir cambios' }))
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
     expect(writeText.mock.calls[0][0]).toMatch(/^Ajustemos Consumidor, de la Estrategia de Grupo Heroica\./)
+  })
+})
+
+describe('EstrategiaWorkspace · el naming, si aplica', () => {
+  it('el equipo lo marca como que no aplica desde su sección, y sólo ahí', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    montar({ irA: 'naming' })
+    expect(screen.getAllByRole('button', { name: 'Marcar que no aplica' })).toHaveLength(1)
+    fireEvent.click(seccion('naming').getByRole('button', { name: 'Marcar que no aplica' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/projects/p1/estrategia/naming')
+    expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ accion: 'no-aplica', noAplica: true }))
   })
 })
 

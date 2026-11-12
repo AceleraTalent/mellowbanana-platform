@@ -40,7 +40,7 @@ describe('construirIndice', () => {
     // El menú abre sólo la fase activa: ya no hace falta esconder etapas detrás de “＋ n más”.
     const fase = construirIndice({ ...base(), etapaActiva: 'estrategia:personalidad' })
       .find(f => f.key === 'estrategia')!
-    expect(fase.entradas).toHaveLength(14)
+    expect(fase.entradas).toHaveLength(18)
   })
 
   it('pone el rótulo del bloque en la primera etapa de cada bloque de estrategia', () => {
@@ -64,7 +64,7 @@ describe('construirIndice', () => {
   it('el avance de landscape y estrategia va siempre con barra, también con la fase completa', () => {
     const sinNada = construirIndice(base())
     expect(sinNada.find(f => f.key === 'landscape')!.avance).toBe('0/6')
-    expect(sinNada.find(f => f.key === 'estrategia')!.avance).toBe('0/14')
+    expect(sinNada.find(f => f.key === 'estrategia')!.avance).toBe('0/18')
 
     const completas = construirIndice({
       ...base(),
@@ -72,7 +72,7 @@ describe('construirIndice', () => {
       etapasEstrategia: buildEtapasEstrategia(ETAPA_ORDER.map(stage => ({ stage, status: 'aprobada' as const }))),
     })
     expect(completas.find(f => f.key === 'landscape')!.avance).toBe('6/6')
-    expect(completas.find(f => f.key === 'estrategia')!.avance).toBe('14/14')
+    expect(completas.find(f => f.key === 'estrategia')!.avance).toBe('18/18')
   })
 })
 
@@ -87,13 +87,13 @@ describe('resolverEtapaActiva', () => {
   })
 
   it('una query inventada cae a la primera que se puede trabajar', () => {
-    expect(resolverEtapaActiva('inventada', ETAPA_ORDER, etapas)).toBe('rtbs')
+    expect(resolverEtapaActiva('inventada', ETAPA_ORDER, etapas)).toBe('objetivo')
   })
 
   it('sin query no aterriza en una no_aplica', () => {
     // 'diagnostico' está aprobada y 'consumidor' no aplica: ninguna de las dos es un
     // destino, así que arranca en la siguiente que el equipo sí puede mover.
-    expect(resolverEtapaActiva(undefined, ETAPA_ORDER, etapas)).toBe('rtbs')
+    expect(resolverEtapaActiva(undefined, ETAPA_ORDER, etapas)).toBe('objetivo')
   })
 
   it('la query sí puede nombrar una no_aplica: la pidió alguien a propósito', () => {

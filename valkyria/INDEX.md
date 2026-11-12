@@ -11,6 +11,12 @@ El mapa de la documentación de trabajo. Un documento que no está listado aquí
 | `propuestas/` | Material de propuesta para mostrar (páginas, maquetas), con README de estado y follow-up |
 | `../PENDIENTE.md` | Handoff vivo en la raíz: qué quedó y qué falta para retomar (hoy: activar Resend, deploy, limpieza de proyectos duplicados). Se borra cuando se vacía |
 
+## Checklists del estudio en Landscape y Estrategia (2026-11-12)
+
+| Documento | Qué contiene |
+|---|---|
+| `specs/2026-11-12-checklists-landscape-estrategia-design.md` | Mapa de cada punto del checklist de investigación y del listado de entregables de Estrategia a su paso o etapa, y qué se agregó |
+
 ## Navegación de proyectos: propuesta de layouts (2026-08-22)
 
 | Documento | Qué contiene |

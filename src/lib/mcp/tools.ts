@@ -18,6 +18,7 @@ import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { validarContenidoEtapa, validarPieza } from './validar'
 import { PIEZA_LABEL, esPieza, etapaDePieza, type PiezaKey } from '@/lib/landscape/piezas'
 import { validarContenidoEstrategia } from './validar-estrategia'
+import { coberturaDelContexto } from '@/lib/landscape/checklist'
 
 // `AnyDb` hace que todo lo que sale del store llegue tipado `any`: estas dos anotan el
 // parámetro de cada `.map` con el tipo real de la fila, así un nombre de campo mal escrito
@@ -271,18 +272,31 @@ export async function guardarEtapa(db: AnyDb, d: {
     author: 'claude',
   })
 
+  let mensaje = yaEstabaAprobada
+    ? `Guardé un borrador nuevo de ${STAGE_LABEL[etapa]}. La etapa sigue aprobada con la ` +
+      'versión anterior: el borrador queda visible en el panel para que el equipo decida ' +
+      'si lo aprueba. No pisé nada.'
+    : `Guardé un borrador de ${STAGE_LABEL[etapa]}. Queda pendiente de aprobación: el ` +
+      'equipo la aprueba desde el panel.'
+
+  // El checklist de investigación del estudio: el contexto tiene siete bloques. No bloquea
+  // (las fuentes se guardan antes que el texto, y el equipo puede querer verlo a medias),
+  // pero Claude se entera mientras todavía tiene el turno.
+  const secciones = (d.contenido as Record<string, unknown>).secciones
+  if (etapa === 'contexto' && Array.isArray(secciones) && secciones.length) {
+    const { faltan } = coberturaDelContexto(d.contenido)
+    if (faltan.length)
+      mensaje += ' Ojo: según el checklist de investigación del estudio, al contexto le falta ' +
+        `cubrir (o marcar con “bloque” en su sección): ${faltan.join('; ')}. Es un aviso, no un bloqueo.`
+  }
+
   return {
     versionId: version.id,
     marca: name,
     etapa,
     esperandoAprobacion: true,
     verEnElPanel: linkAlPanel(id, etapa),
-    mensaje: yaEstabaAprobada
-      ? `Guardé un borrador nuevo de ${STAGE_LABEL[etapa]}. La etapa sigue aprobada con la ` +
-        'versión anterior: el borrador queda visible en el panel para que el equipo decida ' +
-        'si lo aprueba. No pisé nada.'
-      : `Guardé un borrador de ${STAGE_LABEL[etapa]}. Queda pendiente de aprobación: el ` +
-        'equipo la aprueba desde el panel.',
+    mensaje,
   }
 }
 

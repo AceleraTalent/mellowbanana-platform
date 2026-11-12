@@ -51,7 +51,10 @@ const Diagnostico: Vista = ({ content }) => {
         {txt(leer('ventaja')) && <Tarjeta titulo="La ventaja"><Parrafo texto={c.ventaja} /></Tarjeta>}
       </Tarjetas>
       {textos(comoLista(leer('diferenciales'))).length > 0 && (
-        <Seccion titulo="Diferenciales"><Puntos numerada items={comoLista(c.diferenciales)} /></Seccion>
+        <Seccion titulo="Atributos diferenciales"><Puntos numerada items={comoLista(c.diferenciales)} /></Seccion>
+      )}
+      {txt(leer('rumbo', 'haciaDondeVamos', 'hacia_donde_vamos')) && (
+        <Seccion titulo="Hacia dónde vamos"><Parrafo texto={c.rumbo ?? c.haciaDondeVamos ?? c.hacia_donde_vamos} /></Seccion>
       )}
       <MasInformacion c={c} usados={usados} />
     </Documento>
@@ -61,6 +64,9 @@ const Diagnostico: Vista = ({ content }) => {
 const Consumidor: Vista = ({ content }) => {
   const c = obj(content)
   const { leer, usados } = lector(c)
+  // Se leen las dos antes de pintar: lo que `leer` no toca cae a “Más información”.
+  const motivaciones = comoLista(leer('motivaciones'))
+  const tensiones = comoLista(leer('tensiones'))
   return (
     <Documento>
       {txt(leer('metodologia')) && (
@@ -69,6 +75,14 @@ const Consumidor: Vista = ({ content }) => {
           <div className="mt-2.5"><Parrafo texto={c.metodologia} /></div>
         </div>
       )}
+      {txt(leer('perfil')) && <Seccion titulo="Perfil"><Parrafo texto={c.perfil} /></Seccion>}
+      {(textos(motivaciones).length > 0 || textos(tensiones).length > 0) && (
+        <Tarjetas>
+          {textos(motivaciones).length > 0 && <Tarjeta titulo="Motivaciones y necesidades"><Puntos items={motivaciones} /></Tarjeta>}
+          {textos(tensiones).length > 0 && <Tarjeta titulo="Tensiones y barreras"><Puntos items={tensiones} /></Tarjeta>}
+        </Tarjetas>
+      )}
+      {txt(leer('pertenencia')) && <Seccion titulo="Cómo pertenece al grupo"><Parrafo texto={c.pertenencia} /></Seccion>}
       {textos(leer('frases')).length > 0 && <Seccion titulo="Lo que dice el consumidor"><Citas items={c.frases} /></Seccion>}
       <MasInformacion c={c} usados={usados} />
     </Documento>
@@ -168,7 +182,7 @@ const Valores: Vista = ({ content }) => {
   )
 }
 
-/** Territorio, brand ideal y tagline: una sola frase que manda. */
+/** Objetivo, territorio, brand ideal, onlyness y tagline: una sola frase que manda. */
 function FraseUnica(enorme: boolean): Vista {
   function VistaFrase({ content }: { content: unknown }) {
     const c = obj(content)
@@ -203,6 +217,69 @@ const Manifiesto: Vista = ({ content }) => {
   )
 }
 
+/** Las propuestas de nombre, cada una con su porqué; la recomendada va marcada. */
+const Naming: Vista = ({ content }) => {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const propuestas = lista(leer('propuestas')).map(obj)
+  const recomendado = txt(leer('recomendado', 'recomendada')).toLowerCase()
+  return (
+    <Documento>
+      {txt(leer('criterios')) && (
+        <div>
+          <Rotulo>Con qué criterio</Rotulo>
+          <div className="mt-2.5"><Parrafo texto={c.criterios} /></div>
+        </div>
+      )}
+      <ol className="max-w-[68ch] divide-y divide-[var(--line)] border-y border-[var(--ink)]">
+        {propuestas.map((p, i) => (
+          <li key={i} className="flex gap-4 py-5">
+            <span className="w-6 flex-none pt-[9px] font-mono text-[12.5px] tabular-nums text-[var(--rotulo)]">{String(i + 1).padStart(2, '0')}</span>
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-serif text-[26px] leading-[1.2] tracking-[-.015em] text-[var(--ink)]">
+                {txt(p.nombre)}
+                {recomendado && txt(p.nombre).toLowerCase() === recomendado && (
+                  <span className="rounded-full bg-[var(--banana)] px-2.5 py-[3px] font-sans text-[12px] font-semibold tracking-normal text-[var(--ink)]">Recomendado</span>
+                )}
+              </p>
+              {txt(p.racional) && <p className="mt-1.5 text-[15px] leading-[1.6] text-[var(--secundario)]">{txt(p.racional)}</p>}
+              {txt(p.disponibilidad) && <p className="mt-1.5 text-[13.5px] leading-[1.5] text-[var(--rotulo)]">Disponibilidad: {txt(p.disponibilidad)}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
+}
+
+/** La tabla de entregables de marca: qué pieza, con qué especificaciones y qué dice. */
+const Copies: Vista = ({ content }) => {
+  const c = obj(content)
+  const { leer, usados } = lector(c)
+  const entregables = lista(leer('entregables')).map(obj)
+  return (
+    <Documento>
+      <div className="max-w-[72ch] border-t-[1.5px] border-[var(--ink)]">
+        {entregables.map((e, i) => (
+          <div key={i} className="grid gap-x-8 gap-y-3 border-b border-[var(--line)] py-6 sm:grid-cols-[200px_minmax(0,1fr)]">
+            <div>
+              <p className="font-serif text-[20px] leading-[1.25] tracking-[-.01em] text-[var(--ink)]">{txt(e.entregable)}</p>
+              {txt(e.especificaciones) && <p className="mt-1.5 text-[13.5px] leading-[1.55] text-[var(--secundario)]">{txt(e.especificaciones)}</p>}
+            </div>
+            <ul className="space-y-3">
+              {textos(comoLista(e.copies)).map((t, j) => (
+                <li key={j} className="whitespace-pre-line border-l-[1.5px] border-[var(--banana)] pl-4 text-[16px] leading-[1.55] text-[var(--ink)]">{t}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <MasInformacion c={c} usados={usados} />
+    </Documento>
+  )
+}
+
 /** “brandEssence” o “brand_essence” → “Brand essence”. */
 function humano(k: string): string {
   const s = k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
@@ -225,6 +302,7 @@ const Cuadros: Vista = ({ content }) => {
 const VISTAS: Record<EstrategiaKey, Vista> = {
   diagnostico: Diagnostico,
   consumidor: Consumidor,
+  objetivo: FraseUnica(false),
   rtbs: ListaNumerada,
   concepto: Concepto,
   beneficios: Beneficios,
@@ -234,9 +312,12 @@ const VISTAS: Record<EstrategiaKey, Vista> = {
   territorio: FraseUnica(false),
   brand_ideal: FraseUnica(false),
   ingredients: ListaNumerada,
+  onlyness: FraseUnica(false),
   tagline: FraseUnica(true),
   manifiesto: Manifiesto,
   cuadros: Cuadros,
+  naming: Naming,
+  copies: Copies,
 }
 
 /** El documento de una etapa de la Estrategia. Si llega algo que no es un objeto, el genérico. */

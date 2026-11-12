@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BLOQUES, ETAPA_LABEL, ETAPA_ORDER, type EstrategiaKey, type EtapaEstrategia } from '@/lib/estrategia/stages'
+import { BLOQUES, ETAPA_LABEL, ETAPA_ORDER, PUEDEN_NO_APLICAR_ESTRATEGIA, type EstrategiaKey, type EtapaEstrategia } from '@/lib/estrategia/stages'
 import { mensajeEstrategia, type QueSigueEstrategia } from '@/lib/estrategia/sigue'
 import { VistaEstrategia } from '@/components/documento/estrategia'
 import { ComparadorVersiones } from '@/components/ComparadorVersiones'
@@ -32,9 +32,23 @@ const CHIP: Record<EstadoEtapa, { texto: string; clase: string }> = {
   no_aplica: { texto: 'No aplica', clase: 'text-[var(--apagado)]' },
 }
 
+/** Lo que dice una etapa vacía cuando “Claude escribe acá…” no alcanza. */
+const VACIO: Partial<Record<EstrategiaKey, string>> = {
+  cuadros: 'Claude arma acá los cuadros finales con lo que la esencia ya tiene aprobado.',
+  naming: 'Claude deja acá las propuestas de nombre, cada una con su racional. Sólo si el proyecto necesita nombre.',
+  copies: 'Claude arma acá la tabla de entregables de marca: cada pieza con sus especificaciones y sus copies.',
+}
+
+/** La línea de la franja cuando la pelota es de Claude. */
+const PARA_CLAUDE: Partial<Record<EstrategiaKey, string>> = {
+  cuadros: 'Los cuadros finales se arman con lo que la esencia ya tiene aprobado.',
+  naming: 'Sólo si el proyecto necesita nombre. Si la marca ya lo tiene, márcalo abajo como que no aplica.',
+  copies: 'Claude arma la tabla de entregables de marca con sus especificaciones y sus copies.',
+}
+
 /**
  * Toda la Estrategia en una página, como el Landscape: arriba lo que sigue y de quién es;
- * debajo, las catorce etapas agrupadas en los bloques del proceso, abierta la que tiene
+ * debajo, las etapas agrupadas en los bloques del proceso, abierta la que tiene
  * trabajo. El trabajo se hace en el chat de Claude; acá se lee y se aprueba.
  */
 export function EstrategiaWorkspace({
@@ -97,6 +111,8 @@ export function EstrategiaWorkspace({
   const aprobar = (etapa: EstrategiaKey, versionId: string) => enviar(etapa, { accion: 'aprobar', versionId }, 'No se pudo aprobar')
   // La otra salida del conflicto: el equipo se queda con lo que ya había aprobado.
   const mantener = (etapa: EstrategiaKey) => enviar(etapa, { accion: 'reafirmar' }, 'No se pudo mantener la versión aprobada')
+  // El Naming sólo se hace si el proyecto necesita nombre: el equipo dice si aplica.
+  const noAplica = (etapa: EstrategiaKey, valor: boolean) => enviar(etapa, { accion: 'no-aplica', noAplica: valor }, 'No se pudo guardar')
 
   const estadoDe = (e: EtapaEstrategia): EstadoEtapa => {
     const c = contenidoPorEtapa[e.key]
@@ -118,9 +134,7 @@ export function EstrategiaWorkspace({
     if (!contenido) {
       return (
         <p className="rounded-[12px] border border-dashed border-[#CFC9BA] px-6 py-6 text-[14px] leading-[1.6] text-[var(--secundario)]">
-          {e.key === 'cuadros'
-            ? 'Claude arma acá los cuadros finales con lo que la esencia ya tiene aprobado.'
-            : `Claude escribe acá ${ETAPA_LABEL[e.key]} cuando se lo pidan en el chat.`}
+          {VACIO[e.key] ?? `Claude escribe acá ${ETAPA_LABEL[e.key]} cuando se lo pidan en el chat.`}
         </p>
       )
     }
@@ -172,7 +186,7 @@ export function EstrategiaWorkspace({
       )
       : (
         <Franja de="claude" quien="Le toca a Claude" titulo={ETAPA_LABEL[sigue.key]}
-          texto={sigue.key === 'cuadros' ? 'Los cuadros finales se arman con lo que la esencia ya tiene aprobado.' : 'Claude la trabaja desde lo aprobado del Landscape y de la Estrategia.'}>
+          texto={PARA_CLAUDE[sigue.key] ?? 'Claude la trabaja desde lo aprobado del Landscape y de la Estrategia.'}>
           <SeguirEnClaude mensaje={mensajeEstrategia(sigue.key, proyecto)} proyecto={proyecto} fase="la Estrategia" />
         </Franja>
       )
@@ -220,7 +234,21 @@ export function EstrategiaWorkspace({
                     </button>
                   </h2>
                   {abiertaAhora && (
-                    <div id={`cuerpo-${key}`} className="pb-10 pl-10 max-sm:pl-0">{cuerpo(e)}</div>
+                    <div id={`cuerpo-${key}`} className="pb-10 pl-10 max-sm:pl-0">
+                      {estado === 'no_aplica'
+                        ? <p className="text-[14px] text-[var(--secundario)]">No aplica en este proyecto: la marca ya tiene nombre.</p>
+                        : cuerpo(e)}
+                      {PUEDEN_NO_APLICAR_ESTRATEGIA.includes(key) && (
+                        <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[var(--secundario)]">
+                          {estado === 'no_aplica' ? '¿El proyecto sí necesita nombre?' : 'Sólo aplica si el proyecto necesita nombre. ¿La marca ya lo tiene?'}
+                          <button type="button" disabled={guardando === key} onClick={() => noAplica(key, estado !== 'no_aplica')}
+                            className="font-medium text-[var(--ink)] underline underline-offset-2 disabled:cursor-wait disabled:opacity-60">
+                            {guardando === key ? 'Guardando…' : estado === 'no_aplica' ? 'Volver a activarlo' : 'Marcar que no aplica'}
+                          </button>
+                          {(estado === 'no_aplica' || !contenidoPorEtapa[key]) && error?.donde === key && <span role="alert" className="text-[var(--error)]">{error.texto}</span>}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </section>
               )

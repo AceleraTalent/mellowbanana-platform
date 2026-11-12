@@ -160,15 +160,27 @@ const handler = createMcpHandler(
         'la long list completa en "candidatas", cada una con id, eje (Marca, Estrategia o ' +
         'Comunicación), titulo, descripcion y fuentes; no mandes "seleccionadas", que elegir las ' +
         '4 o 5 principales es decisión del equipo. Para las etapas de estrategia mandá fase: ' +
-        '"estrategia"; las claves son las 14 del Proceso de Estrategia (diagnostico, consumidor, ' +
-        'rtbs, concepto, beneficios, arquetipo, personalidad, valores, territorio, brand_ideal, ' +
-        'ingredients, tagline, manifiesto, cuadros). Cada etapa de estrategia tiene su forma mínima: ' +
-        'diagnostico es problema, insight, ventaja y diferenciales (lista); consumidor es metodologia ' +
-        'y frases (lista); rtbs e ingredients son items (lista); concepto es concepto y racional; ' +
+        '"estrategia"; las claves son las 18 del Proceso de Estrategia (diagnostico, consumidor, ' +
+        'objetivo, rtbs, concepto, beneficios, arquetipo, personalidad, valores, territorio, brand_ideal, ' +
+        'ingredients, onlyness, tagline, manifiesto, cuadros, naming, copies). Cada etapa de estrategia ' +
+        'tiene su forma mínima, que sigue el listado de entregables del estudio: diagnostico es problema, ' +
+        'insight, ventaja, diferenciales (lista de atributos diferenciales) y rumbo (hacia dónde vamos); ' +
+        'consumidor es metodologia, perfil, motivaciones (lista: motivaciones y necesidades), tensiones ' +
+        '(lista: tensiones y barreras), pertenencia (cómo pertenece al grupo) y frases (lista); rtbs e ' +
+        'ingredients son items (lista); concepto es concepto y racional; ' +
         'beneficios es funcionales y emocionales (listas); arquetipo es arquetipo y justificacion; ' +
-        'personalidad es rasgos (lista); valores es items, lista de { valor, validacion }; territorio, ' +
-        'brand_ideal, tagline y manifiesto son solo texto; cuadros es brandEssence y consumidor, cada ' +
+        'personalidad es rasgos (lista); valores es items, lista de { valor, validacion }; objetivo, ' +
+        'territorio, brand_ideal, onlyness, tagline y manifiesto son solo texto; cuadros es brandEssence ' +
+        'y consumidor, cada ' +
         'uno un objeto de pares campo→texto. Los cuadros se llenan desde contenido aprobado. ' +
+        'naming (sólo si el proyecto necesita nombre) es { propuestas: [{ nombre, racional, disponibilidad? }], ' +
+        'recomendado?, criterios? }; copies es la tabla de entregables de marca: ' +
+        '{ entregables: [{ entregable, especificaciones, copies: [texto, …] }] }. ' +
+        'El contexto del sector (etapa "contexto") va en "secciones"; marcá cada una con "bloque" para ' +
+        'que el panel sepa qué punto del checklist de investigación cubre: cifras (tamaño, crecimiento y ' +
+        'jugadores clave, global y Colombia), drivers, consumidor, retos, oportunidades, oportunidad_marca ' +
+        'y conclusion (qué buscan los clientes del segmento). En el benchmarking (etapa "panorama") cerrá ' +
+        'con "sintesis": { patrones: […], oportunidades: […] }. ' +
         'Las partes del deck del landscape van en su propia clave de etapa, sin fase: ' +
         '"tendencias-desarrollo" es { tendencias: [{ titulo, explicacion, profundizacion, enfoques }] }; ' +
         '"tendencias-casos" es { tendencias: [{ titulo, casos: [{ marca, mercado, descripcion, link, imagen }] }] }; ' +

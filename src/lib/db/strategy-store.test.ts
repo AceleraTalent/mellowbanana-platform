@@ -61,16 +61,16 @@ describe('approveStrategyVersion', () => {
 })
 
 describe('strategyState / summarizeStrategy', () => {
-  it('devuelve las 14 etapas aunque no haya filas', async () => {
+  it('devuelve las 18 etapas aunque no haya filas', async () => {
     await montarBase()
-    expect(await strategyState(db, projectId)).toHaveLength(14)
+    expect(await strategyState(db, projectId)).toHaveLength(18)
   })
 
   it('no_aplica no cuenta ni en aprobadas ni en total', async () => {
     await montarBase()
     await setStrategyStageStatus(db, projectId, 'manifiesto', 'no_aplica')
     const resumen = summarizeStrategy(await strategyState(db, projectId))
-    expect(resumen.total).toBe(13)
+    expect(resumen.total).toBe(17)
     expect(resumen.aprobadas).toBe(0)
   })
 })

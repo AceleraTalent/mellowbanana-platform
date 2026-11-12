@@ -75,10 +75,10 @@ export const PASOS: Paso[] = [
   },
   {
     id: '2.2', etapa: 'contexto', titulo: 'Contexto del sector',
-    queEs: 'Escribir el panorama del sector: cifras con fuente y año, qué lo mueve, cómo cambia el consumidor y sus retos.',
+    queEs: 'Escribir el panorama del sector, global y en Colombia: cifras con fuente y año (tamaño, crecimiento, jugadores clave), drivers de cambio, cómo cambia el consumidor, retos y oportunidades del sector, la oportunidad de marca y, como conclusión, qué buscan los clientes del segmento.',
     quien: 'claude', quienTexto: 'Claude lo escribe y el equipo lo aprueba.',
     necesita: 'Las fuentes del paso 2.1.',
-    listoCuando: 'Cada bloque está escrito y cada cifra dice de dónde sale.',
+    listoCuando: 'Los siete bloques del checklist están escritos y cada cifra dice de dónde sale.',
     donde: 'plataforma',
   },
   {
@@ -117,10 +117,10 @@ export const PASOS: Paso[] = [
   },
   {
     id: '4.1', etapa: 'panorama', titulo: 'Benchmarking',
-    queEs: 'Analizar referentes y competidores en cuatro ejes: logos, páginas web, redes sociales y experiencia de marca.',
+    queEs: 'Definir los competidores y referentes a analizar, revisarlos en cuatro ejes (logos, páginas web, redes sociales y experiencia de marca) y sintetizar los patrones y las oportunidades.',
     quien: 'juntos', quienTexto: 'Claude analiza y el equipo completa con capturas.',
     necesita: 'La lista de referentes y competidores (1.0).',
-    listoCuando: 'Todas las marcas están cubiertas en los cuatro ejes.',
+    listoCuando: 'Todas las marcas están cubiertas en los cuatro ejes y hay una síntesis de patrones y oportunidades.',
     donde: 'plataforma',
   },
   {
@@ -143,7 +143,7 @@ export const PASOS: Paso[] = [
   },
   {
     id: '5.1', etapa: 'diagnostico', titulo: 'Assets actuales',
-    queEs: 'Analizar los assets que la marca tiene hoy y plantear si el proyecto es una evolución o una revolución.',
+    queEs: 'Analizar los assets que la marca tiene hoy y dejar planteada la pregunta para el cliente: ¿evolución o revolución?',
     quien: 'juntos', quienTexto: 'Claude lo analiza y el equipo lo aprueba. Solo aplica en rebranding.',
     necesita: 'Los assets vigentes de la marca.',
     listoCuando: 'El equipo aprueba el diagnóstico.',

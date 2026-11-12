@@ -171,6 +171,35 @@ describe('mcp · herramientas', () => {
   })
 })
 
+describe('el checklist de investigación en el contexto', () => {
+  const seccion = (bloque: string) => ({ titulo: bloque, texto: 'x', bloque })
+
+  it('avisa qué bloques faltan, sin bloquear el guardado', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    const r = await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'contexto', contenido: { secciones: [seccion('cifras'), seccion('drivers')] } })
+    expect(r.esperandoAprobacion).toBe(true)
+    expect(r.mensaje).toMatch(/checklist de investigación/)
+    expect(r.mensaje).toMatch(/Oportunidad de marca/)
+    expect(r.mensaje).not.toMatch(/Drivers de cambio/)
+  })
+
+  it('con los siete bloques no dice nada', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    const bloques = ['cifras', 'drivers', 'consumidor', 'retos', 'oportunidades', 'oportunidad_marca', 'conclusion']
+    const r = await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'contexto', contenido: { secciones: bloques.map(seccion) } })
+    expect(r.mensaje).not.toMatch(/checklist/)
+  })
+
+  it('guardar sólo las fuentes (paso 2.1) no reclama el texto que todavía no toca', async () => {
+    const db = await makeTestDb()
+    await findOrCreateProject(db, 'Fruta Viva')
+    const r = await guardarEtapa(db, { proyecto: 'Fruta Viva', etapa: 'contexto', contenido: { fuentes: [{ doc: 'Informe' }] } })
+    expect(r.mensaje).not.toMatch(/checklist/)
+  })
+})
+
 describe('guardarEtapa con fase estrategia', () => {
   let db: TestDb
   let projectId: string
@@ -212,6 +241,20 @@ describe('guardarEtapa con fase estrategia', () => {
     expect(r.mensaje).toMatch(/aviso, no un bloqueo/)
   })
 
+  it('el naming y los copies se guardan como cualquier etapa', async () => {
+    const naming = await guardarEtapa(db, {
+      proyecto: 'Marca Test', etapa: 'naming', fase: 'estrategia',
+      contenido: { propuestas: [{ nombre: 'Alba', racional: 'Lo que empieza' }], recomendado: 'Alba' },
+    })
+    const copies = await guardarEtapa(db, {
+      proyecto: 'Marca Test', etapa: 'copies', fase: 'estrategia',
+      contenido: { entregables: [{ entregable: 'Empaque', especificaciones: 'Cara frontal', copies: ['Hecho despacio'] }] },
+    })
+    expect(naming.esperandoAprobacion && copies.esperandoAprobacion).toBe(true)
+    const estado = await strategyState(db, projectId)
+    expect(estado.filter(e => e.versiones > 0).map(e => e.stage)).toEqual(['naming', 'copies'])
+  })
+
   it('sin fase sigue siendo landscape puro (regresión)', async () => {
     await expect(guardarEtapa(db, { proyecto: 'Marca Test', etapa: 'concepto', contenido: {} }))
       .rejects.toThrow(/no es una etapa del landscape/)
@@ -228,7 +271,7 @@ describe('estadoEstrategia', () => {
 
   it('con cero versiones el bloqueo dice que falta el borrador, no manda al panel', async () => {
     const r = await estadoEstrategia(db, 'Marca Test')
-    expect(r.etapas).toHaveLength(14)
+    expect(r.etapas).toHaveLength(18)
     expect(r.etapas[0].bloqueo).toMatch(/no hay ningún borrador/)
     expect(r.etapas[0].hayBorradorEsperandoAprobacion).toBe(false)
   })

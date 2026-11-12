@@ -32,9 +32,24 @@ export function validarContenidoEstrategia(etapa: EstrategiaKey, contenido: unkn
       )
   }
 
+  const listaDeObjetos = (campo: string, forma: string): Record<string, unknown>[] => {
+    const v = c[campo]
+    if (!Array.isArray(v) || v.length === 0 || v.some(x => typeof x !== 'object' || x === null || Array.isArray(x)))
+      throw new ErrorDeHerramienta(`La etapa “${etapa}” necesita “${campo}”: ${forma}, con al menos un elemento.`)
+    return v as Record<string, unknown>[]
+  }
+  const exigir = (o: Record<string, unknown>, campos: string[], donde: string) => {
+    for (const campo of campos)
+      if (typeof o[campo] !== 'string' || !(o[campo] as string).trim())
+        throw new ErrorDeHerramienta(`${donde} le falta “${campo}” como texto no vacío.`)
+  }
+
   switch (etapa) {
-    case 'diagnostico': texto('problema'); texto('insight'); texto('ventaja'); listaDeTextos('diferenciales'); break
-    case 'consumidor': texto('metodologia'); listaDeTextos('frases'); break
+    case 'diagnostico': texto('problema'); texto('insight'); texto('ventaja'); listaDeTextos('diferenciales'); texto('rumbo'); break
+    case 'consumidor':
+      texto('metodologia'); texto('perfil'); listaDeTextos('motivaciones'); listaDeTextos('tensiones')
+      texto('pertenencia'); listaDeTextos('frases')
+      break
     case 'rtbs': listaDeTextos('items'); break
     case 'concepto': texto('concepto'); texto('racional'); break
     case 'beneficios': listaDeTextos('funcionales'); listaDeTextos('emocionales'); break
@@ -54,8 +69,23 @@ export function validarContenidoEstrategia(etapa: EstrategiaKey, contenido: unkn
       })
       break
     }
-    case 'territorio': case 'brand_ideal': case 'tagline': case 'manifiesto': texto('texto'); break
+    case 'territorio': case 'brand_ideal': case 'tagline': case 'manifiesto': case 'objetivo': case 'onlyness':
+      texto('texto'); break
     case 'ingredients': listaDeTextos('items'); break
     case 'cuadros': objetoConTexto('brandEssence'); objetoConTexto('consumidor'); break
+    case 'naming':
+      listaDeObjetos('propuestas', 'una lista de { nombre, racional }').forEach((p, i) =>
+        exigir(p, ['nombre', 'racional'], `A la propuesta de nombre ${i + 1}`))
+      break
+    case 'copies':
+      listaDeObjetos('entregables', 'una lista de { entregable, especificaciones, copies }').forEach((e, i) => {
+        exigir(e, ['entregable', 'especificaciones'], `Al entregable ${i + 1}`)
+        const copies = e.copies
+        if (!Array.isArray(copies) || copies.length === 0 || copies.some(x => typeof x !== 'string' || !x.trim()))
+          throw new ErrorDeHerramienta(
+            `Al entregable ${i + 1} le faltan sus “copies”: una lista de textos no vacíos, con al menos uno.`,
+          )
+      })
+      break
   }
 }

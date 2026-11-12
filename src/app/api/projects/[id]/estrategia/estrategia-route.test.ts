@@ -46,6 +46,28 @@ describe('POST /api/projects/[id]/estrategia/[stage]', () => {
     expect(res.status).toBe(404)
   })
 
+  it('el naming se marca como que no aplica y se vuelve a activar con lo que ya tenía', async () => {
+    const v = await saveStrategyVersion(db, projectId, 'naming', { content: { propuestas: [{ nombre: 'Alba', racional: 'r' }] }, author: 'claude' })
+    const estado = async () => (await strategyState(db, projectId)).find(e => e.stage === 'naming')!.status
+
+    expect((await post(projectId, 'naming', { accion: 'no-aplica', noAplica: true })).status).toBe(200)
+    expect(await estado()).toBe('no_aplica')
+
+    expect((await post(projectId, 'naming', { accion: 'no-aplica', noAplica: false })).status).toBe(200)
+    expect(await estado()).toBe('en_curso')
+
+    await approveStrategyVersion(db, v.id, { projectId, stage: 'naming' })
+    await post(projectId, 'naming', { accion: 'no-aplica', noAplica: true })
+    await post(projectId, 'naming', { accion: 'no-aplica', noAplica: false })
+    expect(await estado()).toBe('aprobada')
+  })
+
+  it('sólo el naming puede no aplicar, y hay que decir si aplica o no', async () => {
+    expect((await post(projectId, 'concepto', { accion: 'no-aplica', noAplica: true })).status).toBe(400)
+    expect((await post(projectId, 'naming', { accion: 'no-aplica' })).status).toBe(400)
+    expect((await post(projectId, 'naming', { accion: 'no-aplica', noAplica: true }, false)).status).toBe(401)
+  })
+
   it('etapa desconocida devuelve 400', async () => {
     const res = await post(projectId, 'tendencias', { accion: 'guardar', content: {} })
     expect(res.status).toBe(400)

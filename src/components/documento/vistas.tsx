@@ -14,6 +14,7 @@ import {
   Parrafo, Puntos, Rotulo, Seccion, Tarjeta, Tarjetas, dominio, lista, obj, textos, txt,
 } from './bloques'
 import { EJES, type TendenciaCandidata } from '@/lib/landscape/stages'
+import { coberturaDelContexto } from '@/lib/landscape/checklist'
 
 type Contenido = Record<string, unknown>
 
@@ -176,6 +177,7 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
   const { leer, usados } = lector(c)
   const secciones = lista(leer('secciones')).map(obj)
   const nFuentes = lista(leer('fuentes')).length
+  const cobertura = coberturaDelContexto(c)
   return (
     <Documento>
       <Destacado rotulo="En corto" texto={leer('resumen')} />
@@ -222,6 +224,8 @@ export function VistaContexto({ content, hrefFuentes }: { content: unknown; href
       )}
 
       <Faltantes items={leer('vacios_de_informacion', 'vaciosDeInformacion', 'vaciosInformacion')} />
+      {/* Sólo si el contexto declara sus bloques: uno anterior al checklist no dice nada. */}
+      {cobertura.marcado && <Faltantes titulo="Falta del checklist de investigación" items={cobertura.faltan} />}
 
       {nFuentes > 0 && (
         <p className="text-[14px] text-[var(--secundario)]">
@@ -318,6 +322,7 @@ export function VistaBenchmarking({ content }: { content: unknown }) {
   const actual = obj(leer('posicionActual', 'posicion_actual'))
   const ideal = obj(leer('posicionIdeal', 'posicion_ideal'))
   leer('notas', 'fuente')
+  const sintesis = obj(leer('sintesis'))
 
   return (
     <Documento>
@@ -360,6 +365,15 @@ export function VistaBenchmarking({ content }: { content: unknown }) {
             </div>
           )}
           {txt(respaldo.notaMetodologica) && <p className="text-[13px] text-[var(--secundario)]">Nota: {txt(respaldo.notaMetodologica)}</p>}
+        </Seccion>
+      )}
+
+      {(textos(sintesis.patrones).length > 0 || textos(sintesis.oportunidades).length > 0) && (
+        <Seccion titulo="Patrones y oportunidades">
+          <Tarjetas>
+            {textos(sintesis.patrones).length > 0 && <Tarjeta titulo="Patrones de la categoría"><Puntos items={sintesis.patrones} /></Tarjeta>}
+            {textos(sintesis.oportunidades).length > 0 && <Tarjeta titulo="Oportunidades" tono="claro"><Puntos items={sintesis.oportunidades} /></Tarjeta>}
+          </Tarjetas>
         </Seccion>
       )}
 

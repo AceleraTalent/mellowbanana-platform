@@ -124,7 +124,7 @@ export function construirIndice(input: {
     }
   })
 
-  // Estrategia: sus catorce etapas, con el sub-rótulo del bloque en la primera de cada uno.
+  // Estrategia: todas sus etapas, con el sub-rótulo del bloque en la primera de cada uno.
   const baseEstrategia = `/admin/projects/${projectId}/estrategia`
   const entradasEstrategia: EntradaIndice[] = etapasEstrategia.map(e => {
     const key = `estrategia:${e.key}`

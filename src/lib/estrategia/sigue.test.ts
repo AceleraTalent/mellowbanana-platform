@@ -17,6 +17,15 @@ describe('qué sigue en la Estrategia', () => {
     expect(queSigueEstrategia(etapas([...ETAPA_ORDER]))).toBeUndefined()
   })
 
+  it('después de los cuadros vienen el naming y los copies; un naming que no aplica se salta', () => {
+    const hastaCuadros = ETAPA_ORDER.filter(k => k !== 'naming' && k !== 'copies')
+    expect(queSigueEstrategia(etapas(hastaCuadros))).toEqual({ key: 'naming', turno: 'claude' })
+    const sinNaming = etapas(hastaCuadros).map(e => (e.key === 'naming' ? { ...e, status: 'no_aplica' } : e))
+    expect(queSigueEstrategia(sinNaming)).toEqual({ key: 'copies', turno: 'claude' })
+    expect(queSigueEstrategiaParaClaude({ key: 'naming', turno: 'claude' }, 0)).toMatch(/no aplica/)
+    expect(queSigueEstrategiaParaClaude({ key: 'copies', turno: 'claude' }, 0)).toMatch(/tabla de entregables/)
+  })
+
   it('a Claude le dice qué etapa trabajar y dónde guardarla', () => {
     const texto = queSigueEstrategiaParaClaude({ key: 'rtbs', turno: 'claude' }, 11)
     expect(texto).toContain('guardar_etapa, fase "estrategia", etapa "rtbs"')

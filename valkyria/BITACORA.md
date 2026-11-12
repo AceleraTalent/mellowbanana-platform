@@ -2,6 +2,24 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-11-12 — Los checklists del estudio, punto por punto
+
+- **Pedido:** el usuario pegó el checklist de investigación y el listado de entregables de la Fase 3
+  y pidió implementarlos. Mapa completo en `specs/2026-11-12-checklists-landscape-estrategia-design.md`.
+- **Estrategia, de 14 a 18 etapas:** nuevas `objetivo`, `onlyness`, `naming` y `copies` (bloque
+  "Naming y copies"; el Naming se puede marcar como que no aplica desde su sección). El Diagnóstico
+  pide "hacia dónde vamos"; el Consumidor, perfil, motivaciones, tensiones y cómo pertenece al grupo.
+  Sin migración: lo ya guardado se sigue leyendo.
+- **Landscape:** el contexto del sector tiene siete bloques; Claude marca cada sección y tanto el
+  conector como el panel dicen cuáles faltan (aviso, no bloqueo). El benchmarking cierra con
+  patrones y oportunidades.
+- **Verificado:** 692 pruebas, tipos sin errores, y las pantallas nuevas vistas en una copia
+  desechable de la demo local con contenido de muestra (la demo real no se tocó).
+- **Queda:** no está desplegado ni en `main` (rama `mejora/paso-a-paso`). claude.ai guarda la lista
+  de herramientas: después del deploy hay que reconectar el conector para que lea la descripción
+  nueva de `guardar_etapa`. El comparador de versiones muestra las etapas nuevas con el render
+  genérico, como todas. El plan de mission-control sigue sin existir: no se marcó nada ahí.
+
 ## 2026-10-22 — El tablero se maneja desde Claude
 
 - **Diagnóstico del conector:** el servidor publicaba bien `actualizar_cliente` (prueba nueva que
