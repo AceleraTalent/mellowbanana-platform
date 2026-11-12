@@ -71,7 +71,8 @@ export const ETAPA_LABEL: Record<EstrategiaKey, string> = {
   tagline: 'Tagline / CCI',
   manifiesto: 'Manifiesto',
   cuadros: 'Cuadros finales',
-  naming: 'Naming',
+  // Como en el listado del estudio. “Naming” a secas ya es la fase 4 del menú.
+  naming: 'Propuesta de naming',
   copies: 'Entregables y copies',
 }
 
