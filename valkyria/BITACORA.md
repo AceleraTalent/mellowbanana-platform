@@ -15,10 +15,14 @@ Entradas nuevas arriba. Formato: ver CONVENCION.md.
   patrones y oportunidades.
 - **Verificado:** 692 pruebas, tipos sin errores, y las pantallas nuevas vistas en una copia
   desechable de la demo local con contenido de muestra (la demo real no se tocó).
-- **Queda:** no está desplegado ni en `main` (rama `mejora/paso-a-paso`). claude.ai guarda la lista
-  de herramientas: después del deploy hay que reconectar el conector para que lea la descripción
-  nueva de `guardar_etapa`. El comparador de versiones muestra las etapas nuevas con el render
-  genérico, como todas. El plan de mission-control sigue sin existir: no se marcó nada ahí.
+- **En producción:** subido a `main` y desplegado en Vercel (`forms-melo-banana`); el conector ya
+  responde con las 18 etapas. La etapa quedó como "Propuesta de naming": "Naming" a secas ya es la
+  fase 4 del menú y aparecía dos veces.
+- **Queda:** claude.ai guarda la lista de herramientas: hay que refrescar el conector desde
+  claude.ai para que lea la descripción nueva de `guardar_etapa`. Ningún chat real ha guardado
+  todavía un naming ni un contexto con bloques. El comparador de versiones muestra las etapas
+  nuevas con el render genérico, como todas. El plan de mission-control sigue sin existir: no se
+  marcó nada ahí.
 
 ## 2026-10-22 — El tablero se maneja desde Claude
 
