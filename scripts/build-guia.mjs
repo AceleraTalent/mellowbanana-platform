@@ -28,3 +28,10 @@ writeFileSync(join(out, 'standalone.html'),
   h.slice(0, i) + '</head>\n<body>\n' + h.slice(i) + '</body>\n</html>\n')
 
 console.log(`guía compilada en ${out} (${(h.length / 1024).toFixed(0)} KB)`)
+
+// Las novedades de cada actualización: una página corta aparte, misma tipografía.
+const nov = readFileSync(join(raiz, 'docs/guia-equipo/novedades-2026-11-src.html'), 'utf8')
+  .replace('__FAVORIT_B64__', b64('ABCFavorit-Bold.otf'))
+  .replace('__MONO_B64__', b64('ABCFavoritMono-Book.otf'))
+writeFileSync(join(out, 'novedades-2026-11.html'), nov)
+

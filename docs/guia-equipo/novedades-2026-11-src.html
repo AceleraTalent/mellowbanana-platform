@@ -1,0 +1,187 @@
+<title>Novedades de noviembre M&B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: una sola columna de lectura, con el mismo lenguaje de la guía del equipo.
+     Arriba, en amarillo, lo único que hay que hacer; abajo, qué cambió, etapa por etapa.
+     Un solo tema, claro: blanco, tinta, el amarillo del estudio y un gris cálido. */
+  @font-face { font-family: 'ABC Favorit'; font-weight: 700; src: url(data:font/otf;base64,__FAVORIT_B64__) format('opentype'); font-display: swap }
+  @font-face { font-family: 'ABC Favorit Mono'; font-weight: 400; src: url(data:font/otf;base64,__MONO_B64__) format('opentype'); font-display: swap }
+
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --ink: #15120C;
+    --cuerpo: #2C281F;
+    --secundario: #6B6657;
+    --rotulo: #8E8878;
+    --line: #E8E5DC;
+    --superficie: #F4F2EB;
+    --banana: #fcf251;
+    --display: 'ABC Favorit', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'ABC Favorit Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px;
+  }
+
+  * { box-sizing: border-box }
+  body { margin: 0; background: var(--bg); color: var(--cuerpo); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; font-synthesis-weight: none }
+  h1, h2, h3 { margin: 0; color: var(--ink); font-family: var(--display); font-weight: 700; letter-spacing: -0.015em; text-wrap: balance }
+  h1 { font-size: clamp(36px, 6vw, 54px); line-height: 1 }
+  h2 { font-size: clamp(28px, 4vw, 36px); line-height: 1.05 }
+  h3 { font-size: 20px; line-height: 1.2 }
+  p, ul, ol { margin: 0 }
+  a { color: var(--ink); text-underline-offset: 3px }
+  a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+  strong { font-weight: 600; color: var(--ink) }
+  .rotulo { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--rotulo); line-height: 1.4 }
+
+  .pagina { max-width: 760px; margin: 0 auto; padding-block: var(--s7) var(--s8); padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); display: grid; gap: var(--s8) }
+  .pagina > * { min-width: 0 }
+
+  .portada { display: grid; gap: var(--s5) }
+  .portada .bajada { font-size: 18px; line-height: 1.5; color: var(--secundario); max-width: 56ch }
+
+  .antes { background: var(--banana); color: var(--ink); border-radius: 14px; padding: var(--s5); display: grid; gap: var(--s4) }
+  .antes .rotulo { color: rgba(21,18,12,.6) }
+  .antes ol { list-style: none; padding: 0; display: grid; gap: var(--s4); counter-reset: paso }
+  .antes li { counter-increment: paso; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: var(--s3); align-items: start }
+  .antes li::before { content: counter(paso); font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.2 }
+  .antes li p:first-child { font-weight: 600; font-size: 17px; line-height: 1.35 }
+  .antes li p + p { font-size: 15px; color: rgba(21,18,12,.78) }
+
+  section { display: grid; gap: var(--s5) }
+  section > header { display: grid; gap: var(--s2); padding-bottom: var(--s4); border-bottom: 1.5px solid var(--ink) }
+  .lead { color: var(--secundario); max-width: 60ch }
+
+  .bloque { display: grid; gap: var(--s3) }
+  .bloque + .bloque { padding-top: var(--s5); border-top: 1px solid var(--line) }
+  .etapas { list-style: none; padding: 0; display: grid; gap: 0 }
+  .etapas li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2) var(--s4); align-items: baseline; padding-block: 10px; border-bottom: 1px solid var(--line) }
+  .etapas li:last-child { border-bottom: 0 }
+  .etapas .nom { color: var(--ink); font-weight: 500 }
+  .etapas .que { grid-column: 1 / -1; font-size: 14.5px; color: var(--secundario) }
+  .chip { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; line-height: 1; padding: 5px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent }
+  .chip.nueva { background: var(--banana); color: var(--ink) }
+  .chip.cambio { background: var(--bg); color: var(--ink); border-color: var(--ink) }
+
+  .siete { list-style: none; padding: 0; counter-reset: b; display: grid; gap: 0 var(--s6); grid-template-columns: 1fr }
+  .siete li { counter-increment: b; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: var(--s2); padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--ink) }
+  .siete li::before { content: counter(b); font-family: var(--mono); font-size: 12px; color: var(--rotulo); padding-top: 3px }
+  .siete li span { color: var(--secundario); font-size: 14.5px }
+
+  .puntos { padding-left: 1.1em; display: grid; gap: var(--s3) }
+  .puntos li::marker { color: var(--rotulo) }
+
+  .cierre { background: var(--superficie); border-radius: 14px; padding: var(--s5); display: grid; gap: var(--s2) }
+</style>
+
+<main class="pagina">
+  <header class="portada">
+    <p class="rotulo">Actualización · noviembre de 2026</p>
+    <h1>Qué cambió en la plataforma</h1>
+    <p class="bajada">Metimos el checklist de investigación y el listado de entregables de la Fase 3. Lo que ya tenían guardado sigue igual: nada se borró ni se movió.</p>
+
+    <div class="antes">
+      <p class="rotulo">Antes de seguir · una sola vez</p>
+      <ol>
+        <li><div><p>Reconecta el conector Mellow Banana.</p><p>En claude.ai: Configuración → Conectores → Mellow Banana. Desconéctalo y vuelve a conectarlo con la contraseña del panel. Sin esto Claude no ve las etapas nuevas.</p></div></li>
+        <li><div><p>Vuelve a pegar las instrucciones en cada proyecto de marca.</p><p>Las que tienes pegadas hablan de 14 etapas. Las nuevas están en la <a href="https://claude.ai/artifact/GbSzyu2VggSB6BR7JKiK1c#conectar">sección 1 de la guía</a>: botón Copiar, y reemplazas las del proyecto en claude.ai.</p></div></li>
+      </ol>
+    </div>
+  </header>
+
+  <section>
+    <header>
+      <p class="rotulo">Fase 3</p>
+      <h2>Estrategia: de 14 a 18 etapas</h2>
+    </header>
+    <p class="lead">Cuatro etapas nuevas y dos que ahora piden más. En los proyectos que ya iban andando, “Lo que sigue” va a apuntar a Objetivo de marca, porque es la primera etapa nueva sin escribir.</p>
+
+    <div class="bloque">
+      <h3>Diagnóstico y consumidor</h3>
+      <ul class="etapas">
+        <li><span class="nom">Diagnóstico</span><span class="chip cambio">Cambió</span><span class="que">Ahora cierra con “Hacia dónde vamos”. Los atributos diferenciales se quedan aquí.</span></li>
+        <li><span class="nom">Consumidor</span><span class="chip cambio">Cambió</span><span class="que">Ahora pide perfil, motivaciones y necesidades, tensiones y barreras, y cómo pertenece al grupo. La metodología y las frases siguen.</span></li>
+      </ul>
+    </div>
+
+    <div class="bloque">
+      <h3>Esencia de marca</h3>
+      <ul class="etapas">
+        <li><span class="nom">Objetivo de marca</span><span class="chip nueva">Nueva</span></li>
+        <li><span class="nom">Onlyness</span><span class="chip nueva">Nueva</span></li>
+        <li><span class="nom">RTBs, Concepto estratégico, Beneficios, Arquetipo, Personalidad, Valores, Territorio, Brand ideal, Brand ingredients, Tagline y Manifiesto</span><span class="que">Igual que antes.</span></li>
+      </ul>
+    </div>
+
+    <div class="bloque">
+      <h3>Narrativa y presentación</h3>
+      <ul class="etapas">
+        <li><span class="nom">Cuadros finales</span><span class="que">Igual que antes: se arman con lo aprobado.</span></li>
+      </ul>
+    </div>
+
+    <div class="bloque">
+      <h3>Naming y copies</h3>
+      <ul class="etapas">
+        <li><span class="nom">Propuesta de naming</span><span class="chip nueva">Nueva</span><span class="que">Solo si el proyecto lleva naming. Si no, abre la etapa en el panel y dale “Marcar que no aplica”: la estrategia pasa a contar 17 etapas. Se puede deshacer.</span></li>
+        <li><span class="nom">Entregables y copies</span><span class="chip nueva">Nueva</span><span class="que">La tabla de entregables del proyecto, con las especificaciones y los copies de cada uno.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <p class="rotulo">Fase 2</p>
+      <h2>Landscape</h2>
+    </header>
+
+    <div class="bloque">
+      <h3>El contexto del sector va en siete bloques</h3>
+      <ol class="siete">
+        <li><div>Cifras del sector<br><span>Global y Colombia: tamaño, crecimiento, jugadores clave</span></div></li>
+        <li><div>Drivers de cambio</div></li>
+        <li><div>Cambios del consumidor</div></li>
+        <li><div>Retos</div></li>
+        <li><div>Oportunidades del sector</div></li>
+        <li><div>Oportunidad de marca</div></li>
+        <li><div>Qué buscan los clientes del segmento<br><span>Como conclusión</span></div></li>
+      </ol>
+      <p>Si a un borrador le falta alguno, el panel lo dice arriba del texto: “Falta del checklist de investigación”. Es un aviso, igual deja aprobar. Los contextos que ya estaban aprobados no lo muestran.</p>
+    </div>
+
+    <div class="bloque">
+      <h3>El benchmarking cierra con patrones y oportunidades</h3>
+      <p>Después de los competidores y referentes, el Panorama de categoría trae una síntesis: qué se repite en la categoría y dónde hay espacio.</p>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <p class="rotulo">Al aprobar</p>
+      <h2>Qué mirar con cuidado</h2>
+    </header>
+    <ul class="puntos">
+      <li>Que las cifras traigan <strong>lo global y lo de Colombia</strong>. La plataforma comprueba que el bloque de cifras exista, no que tenga las dos.</li>
+      <li>Si Claude dice que <strong>no conoce una etapa</strong> o guarda algo con forma rara, falta alguno de los dos pasos de arriba.</li>
+      <li>Si la Estrategia dice <strong>“de 17”</strong> y el proyecto sí lleva naming, alguien marcó la Propuesta de naming como que no aplica. Se reactiva desde la misma etapa.</li>
+    </ul>
+  </section>
+
+  <section>
+    <header>
+      <p class="rotulo">Sin cambios</p>
+      <h2>Lo que sigue igual</h2>
+    </header>
+    <ul class="puntos">
+      <li>La forma de trabajar: le pides la etapa a Claude, Claude guarda el borrador y tú lo apruebas en el panel.</li>
+      <li>El tablero y sus fases.</li>
+      <li>Todo lo que ya estaba escrito o aprobado en cada proyecto.</li>
+    </ul>
+    <div class="cierre">
+      <p class="rotulo">Para el paso a paso</p>
+      <p>La <a href="https://claude.ai/artifact/GbSzyu2VggSB6BR7JKiK1c">guía del equipo</a> ya está al día, con los mensajes para copiar de cada etapa (secciones 6 y 7).</p>
+    </div>
+  </section>
+</main>
