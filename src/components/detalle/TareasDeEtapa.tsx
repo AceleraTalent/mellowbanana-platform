@@ -22,7 +22,7 @@ function Marca({ tarea }: { tarea: Tarea }) {
         <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
       </span>
     )
-  if (tarea.porRevisar) return <span className="block h-[22px] w-[22px] rounded-full border-2 border-[#f59e0b] bg-[#fef3c7]" />
+  if (tarea.porRevisar) return <span className="block h-[22px] w-[22px] rounded-full border-2 border-[var(--ink)] bg-[var(--banana)]" />
   return <span className="block h-[22px] w-[22px] rounded-full border-2 border-[var(--apagado)] bg-white" />
 }
 
@@ -192,7 +192,7 @@ export function TareasDeEtapa({ projectId, fase, nombreFase, tareas, encargados 
                 )}
                 <span className="min-w-0 flex-1 text-[14.5px] leading-[1.4]">
                   {t.href ? <Link href={t.href} className="hover:text-[var(--primario)] [&>span]:hover:text-[var(--primario)]">{titulo}</Link> : titulo}
-                  {t.porRevisar && !hecha && <span className="ml-2 inline-flex rounded-full bg-[#fef3c7] px-2 py-px text-[11.5px] font-semibold text-[#92400e]">Por revisar</span>}
+                  {t.porRevisar && !hecha && <span className="ml-2 inline-flex rounded-full bg-[var(--banana)] px-2 py-px text-[11.5px] font-semibold text-[var(--ink)]">Por revisar</span>}
                 </span>
                 <button type="button" onClick={() => setAsignando(t.id)} aria-label={`Asignar ${t.titulo}`}
                   className="-my-1 flex flex-none items-center gap-3 rounded-[10px] px-2 py-1.5 text-[13.5px] transition-colors hover:bg-[var(--superficie)]">

@@ -165,7 +165,7 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
                     className="group flex flex-col items-center rounded-[14px] px-2 pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primario)]">
                     <span className={`grid h-14 w-14 place-items-center rounded-full transition-transform group-hover:scale-105 ${
                       hecha ? 'bg-[var(--listo)] text-white'
-                        : enEsta ? 'bg-[var(--f)] text-white ring-[6px] ring-[var(--f-suave)]'
+                        : enEsta ? 'bg-[var(--banana)] text-[var(--ink)] ring-[6px] ring-[var(--aprobado)]'
                         : 'border border-[var(--line)] bg-[var(--superficie)] text-[var(--rotulo)]'
                     } ${tab === 'etapas' && etapa === f.key ? 'outline outline-2 outline-offset-[7px] outline-[var(--primario)]' : ''}`}>
                       {hecha ? (
@@ -233,14 +233,14 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
                       {entregables[etapa]!.map(e => (
                         <li key={e.href}>
                           <Link href={e.href} className="flex items-center gap-3 rounded-[12px] border border-[var(--line)] p-3 transition-colors hover:border-[var(--apagado)] hover:bg-[var(--superficie)]/60">
-                            <span className={`grid h-9 w-9 flex-none place-items-center rounded-[10px] ${e.listo ? 'bg-[#d1fae5] text-[#047857]' : 'bg-[var(--superficie)] text-[var(--rotulo)]'}`}>
+                            <span className={`grid h-9 w-9 flex-none place-items-center rounded-[10px] ${e.listo ? 'bg-[var(--aprobado)] text-[var(--ink)]' : 'bg-[var(--superficie)] text-[var(--rotulo)]'}`}>
                               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h5" /></svg>
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-[14.5px] font-semibold leading-snug text-[var(--ink)]">{e.titulo}</span>
                               <span className="block text-[12.5px] text-[var(--secundario)]">{e.detalle}</span>
                             </span>
-                            <span className={`flex-none rounded-full px-2.5 py-[2px] text-[12px] font-semibold ${e.listo ? 'bg-[#d1fae5] text-[#047857]' : 'bg-[var(--superficie)] text-[var(--secundario)]'}`}>{e.listo ? 'Listo' : 'En curso'}</span>
+                            <span className={`flex-none rounded-full px-2.5 py-[2px] text-[12px] font-semibold ${e.listo ? 'bg-[var(--aprobado)] text-[var(--ink)]' : 'bg-[var(--superficie)] text-[var(--secundario)]'}`}>{e.listo ? 'Listo' : 'En curso'}</span>
                           </Link>
                         </li>
                       ))}
@@ -262,12 +262,12 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
                 <Estadistica rotulo="Avance general" valor={`${terminado ? 100 : fila.avance}%`} pie="Del recorrido completo" tono="bg-[var(--primario-suave)] text-[var(--primario)]" icono={<path d="M5 12.5l4.5 4.5L19 7" />} />
                 {entrega ? (
                   <Estadistica rotulo={diasHasta(entrega) < 0 ? 'Días de retraso' : 'Días para entrega'} valor={String(Math.abs(diasHasta(entrega)))} unidad="días" pie={`${fechaLarga(entrega)} · ${cuandoVence(entrega).texto}`}
-                    tono={diasHasta(entrega) < 0 && !terminado ? 'bg-[#ffe4e6] text-[#be123c]' : 'bg-[#fef3c7] text-[#b45309]'} icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} />
+                    tono={diasHasta(entrega) < 0 && !terminado ? 'bg-[var(--ink)] text-white' : 'bg-[var(--aprobado)] text-[var(--ink)]'} icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} />
                 ) : (
-                  <Estadistica rotulo="Días para entrega" valor="—" pie="Sin fecha de entrega. Se pone en “Editar cliente”." tono="bg-[#fef3c7] text-[#b45309]" icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} />
+                  <Estadistica rotulo="Días para entrega" valor="—" pie="Sin fecha de entrega. Se pone en “Editar cliente”." tono="bg-[var(--aprobado)] text-[var(--ink)]" icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} />
                 )}
-                <Estadistica rotulo="Tareas" valor={String(todas.filter(t => t.hecha).length)} unidad={`de ${todas.length}`} pie="Hechas, entre las cinco etapas" tono="bg-[#d1fae5] text-[#047857]" icono={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />
-                <Estadistica rotulo="Etapa actual" valor={terminado ? 'Terminado' : faseDeFila.label} pie={terminado ? 'Proyecto entregado' : faseDeFila.detalle} tono="bg-[#ede9fe] text-[#6d28d9]" icono={<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>} />
+                <Estadistica rotulo="Tareas" valor={String(todas.filter(t => t.hecha).length)} unidad={`de ${todas.length}`} pie="Hechas, entre las cinco etapas" tono="bg-[var(--aprobado)] text-[var(--ink)]" icono={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />
+                <Estadistica rotulo="Etapa actual" valor={terminado ? 'Terminado' : faseDeFila.label} pie={terminado ? 'Proyecto entregado' : faseDeFila.detalle} tono="bg-[var(--aprobado)] text-[var(--ink)]" icono={<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>} />
               </div>
 
               <section className="tarjeta p-5 sm:p-6">

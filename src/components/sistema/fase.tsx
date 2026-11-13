@@ -3,7 +3,7 @@ import type { FaseSistema } from '@/lib/seguimiento/sistema'
 /**
  * Cómo se ve cada fase del proceso: su color (definido en globals.css, `.fase-…`) y su
  * ícono. Lo usan el Pipeline, la línea de tiempo y el detalle del proyecto, para que
- * “Landscape” sea siempre el mismo azul con la misma brújula.
+ * “Landscape” se reconozca siempre por la misma brújula.
  */
 export type FaseVisual = FaseSistema | 'terminado'
 
@@ -68,9 +68,9 @@ export function ChipFase({ fase, children }: { fase: FaseVisual; children: React
   )
 }
 
+// Tonos de la marca: papel, amarillo y tinta. Nada de colores ajenos al estudio.
 const TONOS = [
-  ['#eef2ff', '#4338ca'], ['#e0f2fe', '#0369a1'], ['#d1fae5', '#047857'],
-  ['#fef3c7', '#b45309'], ['#ede9fe', '#6d28d9'], ['#ffe4e6', '#be123c'], ['#ccfbf1', '#0f766e'],
+  ['#FEFBCE', '#15120C'], ['#ECE8DD', '#15120C'], ['#fcf251', '#15120C'], ['#EFECE4', '#2C281F'], ['#15120C', '#ffffff'],
 ]
 
 /** Un tono fijo por nombre: la misma persona o el mismo cliente salen siempre del mismo color. */

@@ -25,7 +25,7 @@ function Campana({ nuevos }: { nuevos: number }) {
         <path d="M10 20a2 2 0 0 0 4 0" />
       </svg>
       {nuevos > 0 && (
-        <span aria-hidden="true" className="absolute right-0 top-0 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#f43f5e] px-1 text-[10.5px] font-bold tabular-nums text-white ring-2 ring-white">
+        <span aria-hidden="true" className="absolute right-0 top-0 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--banana)] px-1 text-[10.5px] font-bold tabular-nums text-[var(--ink)] ring-2 ring-white">
           {nuevos}
         </span>
       )}
@@ -78,7 +78,7 @@ function Enlace({ href, icono, activo, cuenta, children }: { href: string; icono
   return (
     <Link href={href} aria-current={activo ? 'page' : undefined}
       className={`relative flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14.5px] transition-colors ${
-        activo ? 'bg-[var(--primario-suave)] font-semibold text-[var(--primario)]' : 'text-[var(--cuerpo)] hover:bg-[var(--superficie)] hover:text-[var(--ink)]'
+        activo ? 'bg-[var(--banana)] font-semibold text-[var(--ink)]' : 'text-[var(--cuerpo)] hover:bg-[var(--superficie)] hover:text-[var(--ink)]'
       }`}>
       {activo && <span aria-hidden="true" className="absolute -left-4 top-2 h-[calc(100%-16px)] w-[4px] rounded-r-full bg-[var(--primario)]" />}
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={activo ? '' : 'text-[var(--rotulo)]'}>{ICONO[icono]}</svg>
@@ -133,7 +133,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, ch
 
   const marca = (
     <Link href="/admin" className="flex items-center gap-3">
-      <span aria-hidden="true" className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--primario)] text-[15px] font-extrabold tracking-[-.02em] text-white">M</span>
+      <span aria-hidden="true" className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--banana)] text-[15px] font-extrabold tracking-[-.02em] text-[var(--ink)]">M</span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[15.5px] font-bold tracking-[-.01em] text-[var(--ink)]">Mellow &amp; Banana</span>
         <span className="block truncate text-[12.5px] text-[var(--secundario)]">Sistema M&amp;B</span>

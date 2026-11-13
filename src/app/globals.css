@@ -18,60 +18,37 @@
   --error: #B3261E;      /* lo que falló al guardar o aprobar, al lado de la acción */
 }
 
-/* El panel interno (todo lo que va dentro de AdminShell) tiene su propio lenguaje: fondo
-   gris azulado, tarjetas blancas redondeadas, azul índigo como color de acción y un color
-   por fase del proceso. Los nombres de las variables son los de siempre, con otros
-   valores, así las pantallas de trabajo (Landscape, Estrategia) lo toman sin reescribirse.
-   Lo que ve el cliente —la entrevista y los documentos— queda fuera y conserva la marca. */
+/* El panel interno (todo lo que va dentro de AdminShell) usa la marca del estudio: papel
+   de fondo, tarjetas blancas, tinta para la acción y el amarillo banana como resaltado.
+   La forma (barra lateral, Pipeline, detalle con recorrido de etapas) es la que pidió
+   el estudio; el color y la tipografía son los de Mellow & Banana. */
 :root {
-  --primario: var(--ink);      /* el color de los botones de acción */
+  --primario: var(--ink);          /* botones de acción */
   --primario-suave: var(--aprobado);
+  --listo: var(--ink);             /* lo terminado: tinta con el visto en blanco */
 }
-.panel {
-  --papel: hsl(220 23% 97.5%);
-  --papel-hondo: hsl(220 16% 93%);
-  --superficie: hsl(220 16% 96%);
-  --ink: hsl(222 28% 12%);
-  --cuerpo: hsl(222 18% 24%);
-  --secundario: hsl(220 9% 40%);
-  --rotulo: hsl(220 9% 46%);
-  --apagado: hsl(220 12% 76%);
-  --line: hsl(220 14% 91%);
-  --banana: hsl(232 88% 92%);       /* el resaltado: índigo suave con texto oscuro encima */
-  --aprobado: hsl(152 62% 93%);     /* lo aprobado, en verde suave */
-  --primario: hsl(232 60% 45%);
-  --primario-suave: hsl(232 70% 96%);
-  --error: hsl(0 72% 45%);
-  --listo: #059669;
-  --font-geist: var(--font-jakarta);
-  --font-rotulo: var(--font-jakarta);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
-  color: var(--cuerpo);
-}
-.panel .font-serif { letter-spacing: -0.02em; }
-.panel .underline-banana { box-shadow: none; }
+.panel { color: var(--cuerpo); }
 /* La tarjeta del panel: blanca, borde fino, esquinas amplias y una sombra apenas visible. */
 .tarjeta {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 16px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  box-shadow: 0 1px 2px rgba(21, 18, 12, 0.04);
 }
 /* El rótulo chico en mayúsculas: “VALOR DEL PROYECTO”, “TAREAS”. */
 .rotulo {
+  font-family: var(--font-rotulo), ui-monospace, monospace;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--rotulo);
 }
-/* Un color por fase. Cada uno trae su fondo suave y su texto, para chips e íconos. */
-.fase-taller     { --f: #6366f1; --f-suave: #eef2ff; --f-texto: #4338ca; }
-.fase-landscape  { --f: #0ea5e9; --f-suave: #e0f2fe; --f-texto: #0369a1; }
-.fase-estrategia { --f: #10b981; --f-suave: #d1fae5; --f-texto: #047857; }
-.fase-naming     { --f: #f59e0b; --f-suave: #fef3c7; --f-texto: #b45309; }
-.fase-diseno     { --f: #8b5cf6; --f-suave: #ede9fe; --f-texto: #6d28d9; }
-.fase-terminado  { --f: #f43f5e; --f-suave: #ffe4e6; --f-texto: #be123c; }
+/* Las fases comparten la marca: tinta para lo que avanza, amarillo para lo que resalta.
+   Se distinguen por su ícono y su número, no por un color propio. */
+.fase-taller, .fase-landscape, .fase-estrategia, .fase-naming, .fase-diseno, .fase-terminado {
+  --f: var(--ink); --f-suave: var(--aprobado); --f-texto: var(--ink);
+}
 
 @theme inline {
   --font-sans: var(--font-geist);

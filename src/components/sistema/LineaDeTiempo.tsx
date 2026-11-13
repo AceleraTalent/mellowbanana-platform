@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FASES, FASE_LABEL } from '@/lib/seguimiento/sistema'
+import { FASE_LABEL } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { fechaCorta } from './cliente'
 import { Avatar, FASE_CLASE } from './fase'
@@ -43,12 +43,10 @@ export function LineaDeTiempo({ filas, hoy }: { filas: FilaSistema[]; hoy: Date 
   return (
     <div className="tarjeta overflow-hidden">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[var(--line)] px-5 py-4 text-[13px] font-medium text-[var(--cuerpo)] sm:px-6">
-        {FASES.map(f => (
-          <span key={f} className={`${FASE_CLASE[f]} flex items-center gap-2`}>
-            <span aria-hidden="true" className="h-[9px] w-[9px] rounded-full bg-[var(--f)]" />{FASE_LABEL[f]}
-          </span>
-        ))}
-        <span className="ml-auto flex items-center gap-2 text-[#e11d48]"><span aria-hidden="true" className="h-[14px] w-[2px] rounded-full bg-[#f43f5e]" />Hoy</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-[9px] w-[22px] rounded-full bg-[var(--ink)]" />Etapas recorridas</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-[9px] w-[22px] rounded-full bg-[var(--aprobado)] ring-1 ring-inset ring-[var(--line)]" />Por recorrer</span>
+        <span className="flex items-center gap-2"><span aria-hidden="true" className="h-[9px] w-[9px] rotate-45 rounded-[2px] bg-[var(--ink)]" />Sólo fecha de entrega</span>
+        <span className="ml-auto flex items-center gap-2 text-[var(--error)]"><span aria-hidden="true" className="h-[14px] w-[2px] rounded-full bg-[var(--error)]" />Hoy</span>
       </div>
 
       <div className="overflow-x-auto">
@@ -105,7 +103,7 @@ export function LineaDeTiempo({ filas, hoy }: { filas: FilaSistema[]; hoy: Date 
               )
             })}
             <li aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-[236px] right-0">
-              <span className="absolute inset-y-0 w-[2px] bg-[#f43f5e]" style={{ left: `${pos(hoyMs)}%` }} />
+              <span className="absolute inset-y-0 w-[2px] bg-[var(--error)]" style={{ left: `${pos(hoyMs)}%` }} />
             </li>
           </ul>
         </div>
