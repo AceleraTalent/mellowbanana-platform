@@ -46,7 +46,6 @@ describe('TableroSistema · un carril por fase', () => {
     expect(screen.getAllByRole('region').map(r => r.getAttribute('aria-label')))
       .toEqual(['Taller', 'Landscape', 'Estrategia', 'Naming', 'Diseño', 'Terminado'])
     expect(carril('Diseño').getByText('Piezas nuevas')).toBeTruthy()
-    expect(carril('Diseño').getByText('1 en curso, 1 sin empezar')).toBeTruthy()
     expect(carril('Taller').getByText('Grupo Heroica')).toBeTruthy()
     expect(carril('Estrategia').getByText('Nadie en Estrategia')).toBeTruthy()
   })

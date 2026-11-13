@@ -49,10 +49,20 @@ export function IconoFase({ fase, size = 18 }: { fase: FaseVisual; size?: number
   )
 }
 
+/** Cómo se pinta cada fase: su cuadro, su chip, su punto y su barra. Clases enteras, para que Tailwind las vea. */
+export const FASE_ESTILO: Record<FaseVisual, { sello: string; chip: string; punto: string; barra: string; suave: string }> = {
+  taller:     { sello: 'bg-indigo-50 text-indigo-700',   chip: 'bg-indigo-50 text-indigo-700 ring-indigo-600/15',    punto: 'bg-indigo-500',  barra: 'bg-indigo-600',  suave: 'bg-indigo-50' },
+  landscape:  { sello: 'bg-sky-50 text-sky-700',         chip: 'bg-sky-50 text-sky-700 ring-sky-600/15',             punto: 'bg-sky-500',     barra: 'bg-sky-500',     suave: 'bg-sky-50' },
+  estrategia: { sello: 'bg-emerald-50 text-emerald-700', chip: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15', punto: 'bg-emerald-500', barra: 'bg-emerald-500', suave: 'bg-emerald-50' },
+  naming:     { sello: 'bg-amber-50 text-amber-700',     chip: 'bg-amber-50 text-amber-700 ring-amber-600/15',       punto: 'bg-amber-500',   barra: 'bg-amber-500',   suave: 'bg-amber-50' },
+  diseno:     { sello: 'bg-violet-50 text-violet-700',   chip: 'bg-violet-50 text-violet-700 ring-violet-600/15',    punto: 'bg-violet-500',  barra: 'bg-violet-500',  suave: 'bg-violet-50' },
+  terminado:  { sello: 'bg-rose-50 text-rose-700',       chip: 'bg-rose-50 text-rose-700 ring-rose-600/15',          punto: 'bg-rose-500',    barra: 'bg-rose-500',    suave: 'bg-rose-50' },
+}
+
 /** El ícono de la fase en su cuadro de color suave. */
-export function SelloFase({ fase, size = 36 }: { fase: FaseVisual; size?: number }) {
+export function SelloFase({ fase, size = 32 }: { fase: FaseVisual; size?: number }) {
   return (
-    <span className={`${FASE_CLASE[fase]} grid flex-none place-items-center rounded-[10px] bg-[var(--f-suave)] text-[var(--f-texto)]`} style={{ width: size, height: size }}>
+    <span className={`flex flex-none items-center justify-center rounded-lg ${FASE_ESTILO[fase].sello}`} style={{ width: size, height: size }}>
       <IconoFase fase={fase} size={Math.round(size * 0.5)} />
     </span>
   )
@@ -61,24 +71,41 @@ export function SelloFase({ fase, size = 36 }: { fase: FaseVisual; size?: number
 /** La fase como chip: punto de color y nombre. */
 export function ChipFase({ fase, children }: { fase: FaseVisual; children: React.ReactNode }) {
   return (
-    <span className={`${FASE_CLASE[fase]} inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[color-mix(in_srgb,var(--f)_28%,transparent)] bg-[var(--f-suave)] px-2.5 py-[3px] text-[12.5px] font-semibold text-[var(--f-texto)]`}>
-      <span aria-hidden="true" className="h-[6px] w-[6px] rounded-full bg-[var(--f)]" />
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${FASE_ESTILO[fase].chip}`}>
+      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${FASE_ESTILO[fase].punto}`} />
       {children}
     </span>
   )
 }
 
-// Tonos de la marca: papel, amarillo y tinta. Nada de colores ajenos al estudio.
-const TONOS = [
-  ['#FEFBCE', '#15120C'], ['#ECE8DD', '#15120C'], ['#fcf251', '#15120C'], ['#EFECE4', '#2C281F'], ['#15120C', '#ffffff'],
-]
+/** Un chip de estado: punto y texto, en verde, ámbar, rojo o gris. */
+const TONO_ESTADO = {
+  bien: 'bg-emerald-50 text-emerald-700 ring-emerald-600/10',
+  ojo: 'bg-amber-50 text-amber-700 ring-amber-600/10',
+  mal: 'bg-rose-50 text-rose-700 ring-rose-600/10',
+  quieto: 'bg-slate-100 text-slate-600 ring-slate-500/10',
+  azul: 'bg-sky-50 text-sky-700 ring-sky-600/10',
+}
+export type TonoEstado = keyof typeof TONO_ESTADO
+export function ChipEstado({ tono, children }: { tono: TonoEstado; children: React.ReactNode }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${TONO_ESTADO[tono]}`}>
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+      {children}
+    </span>
+  )
+}
+
+// Los tonos de las iniciales: fuertes para los clientes, suaves para las personas.
+const TONOS_CLIENTE = ['bg-teal-100 text-teal-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-800', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700', 'bg-sky-100 text-sky-700', 'bg-indigo-100 text-indigo-700']
+const TONOS_PERSONA = ['bg-indigo-50 text-indigo-700', 'bg-emerald-50 text-emerald-700', 'bg-violet-50 text-violet-700', 'bg-rose-50 text-rose-700', 'bg-sky-50 text-sky-700', 'bg-amber-50 text-amber-700']
 
 /** Un tono fijo por nombre: la misma persona o el mismo cliente salen siempre del mismo color. */
-export function tonoDe(nombre: string): { fondo: string; texto: string } {
+export function tonoDe(nombre: string, cliente = false): string {
   let h = 0
   for (const c of nombre) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  const [fondo, texto] = TONOS[h % TONOS.length]
-  return { fondo, texto }
+  const tonos = cliente ? TONOS_CLIENTE : TONOS_PERSONA
+  return tonos[h % tonos.length]
 }
 
 export const inicialesDe = (nombre: string) =>
@@ -86,11 +113,10 @@ export const inicialesDe = (nombre: string) =>
 
 /** Las iniciales en un círculo (personas) o un cuadro redondeado (clientes). */
 export function Avatar({ nombre, size = 28, cuadrado, anillo }: { nombre: string; size?: number; cuadrado?: boolean; anillo?: boolean }) {
-  const t = tonoDe(nombre)
   return (
     <span aria-hidden="true"
-      className={`grid flex-none place-items-center font-bold ${cuadrado ? 'rounded-[10px]' : 'rounded-full'} ${anillo ? 'ring-2 ring-white' : ''}`}
-      style={{ width: size, height: size, background: t.fondo, color: t.texto, fontSize: Math.max(9.5, Math.round(size * 0.36)) }}>
+      className={`flex shrink-0 items-center justify-center font-bold ${tonoDe(nombre, cuadrado)} ${cuadrado ? (size >= 40 ? 'rounded-xl' : 'rounded-lg') : 'rounded-full'} ${anillo ? 'ring-2 ring-white' : ''}`}
+      style={{ width: size, height: size, fontSize: size >= 40 ? 12 : size >= 28 ? 11 : 9 }}>
       {inicialesDe(nombre)}
     </span>
   )
@@ -103,7 +129,7 @@ export function Avatares({ nombres, size = 26 }: { nombres: string[]; size?: num
     <span className="flex items-center" title={nombres.join(', ')}>
       <span className="sr-only">{nombres.join(', ')}</span>
       {nombres.slice(0, 3).map((n, i) => (
-        <span key={n} style={{ marginLeft: i ? -6 : 0 }}><Avatar nombre={n} size={size} anillo /></span>
+        <span key={n} style={{ marginLeft: i ? -6 : 0 }} className="flex"><Avatar nombre={n} size={size} anillo /></span>
       ))}
       {nombres.length > 3 && <span aria-hidden="true" className="ml-1.5 text-[12px] font-medium text-[var(--secundario)]">+{nombres.length - 3}</span>}
     </span>

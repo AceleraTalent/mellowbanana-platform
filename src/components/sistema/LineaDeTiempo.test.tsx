@@ -25,7 +25,7 @@ describe('LineaDeTiempo', () => {
     const barra = renglon('Arbo').getByTitle(/Arbo: del 1 sep al 15 dic/)
     expect(barra.children).toHaveLength(5)
     // Lo hecho y lo que está andando va en el color de la fase; lo que falta, apagado.
-    expect([...barra.children].map(c => c.className.includes('bg-[var(--f)]'))).toEqual([true, true, false, false, false])
+    expect([...barra.children].map(c => c.getAttribute('data-hecha'))).toEqual(['true', 'true', 'false', 'false', 'false'])
   })
 
   it('si la entrega es anterior al inicio muestra sólo el día de entrega, y lo explica', () => {

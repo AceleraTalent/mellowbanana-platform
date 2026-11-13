@@ -4,29 +4,28 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FASES, FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
-import { CHIP, MARCA } from '@/components/sistema/chips'
-import { guardar } from '@/components/sistema/TablaSistema'
+import { estadoDe, guardar } from '@/components/sistema/TablaSistema'
 import { EditorCliente } from '@/components/sistema/EditorCliente'
 import { cuandoVence, fechaLarga, personas, valorCorto } from '@/components/sistema/cliente'
-import { Avatar, Avatares, ChipFase } from '@/components/sistema/fase'
-import { BOTON_SECUNDARIO } from '@/components/paso/piezas'
+import { Avatar, Avatares, ChipEstado, ChipFase } from '@/components/sistema/fase'
 
 type Destino = FaseSistema | 'terminado'
 
 function Dato({ rotulo, icono, children }: { rotulo: string; icono: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="rotulo flex items-center gap-1.5">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icono}</svg>
-        {rotulo}
-      </p>
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5">{icono}</svg>
+        <p className={LABEL}>{rotulo}</p>
+      </div>
       <div className="mt-1.5">{children}</div>
     </div>
   )
 }
 
-const VACIO = 'text-[14.5px] text-[var(--rotulo)]'
-const VALOR = 'text-[15.5px] font-bold text-[var(--ink)]'
+const LABEL = 'text-[11px] font-semibold uppercase tracking-wider text-muted-foreground'
+const VACIO = 'text-sm text-muted-foreground'
+const VALOR = 'text-sm font-bold'
 
 /**
  * La cabecera del detalle de un proyecto: quién es, en qué fase va y los datos que el
@@ -60,62 +59,64 @@ export function CabeceraDetalle({ fila, encargados }: { fila: FilaSistema; encar
     }
   }
 
+  const estado = estadoDe(fila)
   return (
-    <section className="tarjeta p-5 sm:p-7">
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-4">
-        <Avatar nombre={fila.nombre} size={56} cuadrado />
-        <div className="min-w-0 flex-1 basis-[280px]">
-          <p className="rotulo">Detalle de proyecto</p>
-          <h1 className="mt-1 font-serif text-[30px] leading-[1.12] text-[var(--ink)]">{fila.nombre}</h1>
-          <p className="mt-1.5 text-[14.5px] text-[var(--secundario)]">
-            {s.porFuera ? 'Lleva su proceso fuera de la plataforma' : 'Hace su proceso en la plataforma'}
-            {fila.ultimo && <> · {fila.ultimo.texto} {fila.ultimo.cuando}</>}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <ChipFase fase={destino}>{terminado ? 'Terminado' : fase.label}</ChipFase>
-            {!terminado && (
-              <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[12.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
-            )}
-            {s.faseAMano && <span className="inline-flex rounded-full border border-[var(--line)] px-2.5 py-[2px] text-[12.5px] text-[var(--secundario)]">Fase puesta a mano</span>}
+    <section className="rounded-2xl border border-border/70 bg-card p-6 text-card-foreground shadow-soft">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-4">
+          <Avatar nombre={fila.nombre} size={48} cuadrado />
+          <div className="min-w-0">
+            <p className={LABEL}>Detalle de proyecto</p>
+            <h1 className="mt-0.5 text-[24px] font-extrabold leading-tight tracking-tight">{fila.nombre}</h1>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              {s.porFuera ? 'Lleva su proceso fuera de la plataforma' : 'Hace su proceso en la plataforma'}
+              {fila.ultimo && <> · {fila.ultimo.texto} {fila.ultimo.cuando}</>}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <ChipFase fase={destino}>{terminado ? 'Terminado' : fase.label}</ChipFase>
+              <ChipEstado tono={estado.tono}>{estado.texto}</ChipEstado>
+              <span className="whitespace-nowrap rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{s.porFuera ? 'Por fuera' : 'En la plataforma'}</span>
+              {s.faseAMano && <span className="whitespace-nowrap rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Fase puesta a mano</span>}
+            </div>
           </div>
         </div>
-        <button type="button" onClick={() => setEditando(true)} className={`${BOTON_SECUNDARIO} px-3.5 py-2 text-[13.5px]`}>Editar cliente</button>
+        <button type="button" onClick={() => setEditando(true)} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border bg-white px-3.5 text-sm font-semibold shadow-soft transition hover:bg-muted">Editar cliente</button>
       </div>
 
-      <div className={`mt-6 grid gap-x-6 gap-y-5 border-t border-dashed border-[var(--line)] pt-5 sm:grid-cols-2 ${fila.valorOculto ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))_minmax(190px,1.1fr)]' : 'lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(190px,1.1fr)]'}`}>
+      <div className={`mt-6 grid grid-cols-2 gap-4 border-t border-dashed pt-5 ${fila.valorOculto ? 'md:grid-cols-4' : 'md:grid-cols-4 lg:grid-cols-5'}`}>
         {!fila.valorOculto && (
-        <Dato rotulo="Valor del proyecto" icono={<><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></>}>
-          {s.valor !== null ? <p className={VALOR}>{valorCorto(s.valor)}</p> : <p className={VACIO}>Sin anotar</p>}
-        </Dato>
+          <Dato rotulo="Valor del proyecto" icono={<><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></>}>
+            {s.valor !== null ? <p className={VALOR}>{valorCorto(s.valor)}</p> : <p className={VACIO}>Sin anotar</p>}
+          </Dato>
         )}
-        <Dato rotulo="Inicio" icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>}>
+        <Dato rotulo="Inicio" icono={<><path d="M8 2v4M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></>}>
           <p className={VALOR}>{fechaLarga(fila.inicioIso)}</p>
-          {!s.fechaInicio && <p className="text-[12.5px] text-[var(--secundario)]">Alta en la plataforma</p>}
+          {!s.fechaInicio && <p className="text-xs text-muted-foreground">Alta en la plataforma</p>}
         </Dato>
-        <Dato rotulo="Entrega" icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>}>
+        <Dato rotulo="Entrega" icono={<><path d="M8 2v4M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></>}>
           {s.fechaEntrega && vence ? (
             <>
               <p className={VALOR}>{fechaLarga(s.fechaEntrega)}</p>
-              {!terminado && <p className={`text-[12.5px] ${vence.vencida ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>{vence.texto}</p>}
+              {!terminado && <p className={`text-xs ${vence.vencida ? 'font-semibold text-rose-600' : 'text-muted-foreground'}`}>{vence.texto}</p>}
             </>
           ) : <p className={VACIO}>Sin fecha</p>}
         </Dato>
-        <Dato rotulo="Equipo" icono={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></>}>
+        <Dato rotulo="Equipo" icono={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>}>
           {gente.length ? (
             <p className="flex items-center gap-2">
               <Avatares nombres={gente} size={28} />
-              <span className="truncate text-[14.5px] font-semibold text-[var(--ink)]">{gente[0].split(' ')[0]}{gente.length > 1 && ` y ${gente.length - 1} más`}</span>
+              <span className="truncate text-sm font-semibold">{gente[0].split(' ')[0]}</span>
             </p>
           ) : <p className={VACIO}>Sin asignar</p>}
         </Dato>
         <div className="min-w-0">
-          <label htmlFor="mover-etapa" className="rotulo block">Mover de etapa</label>
+          <label htmlFor="mover-etapa" className={`${LABEL} block`}>Mover de etapa</label>
           <select id="mover-etapa" value={destino} disabled={moviendo} onChange={e => mover(e.target.value as Destino)}
-            className="mt-1.5 w-full cursor-pointer rounded-[12px] border border-[var(--line)] bg-white px-3 py-2.5 text-[14.5px] font-medium text-[var(--ink)] outline-none transition-colors hover:border-[var(--apagado)] focus:border-[var(--primario)] disabled:cursor-wait disabled:opacity-60">
+            className="mt-1.5 h-9 w-full cursor-pointer rounded-lg border bg-white px-3 text-sm font-medium shadow-soft outline-none transition focus:border-primary/40 focus:ring-4 focus:ring-primary/10 disabled:cursor-wait disabled:opacity-60">
             {FASES.map((f, i) => <option key={f} value={f}>{String(i + 1).padStart(2, '0')} · {FASE_LABEL[f]}</option>)}
             <option value="terminado">{String(FASES.length + 1).padStart(2, '0')} · Terminado</option>
           </select>
-          {error && <p role="alert" className="mt-1 text-[12.5px] text-[var(--error)]">{error}</p>}
+          {error && <p role="alert" className="mt-1 text-xs text-rose-600">{error}</p>}
         </div>
       </div>
 

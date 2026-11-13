@@ -24,7 +24,7 @@ import { TareasDeEtapa } from '@/components/detalle/TareasDeEtapa'
 import { Comentarios } from '@/components/sistema/Comentarios'
 import { CHIP, MARCA } from '@/components/sistema/chips'
 import { cuandoVence, diasHasta, encargadosConocidos, fechaLarga, personas } from '@/components/sistema/cliente'
-import { Avatar, FASE_BAJADA, FASE_CLASE, IconoFase, SelloFase } from '@/components/sistema/fase'
+import { Avatar, FASE_BAJADA, FASE_ESTILO, IconoFase, SelloFase } from '@/components/sistema/fase'
 import { FASES, type EstadoFase, type FaseSistema } from '@/lib/seguimiento/sistema'
 import { cuentaDeTareas } from '@/lib/seguimiento/tareas'
 
@@ -129,39 +129,41 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
 
   return (
     <AdminShell
+      riel
       activeProjectId={id}
       sistema={sistema}
       indice={<ProjectIndex enResumen projectId={id} nombre={project.name} subtitulo={bajada} fases={indice} />}
     >
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <CabeceraDetalle fila={fila} encargados={encargados} />
 
         {/* El recorrido: las cinco fases en orden. Un clic en una abre sus tareas. */}
-        <nav aria-label="Etapas del proyecto" className="tarjeta overflow-x-auto px-4 py-6 sm:px-7">
-          <ol className="flex min-w-[620px] items-start">
+        <nav aria-label="Etapas del proyecto" className="overflow-x-auto rounded-2xl border border-border/70 bg-card p-6 shadow-soft scroll-thin">
+          <ol className="flex min-w-[700px] items-start">
             {fila.fases.map((f, i) => {
               const hecha = terminado || f.estado === 'completa'
               const enEsta = !terminado && f.key === fila.actual
+              const elegida = tab === 'etapas' && etapa === f.key
               return (
-                <li key={f.key} className={`${FASE_CLASE[f.key]} relative flex flex-1 flex-col items-center text-center`}>
-                  {i > 0 && (
-                    <span aria-hidden="true" className={`absolute right-[calc(50%+38px)] top-[27px] h-[2px] w-[calc(100%-76px)] rounded-full ${terminado || fila.fases[i - 1].estado === 'completa' ? 'bg-[var(--listo)]' : 'bg-[var(--line)]'}`} />
-                  )}
-                  <Link href={`${base}?etapa=${f.key}#etapa`} aria-current={tab === 'etapas' && etapa === f.key ? 'step' : undefined}
-                    className="group flex flex-col items-center rounded-[14px] px-2 pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primario)]">
-                    <span className={`grid h-14 w-14 place-items-center rounded-full transition-transform group-hover:scale-105 ${
-                      hecha ? 'bg-[var(--listo)] text-white'
-                        : enEsta ? 'bg-[var(--banana)] text-[var(--ink)] ring-[6px] ring-[var(--aprobado)]'
-                        : 'border border-[var(--line)] bg-[var(--superficie)] text-[var(--rotulo)]'
-                    } ${tab === 'etapas' && etapa === f.key ? 'outline outline-2 outline-offset-[7px] outline-[var(--primario)]' : ''}`}>
-                      {hecha ? (
-                        <svg viewBox="0 0 16 16" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
-                      ) : <IconoFase fase={f.key} size={22} />}
+                <li key={f.key} className="flex flex-1 items-start last:flex-none">
+                  <Link href={`${base}?etapa=${f.key}#etapa`} aria-current={elegida ? 'step' : undefined} className="group flex w-[128px] flex-col items-center text-center">
+                    <span className="relative">
+                      {enEsta && <span aria-hidden="true" className={`absolute inset-0 animate-ping rounded-full opacity-40 ${FASE_ESTILO[f.key].barra}`} />}
+                      <span className={`relative flex h-14 w-14 items-center justify-center rounded-full border-2 transition-all duration-200 group-hover:scale-105 ${
+                        hecha ? 'border-emerald-500 bg-emerald-500 text-white'
+                          : enEsta ? `border-transparent text-white shadow-lg ${FASE_ESTILO[f.key].barra}`
+                          : 'border-border bg-muted text-muted-foreground'
+                      } ${elegida ? 'ring-4 ring-primary/20' : ''}`}>
+                        {hecha ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-6 w-6"><path d="M20 6 9 17l-5-5" /></svg>
+                        ) : <IconoFase fase={f.key} size={24} />}
+                      </span>
                     </span>
-                    <span aria-hidden="true" className="mt-3 text-[11px] font-semibold tabular-nums tracking-[.08em] text-[var(--rotulo)]">{String(i + 1).padStart(2, '0')}</span>
-                    <span className={`text-[14.5px] font-bold leading-tight ${hecha || enEsta ? 'text-[var(--ink)]' : 'text-[var(--secundario)]'}`}>{f.label}</span>
-                    <span className="mt-0.5 text-[12.5px] text-[var(--secundario)]">{terminado ? 'Completada' : ESTADO_FASE[f.estado]}</span>
+                    <span aria-hidden="true" className="mt-2.5 font-mono text-[10px] font-semibold text-muted-foreground/70">{String(i + 1).padStart(2, '0')}</span>
+                    <span className={`text-[13px] font-bold leading-tight ${hecha || enEsta ? 'text-foreground' : 'text-muted-foreground'}`}>{f.label}</span>
+                    <span className="mt-0.5 text-[11px] text-muted-foreground">{terminado ? 'Completada' : ESTADO_FASE[f.estado]}</span>
                   </Link>
+                  {i < fila.fases.length - 1 && <span aria-hidden="true" className={`mt-7 h-0.5 flex-1 rounded-full ${hecha ? 'bg-emerald-400' : 'bg-border'}`} />}
                 </li>
               )
             })}
@@ -169,31 +171,37 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
         </nav>
 
         <div id="etapa" className="scroll-mt-24">
-          <nav aria-label="Secciones del proyecto" className="flex gap-1 border-b border-[var(--line)]">
+          <nav aria-label="Secciones del proyecto" className="flex flex-wrap gap-1.5 border-b">
             {([['resumen', 'Resumen', `${base}?tab=resumen`], ['etapas', 'Etapas', `${base}?etapa=${etapa}`]] as const).map(([k, l, href]) => (
               <Link key={k} href={href} aria-current={tab === k ? 'page' : undefined}
-                className={`-mb-px border-b-2 px-4 py-2.5 text-[15px] font-medium transition-colors ${tab === k ? 'border-[var(--primario)] text-[var(--primario)]' : 'border-transparent text-[var(--secundario)] hover:text-[var(--ink)]'}`}>
+                className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition ${tab === k ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
                 {l}
               </Link>
             ))}
           </nav>
 
           {tab === 'etapas' ? (
-            <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <section className={`${FASE_CLASE[etapa]} tarjeta p-5 sm:p-6`}>
-                <div className="flex items-start gap-4">
-                  <SelloFase fase={etapa} size={48} />
-                  <div className="min-w-0 flex-1">
-                    <p className="rotulo">Etapa {String(FASES.indexOf(etapa) + 1).padStart(2, '0')} · {terminado ? 'Completada' : ESTADO_FASE[faseVista.estado]}</p>
-                    <h2 className="mt-0.5 text-[22px] font-bold leading-tight text-[var(--ink)]">{faseVista.label}</h2>
-                    <p className="mt-0.5 text-[14.5px] text-[var(--secundario)]">{FASE_BAJADA[etapa]}</p>
+            <div className="mt-5 grid grid-cols-1 items-start gap-5 xl:grid-cols-3 [&>section]:xl:col-span-2">
+              <section className="rounded-2xl border border-border/70 bg-card text-card-foreground shadow-soft">
+                <div className="flex items-start justify-between gap-4 p-6 pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SelloFase fase={etapa} size={44} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Etapa {String(FASES.indexOf(etapa) + 1).padStart(2, '0')} · {terminado ? 'Completada' : ESTADO_FASE[faseVista.estado]}</p>
+                      <h2 className="text-lg font-bold tracking-tight">{faseVista.label}</h2>
+                      <p className="mt-0.5 text-sm text-muted-foreground">{FASE_BAJADA[etapa]}</p>
+                    </div>
                   </div>
-                  {tareas.length > 0 && <span className="flex-none rounded-full bg-[var(--superficie)] px-3 py-1 text-[12.5px] font-semibold tabular-nums text-[var(--cuerpo)]">{cuentaDeTareas(tareas)} tareas</span>}
+                  {tareas.length > 0 && <span className="tabular flex-none rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">{cuentaDeTareas(tareas)} tareas</span>}
                 </div>
-                <div className="mb-6 mt-5 h-[6px] overflow-hidden rounded-full bg-[var(--superficie)]">
-                  <span className="block h-full rounded-full bg-[var(--f)]" style={{ width: `${tareas.length ? Math.round((hechas / tareas.length) * 100) : 0}%` }} />
+                <div className="px-6 pb-2">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <span className={`block h-full rounded-full transition-all duration-700 ${FASE_ESTILO[etapa].barra}`} style={{ width: `${tareas.length ? Math.round((hechas / tareas.length) * 100) : 0}%` }} />
+                  </div>
                 </div>
-                <TareasDeEtapa key={etapa} projectId={id} fase={etapa} nombreFase={faseVista.label} tareas={tareas} encargados={encargados} />
+                <div className="p-3 pb-4">
+                  <TareasDeEtapa key={etapa} projectId={id} fase={etapa} nombreFase={faseVista.label} tareas={tareas} encargados={encargados} />
+                </div>
               </section>
 
               <div className="flex flex-col gap-6">

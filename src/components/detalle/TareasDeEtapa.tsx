@@ -9,21 +9,21 @@ import { Modal, CerrarModal } from '@/components/Modal'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO } from '@/components/paso/piezas'
 import { guardar } from '@/components/sistema/TablaSistema'
 import { diasHasta, fechaCorta } from '@/components/sistema/cliente'
-import { Avatar } from '@/components/sistema/fase'
+import { Avatar, FASE_ESTILO } from '@/components/sistema/fase'
 
 const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[var(--apagado)] focus:border-[var(--primario)]'
 const ETIQUETA = 'text-[13px] font-medium text-[var(--secundario)]'
 
-/** El círculo de la tarea: hecho, por revisar o pendiente. */
-function Marca({ tarea }: { tarea: Tarea }) {
+/** El cuadro de la tarea: hecho (en el color de la etapa), por revisar o pendiente. */
+function Marca({ tarea, fase }: { tarea: Tarea; fase: FaseSistema }) {
   if (tarea.hecha)
     return (
-      <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-[var(--listo)] text-white">
-        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
+      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-transparent text-white ${FASE_ESTILO[fase].barra}`}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5"><path d="M20 6 9 17l-5-5" /></svg>
       </span>
     )
-  if (tarea.porRevisar) return <span className="block h-[22px] w-[22px] rounded-full border-2 border-[var(--ink)] bg-[var(--banana)]" />
-  return <span className="block h-[22px] w-[22px] rounded-full border-2 border-[var(--apagado)] bg-white" />
+  if (tarea.porRevisar) return <span className="block h-5 w-5 shrink-0 rounded-md border-2 border-amber-400 bg-amber-50" />
+  return <span className="block h-5 w-5 shrink-0 rounded-md border-2 border-slate-300" />
 }
 
 /** Responsable y fecha de una tarea, en un modal con su “Guardar”. */
@@ -164,7 +164,7 @@ export function TareasDeEtapa({ projectId, fase, nombreFase, tareas, encargados 
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <p className="rotulo">Tareas</p>
+        <p className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tareas</p>
         {aMano && (
           <button type="button" onClick={() => setEditandoLista(true)} className="text-[13px] font-medium text-[var(--primario)] hover:underline">Editar lista</button>
         )}
@@ -179,27 +179,26 @@ export function TareasDeEtapa({ projectId, fase, nombreFase, tareas, encargados 
             const hecha = marcadas[t.id] ?? t.hecha
             const vista = { ...t, hecha }
             const atrasada = !hecha && t.fecha !== null && diasHasta(t.fecha) < 0
-            const titulo = <span className={hecha ? 'text-[var(--rotulo)] line-through' : 'font-medium text-[var(--ink)]'}>{t.titulo}</span>
             return (
-              <li key={t.id} className="flex items-center gap-3 border-b border-[var(--line)] py-2.5 last:border-b-0">
+              <li key={t.id} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-muted/60">
                 {t.manual ? (
                   <button type="button" role="checkbox" aria-checked={hecha} aria-label={t.titulo} onClick={() => marcar(t, !hecha)}
-                    className="flex-none rounded-full transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primario)]">
-                    <Marca tarea={vista} />
+                    className="flex-none rounded-md transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                    <Marca tarea={vista} fase={fase} />
                   </button>
                 ) : (
-                  <span className="flex-none" title={hecha ? 'Hecha' : t.porRevisar ? 'Por revisar' : 'Pendiente'}><Marca tarea={vista} /></span>
+                  <span className="flex-none" title={hecha ? 'Hecha' : t.porRevisar ? 'Por revisar' : 'Pendiente'}><Marca tarea={vista} fase={fase} /></span>
                 )}
-                <span className="min-w-0 flex-1 text-[14.5px] leading-[1.4]">
-                  {t.href ? <Link href={t.href} className="hover:text-[var(--primario)] [&>span]:hover:text-[var(--primario)]">{titulo}</Link> : titulo}
-                  {t.porRevisar && !hecha && <span className="ml-2 inline-flex rounded-full bg-[var(--banana)] px-2 py-px text-[11.5px] font-semibold text-[var(--ink)]">Por revisar</span>}
+                <span className={`min-w-0 flex-1 text-sm font-medium ${hecha ? 'text-muted-foreground line-through' : ''}`}>
+                  {t.href ? <Link href={t.href} className="hover:text-primary">{t.titulo}</Link> : t.titulo}
+                  {t.porRevisar && !hecha && <span className="ml-2 inline-flex rounded-full bg-amber-50 px-2 py-px text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/10">Por revisar</span>}
                 </span>
                 <button type="button" onClick={() => setAsignando(t.id)} aria-label={`Asignar ${t.titulo}`}
-                  className="-my-1 flex flex-none items-center gap-3 rounded-[10px] px-2 py-1.5 text-[13.5px] transition-colors hover:bg-[var(--superficie)]">
+                  className="-my-1 flex flex-none items-center gap-3 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-white">
                   {t.responsable ? (
-                    <span className="flex items-center gap-2 text-[var(--cuerpo)]"><Avatar nombre={t.responsable} size={24} />{t.responsable.split(' ')[0]}</span>
-                  ) : !t.fecha && <span className="text-[var(--rotulo)]">Asignar</span>}
-                  {t.fecha && <span className={`w-[52px] text-right font-medium tabular-nums ${atrasada ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>{fechaCorta(t.fecha)}</span>}
+                    <span className="flex items-center gap-1.5 text-muted-foreground"><Avatar nombre={t.responsable} size={20} />{t.responsable.split(' ')[0]}</span>
+                  ) : !t.fecha && <span className="text-muted-foreground/70">Asignar</span>}
+                  {t.fecha && <span className={`tabular w-14 text-right font-semibold ${atrasada ? 'text-rose-600' : 'text-muted-foreground'}`}>{fechaCorta(t.fecha)}</span>}
                 </button>
               </li>
             )

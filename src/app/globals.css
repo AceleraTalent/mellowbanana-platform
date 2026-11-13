@@ -25,9 +25,33 @@
 :root {
   --primario: var(--ink);          /* botones de acción */
   --primario-suave: var(--aprobado);
-  --listo: var(--ink);             /* lo terminado: tinta con el visto en blanco */
+  --listo: #10b981;                /* lo terminado: verde con el visto en blanco */
 }
-.panel { color: var(--cuerpo); }
+.panel {
+  color: hsl(222 28% 12%);
+  /* Los grises de siempre, en frío: así las pantallas de trabajo (Landscape, Estrategia)
+     quedan en la misma familia que el Pipeline sin reescribirse. */
+  --papel: hsl(220 23% 97.5%);
+  --papel-hondo: hsl(220 16% 93%);
+  --superficie: hsl(220 16% 96%);
+  --ink: hsl(222 28% 12%);
+  --cuerpo: hsl(222 18% 24%);
+  --secundario: hsl(220 9% 40%);
+  --rotulo: hsl(220 9% 46%);
+  --apagado: hsl(220 12% 76%);
+  --line: hsl(220 14% 91%);
+  --font-geist: var(--font-jakarta);
+  --font-rotulo: var(--font-jakarta);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+/* En el panel, un borde sin color dicho es gris claro (en Tailwind 4 sería el del texto). */
+@layer base {
+  .panel *, .panel ::before, .panel ::after { border-color: hsl(220 14% 91%); }
+}
+@utility shadow-soft { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.03); }
+@utility shadow-lift { box-shadow: 0 8px 24px -8px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.04); }
+@utility tabular { font-variant-numeric: tabular-nums; }
+@utility scroll-thin { scrollbar-width: thin; scrollbar-color: hsl(220 14% 86%) transparent; }
 /* La tarjeta del panel: blanca, borde fino, esquinas amplias y una sombra apenas visible. */
 .tarjeta {
   background: #fff;
@@ -37,20 +61,33 @@
 }
 /* El rótulo chico en mayúsculas: “VALOR DEL PROYECTO”, “TAREAS”. */
 .rotulo {
-  font-family: var(--font-rotulo), ui-monospace, monospace;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--rotulo);
 }
-/* Las fases comparten la marca: tinta para lo que avanza, amarillo para lo que resalta.
-   Se distinguen por su ícono y su número, no por un color propio. */
-.fase-taller, .fase-landscape, .fase-estrategia, .fase-naming, .fase-diseno, .fase-terminado {
-  --f: var(--ink); --f-suave: var(--aprobado); --f-texto: var(--ink);
-}
+/* Un color por fase, el mismo en el Kanban, la lista, la línea de tiempo y el detalle:
+   así se sabe en qué etapa va un cliente sin leer. Cada uno trae su fondo suave y su texto. */
+.fase-taller     { --f: #6366f1; --f-suave: #eef2ff; --f-texto: #4338ca; }
+.fase-landscape  { --f: #0ea5e9; --f-suave: #e0f2fe; --f-texto: #0369a1; }
+.fase-estrategia { --f: #10b981; --f-suave: #d1fae5; --f-texto: #047857; }
+.fase-naming     { --f: #f59e0b; --f-suave: #fef3c7; --f-texto: #b45309; }
+.fase-diseno     { --f: #8b5cf6; --f-suave: #ede9fe; --f-texto: #6d28d9; }
+.fase-terminado  { --f: #f43f5e; --f-suave: #ffe4e6; --f-texto: #be123c; }
 
 @theme inline {
+  /* Los nombres de color del panel (los mismos del diseño de referencia): con esto
+     `bg-primary`, `text-muted-foreground`, `border-border`… existen como clases. */
+  --color-primary: var(--primario);
+  --color-primary-soft: var(--primario-suave);
+  --color-background: hsl(220 23% 97.5%);
+  --color-foreground: hsl(222 28% 12%);
+  --color-card: #fff;
+  --color-card-foreground: hsl(222 28% 12%);
+  --color-muted: hsl(220 16% 96%);
+  --color-muted-foreground: hsl(220 9% 46%);
+  --color-border: hsl(220 14% 91%);
   --font-sans: var(--font-geist);
   /* `font-serif` es el hueco de titulares: Geist Bold mientras se resuelve la licencia
      web de ABC Favorit (ver layout.tsx). El nombre quedó de cuando ahí vivía Fraunces y

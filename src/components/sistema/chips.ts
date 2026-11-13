@@ -17,3 +17,6 @@ export const CHIP: Record<Quien, string> = {
 
 /** Lo que va antes del texto del chip: se lee sin depender del color. */
 export const MARCA: Partial<Record<Quien, string>> = { cliente: '○ ', pausa: '‖ ', listo: '✓ ' }
+
+/** Lo que nos toca va primero; lo terminado, al final. */
+export const URGENCIA: Record<Quien, number> = { revisar: 0, equipo: 1, claude: 2, fuera: 3, cliente: 4, pausa: 5, listo: 6 }

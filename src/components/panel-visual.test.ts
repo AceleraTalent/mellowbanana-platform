@@ -52,11 +52,4 @@ describe('lenguaje visual del panel', () => {
       for (const g of viejos) expect(`${f}: ${src.includes(g) ? g : 'ok'}`).toBe(`${f}: ok`)
     }
   })
-
-  it('no quedan tarjetas con sombra en el panel', () => {
-    for (const f of panel) {
-      const src = readFileSync(f, 'utf8')
-      expect(`${f}: ${src.includes('shadow-sm') ? 'shadow-sm' : 'ok'}`).toBe(`${f}: ok`)
-    }
-  })
 })

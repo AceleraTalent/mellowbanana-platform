@@ -2,6 +2,24 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-11-13 — El panel portado del código de Pramana (no de capturas)
+
+- **Por qué:** Luciano dijo que las vistas no se veían igual. Las anteriores estaban rehechas a
+  ojo. Esta vez el marcado y las clases salen del código real: `github.com/AceleraTalent/pramana-demo`
+  (`src/pages/Pipeline.tsx`, `ProjectDetail.tsx`, `components/layout/*`) y del HTML del demo publicado.
+- **Cómo:** `globals.css` define los colores con los nombres de ese diseño (`bg-primary`,
+  `text-muted-foreground`, `border-border`, `shadow-soft`…), así sus clases funcionan tal cual. El
+  primario es la tinta de Mellow y el resaltado el amarillo; el resto (grises fríos, Plus Jakarta
+  Sans, un color por etapa en `FASE_ESTILO`) es el de la referencia.
+- **Vistas:** Kanban (tarjeta con tipo, estado, avance, equipo, días y valor), Lista (tabla de sólo
+  lectura; un clic abre el cliente: ya no se edita en línea), Línea de tiempo (barras por etapa),
+  Detalle (cabecera, recorrido, pestañas, tareas) y la columna derecha («En la plataforma» y
+  «Actividad reciente») en Pipeline, Dashboard y Detalle (`riel` en `AdminShell`).
+- **Estado de un cliente** (`estadoDe` en `TablaSistema.tsx`): Atrasado si la entrega pasó, En riesgo
+  si faltan 14 días o menos y va por debajo del 70 %, En tiempo si no; Sin fecha si no tiene entrega.
+- **Ojo:** `URGENCIA` vive en `chips.ts`: `AdminShell` (servidor) no puede importar valores de un
+  archivo `'use client'`.
+
 ## 2026-11-13 — Cada quien entra con su cuenta; dirección y equipo
 
 - **Accesos** (`src/lib/admin/permisos.ts`): dirección (`esAdmin`) ve y hace todo. El equipo no ve

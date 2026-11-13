@@ -1,15 +1,12 @@
 import Link from 'next/link'
 import { db } from '@/lib/db/client'
 import { cargarSistema } from '@/lib/seguimiento/cargar'
-import { avisosRecientes } from '@/lib/avisos'
-import { haceCuanto } from '@/lib/landscape/stages'
 import { FASES, FASE_LABEL } from '@/lib/seguimiento/sistema'
 import { quienEntro } from '@/lib/admin/auth'
 import { esDireccion, paraQuien } from '@/lib/admin/permisos'
 import { AdminShell } from '@/components/AdminShell'
 import { Estadistica } from '@/components/sistema/Estadistica'
-import { Avatar, FASE_BAJADA, SelloFase } from '@/components/sistema/fase'
-import { CHIP, MARCA } from '@/components/sistema/chips'
+import { FASE_BAJADA, FASE_ESTILO, SelloFase } from '@/components/sistema/fase'
 import { diasHasta, valorCorto } from '@/components/sistema/cliente'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +20,7 @@ const TONO = 'bg-[var(--aprobado)] text-[var(--ink)]'
  */
 export default async function Panorama() {
   const ahora = new Date()
-  const [todas, avisos, quien] = await Promise.all([cargarSistema(db, ahora), avisosRecientes(db, 6), quienEntro()])
+  const [todas, quien] = await Promise.all([cargarSistema(db, ahora), quienEntro()])
   const filas = paraQuien(todas, quien)
   const direccion = esDireccion(quien)
   const enCurso = filas.filter(f => f.sigue.quien !== 'listo')
@@ -34,10 +31,10 @@ export default async function Panorama() {
   const valor = conValor.reduce((t, f) => t + (f.seguimiento.valor ?? 0), 0)
 
   return (
-    <AdminShell sistema={filas} seccion="panorama">
+    <AdminShell riel sistema={filas} seccion="panorama">
       <header>
-        <h1 className="font-serif text-[30px] leading-[1.1] text-[var(--ink)]">Panorama del estudio</h1>
-        <p className="mt-1.5 text-[15px] text-[var(--secundario)]">Todos los clientes y sus etapas en una sola vista</p>
+        <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">Panorama del estudio</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Todos los clientes y sus etapas en una sola vista</p>
       </header>
 
       <ol className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -60,7 +57,7 @@ export default async function Panorama() {
                 </span>
                 <span className="mt-2 text-[14.5px] text-[var(--secundario)]">{FASE_BAJADA[f]}</span>
                 <span className="mt-5 flex items-center gap-3">
-                  <span className="h-[6px] flex-1 overflow-hidden rounded-full bg-[var(--superficie)]"><span className="block h-full rounded-full bg-[var(--ink)]" style={{ width: `${parte}%` }} /></span>
+                  <span className="h-[6px] flex-1 overflow-hidden rounded-full bg-[var(--superficie)]"><span className={`block h-full rounded-full ${FASE_ESTILO[f].barra}`} style={{ width: `${parte}%` }} /></span>
                   <span className="w-9 text-right text-[12.5px] tabular-nums text-[var(--secundario)]">{parte}%</span>
                 </span>
                 <span className="mt-4 flex items-center justify-between border-t border-dashed border-[var(--line)] pt-3.5 text-[13.5px] font-semibold">
@@ -104,46 +101,6 @@ export default async function Panorama() {
           icono={<><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></>} />}
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <section className="tarjeta p-6">
-          <h2 className="rotulo">Esperan al equipo</h2>
-          {nosToca.length === 0 ? <p className="mt-4 text-[14.5px] text-[var(--secundario)]">Nada espera al equipo en este momento.</p> : (
-            <ul className="mt-3 divide-y divide-[var(--line)]">
-              {nosToca.slice(0, 6).map(f => (
-                <li key={f.id}>
-                  <Link href={f.href} className="-mx-2 flex items-center gap-3 rounded-[10px] px-2 py-3 hover:bg-[var(--superficie)]">
-                    <Avatar nombre={f.nombre} size={34} cuadrado />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14.5px] font-semibold text-[var(--ink)]">{f.nombre}</span>
-                      <span className="block truncate text-[13px] text-[var(--secundario)]">{FASE_LABEL[f.actual]}</span>
-                    </span>
-                    <span className={`inline-flex flex-none rounded-full px-2.5 py-[3px] text-[12.5px] font-semibold ${CHIP[f.sigue.quien]}`}>{MARCA[f.sigue.quien]}{f.sigue.texto}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {nosToca.length > 6 && <p className="mt-3 text-[13px] text-[var(--secundario)]">Y {nosToca.length - 6} más en el Pipeline.</p>}
-        </section>
-        <section className="tarjeta p-6">
-          <h2 className="rotulo">Actividad reciente</h2>
-          {avisos.length === 0 ? <p className="mt-4 text-[14.5px] text-[var(--secundario)]">Todavía no hay avisos. Llegan cuando un cliente termina su entrevista.</p> : (
-            <ul className="mt-3 divide-y divide-[var(--line)]">
-              {avisos.map(a => (
-                <li key={a.id}>
-                  <Link href={a.href} className="-mx-2 flex items-baseline justify-between gap-4 rounded-[10px] px-2 py-3 hover:bg-[var(--superficie)]">
-                    <span className="min-w-0">
-                      <span className="text-[14.5px] text-[var(--ink)]">{a.texto}</span>
-                      {a.detalle && <span className="ml-2 text-[13px] text-[var(--secundario)]">{a.detalle}</span>}
-                    </span>
-                    <span className="flex-none text-[12.5px] text-[var(--rotulo)]">{haceCuanto(a.cuando, ahora)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
     </AdminShell>
   )
 }

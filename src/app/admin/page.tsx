@@ -33,20 +33,20 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const filas = paraQuien(await cargarSistema(db, ahora), await quienEntro())
 
   return (
-    <AdminShell sistema={filas} fase={vista === 'lista' ? fase : undefined}>
-      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+    <AdminShell riel sistema={filas} fase={vista === 'lista' ? fase : undefined}>
+      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-serif text-[30px] leading-[1.1] text-[var(--ink)]">Pipeline de proyectos</h1>
-          <p className="mt-1.5 text-[15px] text-[var(--secundario)]">
-            {filas.length} {filas.length === 1 ? 'cliente' : 'clientes'} en {FASES.length} fases
-            {vista === 'kanban' && ' · arrastra una tarjeta para moverla de fase'}
+          <h1 className="text-[26px] font-extrabold tracking-tight text-foreground">Pipeline de proyectos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {filas.length} {filas.length === 1 ? 'proyecto' : 'proyectos'} en {FASES.length} etapas
+            {vista === 'kanban' && ' · arrastra una tarjeta para moverla de etapa'}
           </p>
         </div>
-        <nav aria-label="Vista" className="flex rounded-[14px] border border-[var(--line)] bg-white p-1 text-[14px] font-medium">
+        <nav aria-label="Vista" className="inline-flex rounded-xl border border-border bg-white p-1 shadow-soft">
           {VISTAS.map(v => (
             <Link key={v.key} href={v.href} aria-current={vista === v.key ? 'page' : undefined}
-              className={`flex items-center gap-2 rounded-[10px] px-3.5 py-2 transition-colors ${vista === v.key ? 'bg-[var(--primario)] text-white' : 'text-[var(--secundario)] hover:text-[var(--ink)]'}`}>
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{v.icono}</svg>
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${vista === v.key ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">{v.icono}</svg>
               {v.label}
             </Link>
           ))}
@@ -54,11 +54,11 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </header>
 
       {filas.length === 0 ? (
-        <p className="tarjeta mt-8 px-6 py-14 text-center text-[15px] text-[var(--secundario)]">
+        <p className="rounded-2xl border border-border/70 bg-card px-6 py-14 text-center text-sm text-muted-foreground shadow-soft">
           Todavía no hay clientes. Agrega uno con “Nuevo cliente”, o llegan solos al completarse una entrevista.
         </p>
       ) : (
-        <div className="mt-7">
+        <div>
           {vista === 'kanban' ? <TableroSistema filas={filas} /> : vista === 'lista' ? <TablaSistema key={fase ?? 'todas'} filas={filas} fase={fase} /> : <LineaDeTiempo filas={filas} hoy={ahora} />}
         </div>
       )}
