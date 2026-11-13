@@ -85,6 +85,13 @@
       "when": 1794601286996,
       "tag": "0011_cuentas_del_equipo",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794603586043,
+      "tag": "0012_cuenta_de_nicolas",
+      "breakpoints": true
     }
   ]
 }
