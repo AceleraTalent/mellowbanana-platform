@@ -6,7 +6,7 @@ import { FASES, FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO } from '@/components/paso/piezas'
 import { CerrarModal, Modal } from '@/components/Modal'
 
-const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[#CFC9BB] focus:border-[var(--ink)]'
+const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[var(--apagado)] focus:border-[var(--ink)]'
 const ETIQUETA = 'text-[13px] font-medium text-[var(--secundario)]'
 
 /**
@@ -71,7 +71,7 @@ export function NuevoCliente({ encargados = [] }: { encargados?: string[] }) {
                   <datalist id="encargados-nuevo">{encargados.map(n => <option key={n} value={n} />)}</datalist>
                 </label>
               </div>
-              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-[var(--line)] p-3.5 transition-colors hover:border-[#CFC9BB]">
+              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-[var(--line)] p-3.5 transition-colors hover:border-[var(--apagado)]">
                 <input type="checkbox" checked={enPlataforma} onChange={e => setEnPlataforma(e.target.checked)} className="mt-0.5 h-4 w-4 flex-none accent-[var(--ink)]" />
                 <span>
                   <span className="block text-[14px] font-medium text-[var(--ink)]">Hace su proceso en la plataforma</span>
@@ -81,7 +81,7 @@ export function NuevoCliente({ encargados = [] }: { encargados?: string[] }) {
                 </span>
               </label>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[#FBFAF7] px-5 py-4 sm:px-7">
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[var(--superficie)] px-5 py-4 sm:px-7">
               {error && <p role="alert" className="mr-auto text-[13px] text-[var(--error)]">{error}</p>}
               <button type="button" onClick={cerrar} className={BOTON_SECUNDARIO}>Cancelar</button>
               <button disabled={busy} className={`${BOTON_PRIMARIO} disabled:opacity-50`}>{busy ? 'Creando…' : 'Crear cliente'}</button>

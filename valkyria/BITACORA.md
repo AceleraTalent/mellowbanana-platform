@@ -2,6 +2,38 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-11-13 — El panel con el diseño de Pramana: Pipeline en tres vistas y detalle del proyecto
+
+- **Pedido:** Luciano mostró en video el demo de Pramana (`pramana-demo.vercel.app`) y pidió que el
+  panel de Mellow quede "igual, no parecido": las etapas en Kanban, lista y línea de tiempo, y el
+  detalle del proyecto con responsables, equipo, tareas con fecha y "Mover de etapa". El usuario
+  confirmó tres cosas: el aspecto es el de Pramana tal cual (índigo, Plus Jakarta Sans, un color por
+  fase), las tareas son los pasos reales de cada fase, y el valor del proyecto es un campo opcional.
+- **Aspecto:** todo lo que va dentro de `AdminShell` lleva la clase `.panel` (globals.css), que
+  redefine las variables de siempre con la paleta nueva; por eso Landscape y Estrategia lo toman
+  sin reescribirse. La entrevista pública, el login y los documentos del cliente quedan fuera y
+  conservan la marca del estudio. Los botones de acción usan `--primario` (fuera del panel vale `--ink`).
+- **Pipeline (`/admin`):** Kanban por defecto (columnas horizontales, una por fase y Terminado),
+  `?vista=lista` y `?vista=tiempo`. La línea de tiempo parte el plazo inicio→entrega en cinco tramos
+  iguales: la plataforma no guarda fechas por fase, así que muestra el plan, no cuándo cerró cada una.
+- **Detalle (`/admin/projects/[id]`):** cabecera con valor, inicio, entrega, equipo y "Mover de
+  etapa" (el mismo `moverA` del Kanban); recorrido de las cinco fases; pestañas Resumen y Etapas.
+  Vale también para los clientes por fuera (reemplaza a la ficha).
+- **Datos nuevos** (migración `0010_detalle_de_proyecto`): `fecha_inicio`, `valor` y `tareas` en
+  `project_seguimiento`. Las tareas de Taller, Landscape y Estrategia se calculan con lo aprobado;
+  Naming, Diseño y los clientes por fuera llevan una lista a mano. Sólo se guarda responsable, fecha,
+  lo marcado a mano y las listas reescritas. Ver `src/lib/seguimiento/tareas.ts`.
+- **Verificado:** 705 pruebas, tipos sin errores; las tres vistas, el detalle (plataforma y por
+  fuera), el modal y el ancho de celular vistos en la demo local con los 29 clientes reales.
+  Asignar y marcar una tarea probado en el navegador y deshecho.
+- **Queda:** está en la rama `rediseno/pramana`, sin subir a `main`. Las listas de arranque de
+  Naming y Diseño (`LISTA_DE_SIEMPRE`) las propuse yo: el estudio tiene que confirmarlas. Casi todos
+  los clientes importados de Notion tienen la entrega antes que el alta, así que en la línea de
+  tiempo se ven como un punto hasta que se les ponga fecha de inicio. No se hizo el Dashboard de
+  Pramana (tarjetas por etapa y cifras). Las pantallas de trabajo heredan colores y tipografía pero
+  no se rediseñaron una por una. La guía del equipo y la página de novedades todavía describen el
+  panel anterior.
+
 ## 2026-11-12 — Los checklists del estudio, punto por punto
 
 - **Pedido:** el usuario pegó el checklist de investigación y el listado de entregables de la Fase 3

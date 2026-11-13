@@ -5,6 +5,7 @@ import {
   ESTADOS_FASE, ESTADOS_MANUALES, FASES, FASES_MANUALES, fasesAlMover,
   type EstadoFase, type EstadoManual, type FaseSistema,
 } from '@/lib/seguimiento/sistema'
+import { aplicarCambioDeTareas, validarCambioDeTareas, type CambioDeTareas, type TareasGuardadas } from '@/lib/seguimiento/tareas'
 
 export interface Seguimiento {
   encargado: string | null
@@ -22,9 +23,15 @@ export interface Seguimiento {
   porFuera: boolean
   /** Hace su proceso en la plataforma, pero el equipo puso la fase a mano: manda lo que dijo. */
   faseAMano: boolean
+  /** Cuándo arrancó el proyecto, si el equipo lo anotó. Sin esto vale el día de alta. */
+  fechaInicio: string | null
+  /** El valor del proyecto en pesos, si el equipo lo anotó. */
+  valor: number | null
+  /** Lo que el equipo anotó sobre las tareas de cada fase: responsable, fecha, hechas y listas propias. */
+  tareas: TareasGuardadas
 }
 
-export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null, porFuera: false, faseAMano: false }
+export const SEGUIMIENTO_VACIO: Seguimiento = { encargado: null, notas: null, fechaEntrega: null, estadoManual: null, fases: {}, conclusionesTaller: null, porFuera: false, faseAMano: false, fechaInicio: null, valor: null, tareas: {} }
 
 type Fila = typeof projectSeguimiento.$inferSelect
 
@@ -38,6 +45,9 @@ function desdeFila(f: Fila): Seguimiento {
     conclusionesTaller: f.conclusionesTaller ?? null,
     porFuera: !!f.porFuera,
     faseAMano: !!f.faseAMano,
+    fechaInicio: f.fechaInicio ?? null,
+    valor: f.valor ?? null,
+    tareas: (f.tareas ?? {}) as TareasGuardadas,
   }
 }
 
@@ -87,6 +97,10 @@ export interface CambiosSeguimiento {
   moverA?: FaseSistema | 'terminado'
   /** En la plataforma: dejar de mandar a mano y que la fase vuelva a salir de lo aprobado. */
   calcular?: boolean
+  fechaInicio?: string | null
+  valor?: number | null
+  /** Un cambio sobre las tareas de una fase: asignar, marcar o reescribir la lista. */
+  tareas?: CambioDeTareas
 }
 
 const LARGO_MAXIMO = { encargado: 80, notas: 2000, conclusionesTaller: 30000 }
@@ -109,11 +123,25 @@ export function validarCambios(body: Record<string, unknown>): CambiosSeguimient
   if ('encargado' in body) c.encargado = texto(body.encargado, 'encargado')
   if ('notas' in body) c.notas = texto(body.notas, 'notas')
   if ('conclusionesTaller' in body) c.conclusionesTaller = texto(body.conclusionesTaller, 'conclusionesTaller')
-  if ('fechaEntrega' in body) {
-    const f = body.fechaEntrega
+  for (const campo of ['fechaEntrega', 'fechaInicio'] as const) {
+    if (!(campo in body)) continue
+    const f = body[campo]
     if (f !== null && (typeof f !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(f)))
-      throw new ErrorDeValidacion('fechaEntrega tiene que ser una fecha AAAA-MM-DD, o null')
-    c.fechaEntrega = (f as string | null) || null
+      throw new ErrorDeValidacion(`${campo} tiene que ser una fecha AAAA-MM-DD, o null`)
+    c[campo] = (f as string | null) || null
+  }
+  if ('valor' in body) {
+    const v = body.valor
+    if (v !== null && (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0))
+      throw new ErrorDeValidacion('valor tiene que ser un número entero de pesos, o null')
+    c.valor = v as number | null
+  }
+  if ('tareas' in body) {
+    try {
+      c.tareas = validarCambioDeTareas(body.tareas)
+    } catch (e) {
+      throw new ErrorDeValidacion(e instanceof Error ? e.message : 'tareas inválidas')
+    }
   }
   if ('estadoManual' in body) {
     const e = body.estadoManual
@@ -150,7 +178,7 @@ export async function actualizarSeguimiento(db: AnyDb, projectId: string, cambio
 
   const [fila] = (await db.select().from(projectSeguimiento).where(eq(projectSeguimiento.projectId, projectId))) as Fila[]
   const previo = fila ? desdeFila(fila) : SEGUIMIENTO_VACIO
-  const { fase, moverA, calcular, ...resto } = cambios
+  const { fase, moverA, calcular, tareas, ...resto } = cambios
   const porFuera = resto.porFuera ?? previo.porFuera
   // Cualquier cliente se mueve de fase a mano, como en Notion. En uno que hace su proceso
   // en la plataforma, moverlo deja la fase "a mano": manda lo que dijo el equipo hasta que
@@ -166,6 +194,7 @@ export async function actualizarSeguimiento(db: AnyDb, projectId: string, cambio
     ...resto,
     faseAMano,
     fases: fase ? { ...base, [fase.key]: fase.estado } : base,
+    tareas: tareas ? aplicarCambioDeTareas(previo.tareas, tareas) : previo.tareas,
   }
 
   const valores = { ...nuevo, updatedAt: new Date() }

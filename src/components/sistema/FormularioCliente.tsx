@@ -9,7 +9,7 @@ import {
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { CerrarModal } from '@/components/Modal'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO } from '@/components/paso/piezas'
-import { cuandoVence } from './cliente'
+import { cuandoVence, pesosDe, valorCorto } from './cliente'
 import { Comentarios } from './Comentarios'
 
 export type Destino = FaseSistema | 'terminado'
@@ -23,14 +23,14 @@ async function patch(id: string, cambios: Record<string, unknown>) {
   if (!res.ok) throw new Error(((await res.json()) as { error?: string }).error ?? 'No se pudo guardar')
 }
 
-const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[#CFC9BB] focus:border-[var(--ink)]'
+const CAMPO = 'w-full rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--rotulo)] hover:border-[var(--apagado)] focus:border-[var(--ink)]'
 const ETIQUETA = 'text-[13px] font-medium text-[var(--secundario)]'
 
 function Opcion({ activa, onClick, children }: { activa: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" role="radio" aria-checked={activa} onClick={onClick}
       className={`rounded-full border px-3.5 py-1.5 text-[13.5px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)] ${
-        activa ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--line)] bg-white text-[var(--cuerpo)] hover:border-[var(--ink)]'
+        activa ? 'border-[var(--ink)] bg-[var(--primario)] text-white' : 'border-[var(--line)] bg-white text-[var(--cuerpo)] hover:border-[var(--ink)]'
       }`}>
       {children}
     </button>
@@ -65,9 +65,9 @@ function Recorrido({ destino, sinEmpezar, onElegir, estados }: {
           <Tramo key={f} {...(onElegir ? { type: 'button' as const, role: 'radio', 'aria-checked': actual, onClick: () => onElegir(f) } : {})}
             className={`group flex min-w-0 flex-col gap-2 rounded-[6px] text-left ${onElegir ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ink)]' : ''}`}>
             <span className={`block h-[8px] rounded-full transition-colors ${
-              e === 'completa' ? 'bg-[var(--banana)] shadow-[inset_0_0_0_1px_#D9CF2F]'
+              e === 'completa' ? 'bg-[var(--listo)]'
                 : actual && e === 'pendiente' ? 'shadow-[inset_0_0_0_1.5px_var(--ink)]'
-                : e === 'en_curso' ? 'bg-[var(--ink)]'
+                : e === 'en_curso' ? 'bg-[var(--primario)]'
                 : `bg-[var(--line)] ${onElegir ? 'group-hover:bg-[#D6D1C4]' : ''}`
             }`} />
             <span className={`truncate text-[12.5px] ${actual || (estados && e === 'en_curso') ? 'font-semibold text-[var(--ink)]' : 'text-[var(--secundario)]'}`}>
@@ -79,9 +79,9 @@ function Recorrido({ destino, sinEmpezar, onElegir, estados }: {
       <Tramo {...(onElegir ? { type: 'button' as const, role: 'radio', 'aria-checked': terminado, onClick: () => onElegir('terminado') } : {})}
         className={`group flex flex-col items-start gap-1 rounded-[6px] sm:items-center ${onElegir ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ink)]' : ''}`}>
         <span className={`-mt-[7px] grid h-[22px] w-[22px] place-items-center rounded-full transition-colors ${
-          terminado ? 'bg-[var(--banana)] shadow-[inset_0_0_0_1px_#D9CF2F]' : `border border-[var(--line)] bg-white ${onElegir ? 'group-hover:border-[var(--ink)]' : ''}`
+          terminado ? 'bg-[var(--listo)]' : `border border-[var(--line)] bg-white ${onElegir ? 'group-hover:border-[var(--ink)]' : ''}`
         }`}>
-          <svg viewBox="0 0 12 12" className={`h-3 w-3 ${terminado ? 'text-[var(--ink)]' : 'text-[var(--apagado)]'}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 12 12" className={`h-3 w-3 ${terminado ? 'text-white' : 'text-[var(--apagado)]'}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M2.5 6.3 4.9 8.6 9.5 3.6" />
           </svg>
         </span>
@@ -95,7 +95,7 @@ function Interruptor({ encendido, onCambiar, children }: { encendido: boolean; o
   return (
     <button type="button" role="switch" aria-checked={encendido} onClick={() => onCambiar(!encendido)}
       className="flex items-center gap-2.5 rounded-[6px] text-left text-[13.5px] text-[var(--cuerpo)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ink)]">
-      <span className={`relative h-[20px] w-[34px] flex-none rounded-full transition-colors ${encendido ? 'bg-[var(--ink)]' : 'bg-[var(--line)]'}`}>
+      <span className={`relative h-[20px] w-[34px] flex-none rounded-full transition-colors ${encendido ? 'bg-[var(--primario)]' : 'bg-[var(--line)]'}`}>
         <span className={`absolute top-[2px] h-[16px] w-[16px] rounded-full bg-white shadow-[0_1px_2px_rgba(21,18,12,.25)] transition-[left] ${encendido ? 'left-[16px]' : 'left-[2px]'}`} />
       </span>
       {children}
@@ -128,6 +128,8 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
     encargado: s.encargado ?? '',
     fecha: s.fechaEntrega ?? '',
     notas: s.notas ?? '',
+    inicio: s.fechaInicio ?? '',
+    valor: s.valor === null ? '' : String(s.valor),
   }
   const [d, setD] = useState(inicial)
   const cambiar = (c: Partial<typeof inicial>) => { setD(x => ({ ...x, ...c })); setGuardado(false) }
@@ -138,6 +140,7 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
 
   const sucio = (Object.keys(inicial) as (keyof typeof inicial)[]).some(k => d[k] !== inicial[k])
   const vence = d.fecha ? cuandoVence(d.fecha) : null
+  const pesos = pesosDe(d.valor)
 
   async function guardar() {
     if (!sucio) { onListo(); return }
@@ -159,6 +162,8 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
     if (d.encargado !== inicial.encargado) cambios.encargado = d.encargado.trim() || null
     if (d.fecha !== inicial.fecha) cambios.fechaEntrega = d.fecha || null
     if (d.notas !== inicial.notas) cambios.notas = d.notas.trim() || null
+    if (d.inicio !== inicial.inicio) cambios.fechaInicio = d.inicio || null
+    if (d.valor !== inicial.valor) cambios.valor = pesos
     try {
       if (Object.keys(cambios).length) await patch(fila.id, cambios)
       setGuardado(true)
@@ -237,6 +242,20 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
           </label>
         </div>
 
+        <div className="grid gap-5 sm:grid-cols-[1fr_200px]">
+          <label className="flex flex-col gap-2">
+            <span className={ETIQUETA}>Valor del proyecto</span>
+            <input value={d.valor} onChange={e => cambiar({ valor: e.target.value })} inputMode="numeric"
+              placeholder="En pesos, opcional" maxLength={20} className={CAMPO} />
+            {pesos !== null && <span className="text-[12.5px] text-[var(--secundario)]">{valorCorto(pesos)}</span>}
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className={ETIQUETA}>Inicio</span>
+            <input type="date" value={d.inicio} onChange={e => cambiar({ inicio: e.target.value })} className={CAMPO} />
+            {!d.inicio && <span className="text-[12.5px] text-[var(--secundario)]">Sin fecha, cuenta desde el {fila.inicio}</span>}
+          </label>
+        </div>
+
         <label className="flex flex-col gap-2">
           <span className={ETIQUETA}>Notas</span>
           <textarea value={d.notas} onChange={e => cambiar({ notas: e.target.value })} rows={2} maxLength={2000}
@@ -248,14 +267,14 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
         </div>
       </div>
 
-      <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-[var(--line)] bg-[#FBFAF7] py-4 ${px}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-[var(--line)] bg-[var(--superficie)] py-4 ${px}`}>
         <Interruptor encendido={d.porFuera} onCambiar={porFuera => cambiar({ porFuera, calcular: false })}>
           Lleva su proceso por fuera
         </Interruptor>
         <div className="ml-auto flex items-center gap-2">
           {error && <p role="alert" className="mr-1 text-[13px] text-[var(--error)]">{error}</p>}
           {!enModal && guardado && !sucio && <p className="mr-1 text-[13px] text-[var(--secundario)]">Cambios guardados</p>}
-          {!enModal && !sucio && <Link href="/admin?vista=tablero" className={BOTON_SECUNDARIO}>Ver en el tablero</Link>}
+          {!enModal && !sucio && <Link href="/admin" className={BOTON_SECUNDARIO}>Ver en el Pipeline</Link>}
           {onCancelar && <button type="button" onClick={onCancelar} className={BOTON_SECUNDARIO}>Cancelar</button>}
           {(enModal || sucio) && (
             <button type="submit" disabled={guardando || (!sucio && !enModal)} className={`${BOTON_PRIMARIO} disabled:opacity-50`}>

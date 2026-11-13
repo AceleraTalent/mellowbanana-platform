@@ -21,7 +21,7 @@ function fila(id: string, nombre: string, s: Partial<SenalesProyecto>, seguimien
   }
   const fases = estadoDeFases(senales)
   return {
-    id, nombre, href: `/admin/projects/${id}`, inicio: '1 oct', fases, actual: faseActual(fases),
+    id, nombre, href: `/admin/projects/${id}`, inicio: '1 oct', inicioIso: '2026-10-01', avance: 0, tareas: { taller: [], landscape: [], estrategia: [], naming: [], diseno: [] }, fases, actual: faseActual(fases),
     sigue: queSigue(senales, fases), pasos: [],
     seguimiento: { ...SEGUIMIENTO_VACIO, fases: senales.manual, porFuera: !!senales.porFuera, ...seguimiento },
   }

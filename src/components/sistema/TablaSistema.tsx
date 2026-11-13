@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FASES, FASE_LABEL, type FaseConEstado, type FaseSistema, type Quien } from '@/lib/seguimiento/sistema'
+import { FASES, FASE_LABEL, type FaseSistema, type Quien } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { CHIP, MARCA } from './chips'
 import { EditorCliente } from './EditorCliente'
-import { cuandoVence, encargadosConocidos } from './cliente'
+import { cuandoVence, encargadosConocidos, personas } from './cliente'
+import { Avatar, Avatares, ChipFase, FASE_CLASE } from './fase'
 
 /**
- * El Sistema M&B dentro de la plataforma: una fila por cliente con su fase, qué sigue,
- * quién lo lleva, la fecha de entrega y las notas del equipo. Lo calculado (fase, qué
+ * El Pipeline como lista: una fila por cliente con su fase y su avance, qué sigue, quién
+ * lo lleva, la fecha de entrega y las notas del equipo. Lo calculado (fase, qué
  * sigue, último movimiento) no se edita; encargado, entrega y notas se editan ahí mismo, y
  * un clic en la fase abre el cliente entero en el modal, el mismo que usa el tablero.
  */
@@ -26,26 +27,6 @@ export async function guardar(id: string, cambios: Record<string, unknown>) {
     body: JSON.stringify(cambios),
   })
   if (!res.ok) throw new Error(((await res.json()) as { error?: string }).error ?? 'No se pudo guardar')
-}
-
-/** Los cinco tramos del recorrido. Amarillo lo terminado, tinta lo que está en curso. */
-function Recorrido({ fases, actual }: { fases: FaseConEstado[]; actual: FaseSistema }) {
-  return (
-    <span className="flex items-center gap-1" aria-hidden="true">
-      {fases.map(f => (
-        <span
-          key={f.key}
-          title={`${f.label}: ${f.detalle}`}
-          className={`h-[4px] w-[22px] rounded-[2px] ${
-            f.estado === 'completa' ? 'bg-[var(--banana)] ring-1 ring-inset ring-[#d9cf2f]'
-              : f.key === actual ? 'bg-[var(--ink)]'
-              : f.estado === 'en_curso' ? 'bg-[#A39E91]'
-              : 'bg-[var(--line)]'
-          }`}
-        />
-      ))}
-    </span>
-  )
 }
 
 /** Texto editable que se ve como texto: se guarda al salir del campo. */
@@ -72,7 +53,7 @@ export function Editable({ valor, placeholder, multilinea, onGuardar, etiqueta }
   }
   // `field-sizing: content`: el campo crece con lo que tiene, así un encargado con dos
   // nombres o una nota larga se leen enteros sin abrir nada.
-  const clase = 'w-full resize-none rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] leading-[1.5] text-[var(--ink)] [field-sizing:content] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--ink)] focus:bg-white focus:outline-none'
+  const clase = 'w-full resize-none rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[14px] leading-[1.5] text-[var(--ink)] [field-sizing:content] placeholder:text-[var(--rotulo)] hover:border-[var(--line)] focus:border-[var(--primario)] focus:bg-white focus:outline-none'
   return (
     <div className="relative">
       {multilinea ? (
@@ -126,7 +107,7 @@ export function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () =>
             setError(true)
           }
         }}
-        className={`w-full rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-[14.5px] hover:border-[var(--line)] focus:border-[var(--ink)] focus:outline-none ${fecha ? 'text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}
+        className={`w-full rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[14px] hover:border-[var(--line)] focus:border-[var(--primario)] focus:outline-none ${fecha ? 'font-medium text-[var(--ink)]' : 'text-[var(--rotulo)]'}`}
       />
       {resto && <p className={`px-2 text-[12.5px] ${resto.vencida ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>{resto.texto}</p>}
       {error && <p className="px-2 text-[11.5px] text-[var(--error)]">No se guardó</p>}
@@ -134,31 +115,39 @@ export function Entrega({ fila, onCambio }: { fila: FilaSistema; onCambio: () =>
   )
 }
 
+const COLUMNAS = 'lg:grid-cols-[minmax(190px,1.35fr)_minmax(150px,.95fr)_minmax(160px,1fr)_minmax(200px,1.25fr)_minmax(140px,.75fr)_minmax(140px,.95fr)]'
+
 function Fila({ fila, encargados, onCambio }: { fila: FilaSistema; encargados: string[]; onCambio: () => void }) {
   const [editando, setEditando] = useState(false)
   const fase = fila.fases.find(f => f.key === fila.actual)!
+  const terminado = fila.sigue.quien === 'listo'
+  const gente = personas(fila.seguimiento.encargado).map(p => p.nombre)
   const celda = 'min-w-0'
-  const rotuloMovil = 'pb-1 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:hidden'
+  const rotuloMovil = 'rotulo pb-1 lg:hidden'
   return (
-    <li className="grid gap-x-7 gap-y-3 border-b border-[var(--line)] py-6 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1.2fr)_minmax(140px,.95fr)_minmax(170px,1.15fr)_minmax(150px,1fr)_minmax(140px,.8fr)_minmax(170px,1.2fr)] lg:items-start">
-      <div className={celda}>
-        <Link href={fila.href} className="font-serif text-[20px] leading-tight tracking-[-.01em] text-[var(--ink)] hover:underline">{fila.nombre}</Link>
-        <p className="mt-1.5 text-[13px] leading-[1.45] text-[var(--rotulo)]">
-          {fila.ultimo ? <>{fila.ultimo.texto} · {fila.ultimo.cuando}</> : `Inicio ${fila.inicio}`}
-        </p>
+    <li className={`grid gap-x-6 gap-y-3 border-t border-[var(--line)] px-5 py-4 transition-colors hover:bg-[var(--superficie)]/50 sm:grid-cols-2 sm:px-6 ${COLUMNAS} lg:items-center`}>
+      <div className={`flex items-center gap-3.5 ${celda}`}>
+        <Avatar nombre={fila.nombre} size={40} cuadrado />
+        <div className="min-w-0">
+          <Link href={fila.href} className="block truncate text-[15px] font-bold leading-tight text-[var(--ink)] hover:text-[var(--primario)]">{fila.nombre}</Link>
+          <p className="mt-0.5 truncate text-[12.5px] text-[var(--rotulo)]">
+            {fila.ultimo ? <>{fila.ultimo.texto} · {fila.ultimo.cuando}</> : `Inicio ${fila.inicio}`}
+          </p>
+        </div>
       </div>
 
       <div className={`relative ${celda}`}>
         <p className={rotuloMovil}>Fase</p>
         <button type="button" onClick={() => setEditando(true)}
-          className="-mx-2 -my-1 w-[calc(100%+16px)] rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-[var(--superficie)]"
+          className={`${FASE_CLASE[terminado ? 'terminado' : fila.actual]} -mx-2 -my-1 block w-[calc(100%+16px)] rounded-[10px] px-2 py-1.5 text-left transition-colors hover:bg-white`}
           aria-label={`Fase de ${fila.nombre}: ${fase.label}. Editar el cliente`}>
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="text-[15px] font-semibold text-[var(--ink)]">{fase.label}</span>
-            <span className="text-[11px] text-[var(--rotulo)]" aria-hidden="true">✎</span>
+          <ChipFase fase={terminado ? 'terminado' : fila.actual}>{terminado ? 'Terminado' : fase.label}</ChipFase>
+          <span className="mt-2 flex items-center gap-2.5" title={fila.fases.map(f => `${f.label}: ${f.detalle}`).join('\n')}>
+            <span className="h-[6px] flex-1 overflow-hidden rounded-full bg-[var(--papel-hondo)]">
+              <span className="block h-full rounded-full bg-[var(--primario)]" style={{ width: `${fila.avance}%` }} />
+            </span>
+            <span className="w-9 flex-none text-right text-[12.5px] tabular-nums text-[var(--secundario)]">{fila.avance}%</span>
           </span>
-          <span className="mt-2 block"><Recorrido fases={fila.fases} actual={fila.actual} /></span>
-          <span className="mt-1.5 block truncate text-[13px] text-[var(--secundario)]">{fase.detalle}</span>
         </button>
         {editando && <EditorCliente fila={fila} encargados={encargados} onCerrar={() => setEditando(false)} />}
       </div>
@@ -168,20 +157,25 @@ function Fila({ fila, encargados, onCambio }: { fila: FilaSistema; encargados: s
         {/* Por fuera y andando, la columna Fase ya lo dice todo: repetirlo sería ruido. */}
         {fila.sigue.quien !== 'fuera' && (
           <p>
-            <span className={`inline-flex rounded-[3px] px-[7px] py-[2px] text-[12.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
+            <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[12px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
           </p>
         )}
-        {fila.sigue.detalle && (
+        {fila.sigue.detalle ? (
           fila.sigue.href
-            ? <Link href={fila.sigue.href} className="mt-1.5 block text-[14.5px] leading-[1.45] text-[var(--ink)] underline decoration-[var(--line)] underline-offset-[3px] hover:decoration-[var(--ink)]">{fila.sigue.detalle} →</Link>
-            : <p className="mt-1.5 text-[14.5px] leading-[1.45] text-[var(--cuerpo)]">{fila.sigue.detalle}</p>
-        )}
+            ? <Link href={fila.sigue.href} className="mt-1.5 block text-[13.5px] leading-[1.4] text-[var(--ink)] hover:text-[var(--primario)]">{fila.sigue.detalle} →</Link>
+            : <p className="mt-1.5 text-[13.5px] leading-[1.4] text-[var(--cuerpo)]">{fila.sigue.detalle}</p>
+        ) : fila.sigue.quien === 'fuera' && <p className="text-[13.5px] text-[var(--secundario)]">{fase.detalle}</p>}
       </div>
 
       <div className={celda}>
-        <p className={rotuloMovil}>Encargado</p>
-        <Editable etiqueta={`Encargado de ${fila.nombre}`} valor={fila.seguimiento.encargado} placeholder="Asignar" multilinea
-          onGuardar={async v => { await guardar(fila.id, { encargado: v }); onCambio() }} />
+        <p className={rotuloMovil}>Responsable</p>
+        <div className="flex items-center gap-1.5">
+          {gente.length > 0 && <Avatares nombres={gente} size={26} />}
+          <div className="min-w-0 flex-1">
+            <Editable etiqueta={`Encargado de ${fila.nombre}`} valor={fila.seguimiento.encargado} placeholder="Asignar" multilinea
+              onGuardar={async v => { await guardar(fila.id, { encargado: v }); onCambio() }} />
+          </div>
+        </div>
       </div>
 
       <div className={celda}>
@@ -209,37 +203,42 @@ export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
   const encargados = useMemo(() => encargadosConocidos(filas.map(f => f.seguimiento.encargado)), [filas])
 
   const pestaña = (activa: boolean) =>
-    `-mb-px inline-flex items-baseline gap-1.5 border-b-2 pb-3 text-[14.5px] transition-colors ${
-      activa ? 'border-[var(--ink)] font-medium text-[var(--ink)]' : 'border-transparent text-[var(--secundario)] hover:text-[var(--ink)]'
+    `inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13.5px] font-medium transition-colors ${
+      activa ? 'border-[var(--primario)] bg-[var(--primario-suave)] text-[var(--primario)]' : 'border-[var(--line)] bg-white text-[var(--secundario)] hover:text-[var(--ink)]'
     }`
+  const cuenta = 'text-[12px] tabular-nums opacity-70'
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-[var(--line)]">
-        <nav aria-label="Filtrar por fase" className="flex flex-wrap gap-x-7 gap-y-2">
-          <button type="button" className={pestaña(filtro === 'todas')} aria-pressed={filtro === 'todas'} onClick={() => setFiltro('todas')}>
-            Todos <span className="font-mono text-[12px] tabular-nums text-[var(--rotulo)]">{filas.length}</span>
-          </button>
-          {FASES.map(f => (
-            <button key={f} type="button" className={pestaña(filtro === f)} aria-pressed={filtro === f} onClick={() => setFiltro(f)}>
-              {FASE_LABEL[f]} <span className="font-mono text-[12px] tabular-nums text-[var(--rotulo)]">{porFase.get(f) ?? 0}</span>
-            </button>
-          ))}
-        </nav>
+    <div className="tarjeta overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-5 pt-5 sm:px-6">
+        <div>
+          <h2 className="text-[17px] font-bold text-[var(--ink)]">Proyectos en curso</h2>
+          <p className="mt-0.5 text-[13.5px] text-[var(--secundario)]">Un clic en la fase abre el cliente; encargado, entrega y notas se editan aquí mismo.</p>
+        </div>
         {nosToca > 0 && (
-          <p className="pb-3 text-[13.5px] text-[var(--secundario)]">
-            <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[var(--banana)] ring-1 ring-[var(--ink)]" aria-hidden="true" />
+          <p className="rounded-full bg-[var(--primario-suave)] px-3 py-1 text-[12.5px] font-semibold text-[var(--primario)]">
             {nosToca} {nosToca === 1 ? 'cliente espera' : 'clientes esperan'} al equipo
           </p>
         )}
       </div>
 
-      <div className="hidden gap-x-7 border-b border-[var(--line)] pb-3 pt-6 text-[10.5px] font-mono uppercase tracking-[.12em] text-[var(--rotulo)] lg:grid lg:grid-cols-[minmax(170px,1.2fr)_minmax(140px,.95fr)_minmax(170px,1.15fr)_minmax(150px,1fr)_minmax(140px,.8fr)_minmax(170px,1.2fr)]">
-        <span>Cliente</span><span>Fase</span><span>Qué sigue</span><span className="px-2">Encargado</span><span className="px-2">Entrega</span><span className="px-2">Notas</span>
+      <nav aria-label="Filtrar por fase" className="flex flex-wrap gap-2 px-5 pb-4 pt-4 sm:px-6">
+        <button type="button" className={pestaña(filtro === 'todas')} aria-pressed={filtro === 'todas'} onClick={() => setFiltro('todas')}>
+          Todos <span className={cuenta}>{filas.length}</span>
+        </button>
+        {FASES.map(f => (
+          <button key={f} type="button" className={pestaña(filtro === f)} aria-pressed={filtro === f} onClick={() => setFiltro(f)}>
+            {FASE_LABEL[f]} <span className={cuenta}>{porFase.get(f) ?? 0}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className={`rotulo hidden gap-x-6 border-t border-[var(--line)] bg-[var(--superficie)]/60 px-6 py-3 lg:grid ${COLUMNAS}`}>
+        <span>Cliente</span><span>Fase y avance</span><span>Qué sigue</span><span>Responsable</span><span className="px-2">Entrega</span><span className="px-2">Notas</span>
       </div>
 
       {visibles.length === 0 ? (
-        <p className="py-12 text-center text-[14px] text-[var(--secundario)]">No hay clientes en {filtro === 'todas' ? 'la plataforma' : FASE_LABEL[filtro]}.</p>
+        <p className="border-t border-[var(--line)] py-12 text-center text-[14px] text-[var(--secundario)]">No hay clientes en {filtro === 'todas' ? 'la plataforma' : FASE_LABEL[filtro]}.</p>
       ) : (
         <ul aria-label="Clientes">
           {visibles.map(f => <Fila key={f.id} fila={f} encargados={encargados} onCambio={() => router.refresh()} />)}

@@ -7,9 +7,10 @@ import { STAGE_LABEL, haceCuanto } from '@/lib/landscape/stages'
 import { ETAPA_LABEL } from '@/lib/estrategia/stages'
 import { AUTOR_SINCRONIZADO } from '@/lib/deliverable/sync-estrategia'
 import {
-  estadoDeFases, faseActual, queSigue,
+  FASES, estadoDeFases, faseActual, queSigue,
   type FaseConEstado, type FaseSistema, type QueSigue, type SenalesProyecto,
 } from './sistema'
+import { tareasDeFase, type Tarea, type TareaCalculada } from './tareas'
 
 /** Una fila del Sistema M&B, lista para mostrar: todo formateado en el servidor. */
 export interface FilaSistema {
@@ -18,11 +19,17 @@ export interface FilaSistema {
   href: string
   /** “14 oct”. */
   inicio: string
+  /** El día en que arrancó, 'AAAA-MM-DD': el que puso el equipo o, si no, el de alta. */
+  inicioIso: string
+  /** Cuánto va del recorrido completo, de 0 a 100. */
+  avance: number
   fases: FaseConEstado[]
   actual: FaseSistema
   sigue: QueSigue
   seguimiento: Seguimiento
   ultimo?: { texto: string; cuando: string }
+  /** Las tareas de cada fase, para el detalle del proyecto. */
+  tareas: Record<FaseSistema, Tarea[]>
   /** Los pasos del Landscape, para el buscador. */
   pasos: { id: string; titulo: string; estado: string }[]
 }
@@ -32,6 +39,43 @@ const fechaCorta = (d: Date) => {
   const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', day: 'numeric', month: 'numeric' }).formatToParts(d)
   const v = (t: string) => Number(p.find(x => x.type === t)!.value)
   return `${v('day')} ${MESES[v('month') - 1]}`
+}
+
+const isoBogota = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(d)
+
+/**
+ * Cuánto va del recorrido: cada fase pesa lo mismo; una terminada cuenta entera y una en
+ * curso cuenta lo que lleva (“7/15”), o la mitad si no se puede contar.
+ */
+export function avanceDe(fases: FaseConEstado[]): number {
+  const parte = (f: FaseConEstado) => {
+    if (f.estado === 'completa') return 1
+    if (f.estado === 'pendiente') return 0
+    const [a, b] = (f.avance ?? '').split('/').map(Number)
+    return b > 0 ? a / b : 0.5
+  }
+  return Math.round((fases.reduce((n, f) => n + parte(f), 0) / fases.length) * 100)
+}
+
+/**
+ * Las tareas de las fases que la plataforma ve, calculadas con lo que hay guardado. Naming
+ * y Diseño no aparecen: esas van con su lista a mano. Ver ./tareas.ts
+ */
+function tareasCalculadas(s: SenalesProyecto): Partial<Record<FaseSistema, TareaCalculada[]>> {
+  const base = `/admin/projects/${s.projectId}`
+  return {
+    taller: [
+      { id: 'taller:entrevistas', titulo: 'Entrevistas a los respondientes', hecha: s.sesionesTotal > 0 && s.sesionesCompletas === s.sesionesTotal, href: `${base}/entrevistas` },
+      { id: 'taller:propuesta', titulo: 'Propuesta de valor', hecha: s.tienePropuesta, href: `${base}/propuesta` },
+      { id: 'taller:taller', titulo: 'Taller con el cliente', hecha: s.manual.taller === 'completa', href: `${base}/taller` },
+    ],
+    landscape: s.pasos.filter(p => p.estado !== 'no_aplica').map(p => ({
+      id: `landscape:${p.id}`, titulo: p.titulo, hecha: p.estado === 'hecho', porRevisar: p.estado === 'revisar', href: `${base}/landscape?paso=${p.id}`,
+    })),
+    estrategia: s.estrategia.map(e => ({
+      id: `estrategia:${e.key}`, titulo: e.label, hecha: e.aprobada, porRevisar: e.esperaDecision && !e.aprobada, href: `${base}/estrategia?etapa=${e.key}`,
+    })),
+  }
 }
 
 /**
@@ -95,6 +139,8 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       faseAMano: seguimiento.faseAMano,
     }
     const fases = estadoDeFases(senales)
+    // Por fuera no hay pasos reales que mirar: las cinco fases van con su lista a mano.
+    const calculadas = seguimiento.porFuera ? {} : tareasCalculadas(senales)
 
     // El último movimiento, venga de donde venga: Landscape, Estrategia o las entrevistas.
     const candidatos: { cuando: Date; texto: string }[] = []
@@ -114,12 +160,15 @@ export async function cargarSistema(db: AnyDb, ahora = new Date()): Promise<Fila
       id: r.id,
       nombre: r.name,
       href: `/admin/projects/${r.id}`,
-      inicio: fechaCorta(r.creadoEl),
+      inicio: fechaCorta(seguimiento.fechaInicio ? new Date(`${seguimiento.fechaInicio}T12:00:00-05:00`) : r.creadoEl),
+      inicioIso: seguimiento.fechaInicio ?? isoBogota(r.creadoEl),
+      avance: avanceDe(fases),
       fases,
       actual: faseActual(fases),
       sigue: queSigue(senales, fases),
       seguimiento,
       ultimo: ultimo && { texto: ultimo.texto, cuando: haceCuanto(ultimo.cuando, ahora) },
+      tareas: Object.fromEntries(FASES.map(f => [f, tareasDeFase(f, seguimiento.tareas, calculadas[f])])) as Record<FaseSistema, Tarea[]>,
       pasos: senales.pasos.map(p => ({ id: p.id, titulo: p.titulo, estado: p.estado })),
     }
   }))

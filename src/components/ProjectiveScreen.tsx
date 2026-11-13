@@ -86,7 +86,7 @@ export function ProjectiveScreen({ question, index, total, initial, canGoBack, o
         )}
         <button disabled={!choice}
           onClick={() => onAnswer({ rawText: why.trim(), imageChoice: choice })}
-          className="group flex items-center gap-2 rounded-xl bg-[var(--ink)] px-6 py-3 font-semibold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:active:scale-100">
+          className="group flex items-center gap-2 rounded-xl bg-[var(--primario)] px-6 py-3 font-semibold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:active:scale-100">
           {index === total ? 'Finalizar' : 'Siguiente'}
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2"
             className="transition-transform duration-200 group-hover:translate-x-1">

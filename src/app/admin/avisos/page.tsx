@@ -15,7 +15,7 @@ export default async function Avisos() {
   const vistosHasta = quien?.avisosVistosHasta ?? null
   const ahora = new Date()
   return (
-    <AdminShell>
+    <AdminShell seccion="avisos">
       <EncabezadoPagina rotulo="Panel interno" titulo="Avisos" bajada="Cada vez que un cliente termina su entrevista." />
       <MarcarVistos />
       {avisos.length === 0 ? (

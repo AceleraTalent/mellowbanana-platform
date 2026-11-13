@@ -28,6 +28,24 @@ export function fechaCorta(fecha: string, hoy = new Date()): string {
   return `${d} ${MESES[m - 1]}${a !== hoy.getFullYear() ? ` ${a}` : ''}`
 }
 
+/** El valor del proyecto, corto: “$118M”, “$850.000”. */
+export function valorCorto(pesos: number): string {
+  if (pesos >= 1_000_000) return `$${(pesos / 1_000_000).toLocaleString('es-CO', { maximumFractionDigits: 1 })}M`
+  return `$${pesos.toLocaleString('es-CO')}`
+}
+
+/** Lo que se escribió en el campo de valor, en pesos: cuentan sólo los dígitos. */
+export function pesosDe(texto: string): number | null {
+  const digitos = texto.replace(/[^0-9]/g, '')
+  return digitos ? Number(digitos) : null
+}
+
+/** “15 oct 2026”: la fecha con el año siempre, para la cabecera del proyecto. */
+export function fechaLarga(fecha: string): string {
+  const [a, m, d] = fecha.split('-').map(Number)
+  return `${d} ${MESES[m - 1]} ${a}`
+}
+
 /** Para el lado de la fecha: cuánto falta, en palabras. */
 export function cuandoVence(fecha: string, hoy = new Date()): { texto: string; vencida: boolean } {
   const dias = diasHasta(fecha, hoy)

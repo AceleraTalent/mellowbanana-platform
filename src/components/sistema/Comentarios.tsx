@@ -75,7 +75,7 @@ export function Comentarios({ projectId }: { projectId: string }) {
           rows={1}
           maxLength={2000}
           placeholder="Qué pasó, qué se decidió, qué dijo el cliente"
-          className="min-h-[44px] w-full resize-none rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[14.5px] leading-[1.45] text-[var(--ink)] outline-none transition-colors [field-sizing:content] placeholder:text-[var(--rotulo)] hover:border-[#CFC9BB] focus:border-[var(--ink)]"
+          className="min-h-[44px] w-full resize-none rounded-[10px] border border-[var(--line)] bg-white px-3.5 py-2.5 text-[14.5px] leading-[1.45] text-[var(--ink)] outline-none transition-colors [field-sizing:content] placeholder:text-[var(--rotulo)] hover:border-[var(--apagado)] focus:border-[var(--ink)]"
         />
         <button type="button" onClick={comentar} disabled={enviando || !texto.trim()} className={`${BOTON_SECUNDARIO} flex-none disabled:opacity-40`}>
           {enviando ? 'Publicando…' : 'Comentar'}
@@ -93,7 +93,7 @@ export function Comentarios({ projectId }: { projectId: string }) {
               <li key={c.id} className="flex gap-3">
                 <span aria-hidden="true"
                   className={`mt-0.5 grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-[10px] font-semibold ${
-                    c.desde === 'claude' && c.autor === 'Claude' ? 'bg-[var(--ink)] text-white' : 'bg-[var(--papel-hondo)] text-[var(--ink)]'
+                    c.desde === 'claude' && c.autor === 'Claude' ? 'bg-[var(--primario)] text-white' : 'bg-[var(--papel-hondo)] text-[var(--ink)]'
                   }`}>
                   {c.autor === 'Claude' ? 'C' : iniciales}
                 </span>

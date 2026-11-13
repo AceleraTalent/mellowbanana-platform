@@ -17,7 +17,7 @@ function fila(id: string, actual: FaseSistema, quien: Quien, texto: string): Fil
     id,
     nombre: `Cliente ${id}`,
     href: `/admin/projects/${id}`,
-    inicio: '14 oct',
+    inicio: '14 oct', inicioIso: '2026-10-14', avance: 0, tareas: { taller: [], landscape: [], estrategia: [], naming: [], diseno: [] },
     fases: FASES.map(key => ({ key, label: FASE_LABEL[key], estado: key === actual ? 'en_curso' : 'pendiente', detalle: 'detalle' })),
     actual,
     sigue: { quien, texto },

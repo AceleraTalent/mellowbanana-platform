@@ -71,6 +71,13 @@
       "when": 1792678347066,
       "tag": "0009_fase_a_mano",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794589490272,
+      "tag": "0010_detalle_de_proyecto",
+      "breakpoints": true
     }
   ]
 }

@@ -83,3 +83,29 @@ describe('validarCambios', () => {
     expect(validarCambios({ fechaEntrega: '2026-11-30' })).toEqual({ fechaEntrega: '2026-11-30' })
   })
 })
+
+describe('el detalle del proyecto: inicio, valor y tareas', () => {
+  it('guarda la fecha de inicio y el valor, y los borra con null', async () => {
+    await actualizarSeguimiento(db, projectId, validarCambios({ fechaInicio: '2026-09-14', valor: 118000000 }))
+    expect((await seguimientosPorProyecto(db)).get(projectId)).toMatchObject({ fechaInicio: '2026-09-14', valor: 118000000 })
+    await actualizarSeguimiento(db, projectId, validarCambios({ valor: null }))
+    expect((await seguimientosPorProyecto(db)).get(projectId)).toMatchObject({ fechaInicio: '2026-09-14', valor: null })
+  })
+
+  it('rechaza un inicio que no es fecha y un valor que no es un entero de pesos', () => {
+    expect(() => validarCambios({ fechaInicio: '14 de septiembre' })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ valor: '118M' })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ valor: -5 })).toThrow(ErrorDeValidacion)
+    expect(() => validarCambios({ tareas: { tipo: 'otro' } })).toThrow(ErrorDeValidacion)
+  })
+
+  it('los cambios de tareas se acumulan y no tocan el resto del seguimiento', async () => {
+    await actualizarSeguimiento(db, projectId, { encargado: 'Isa' })
+    await actualizarSeguimiento(db, projectId, validarCambios({ tareas: { tipo: 'asignar', id: 'landscape:2.2', responsable: 'Lina', fecha: '2026-11-20' } }))
+    await actualizarSeguimiento(db, projectId, validarCambios({ tareas: { tipo: 'marcar', id: 'diseno:m1', hecha: true } }))
+    expect((await seguimientosPorProyecto(db)).get(projectId)).toMatchObject({
+      encargado: 'Isa',
+      tareas: { asignadas: { 'landscape:2.2': { responsable: 'Lina', fecha: '2026-11-20' } }, hechas: { 'diseno:m1': true } },
+    })
+  })
+})

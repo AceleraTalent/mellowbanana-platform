@@ -15,7 +15,7 @@ export function Breather({ message, closing, emoji, cta, onContinue }: {
           <p className="font-serif text-[26px] font-medium leading-snug text-ink md:text-[30px]">{message}</p>
         </div>
         <button onClick={onContinue}
-          className="animate-q-late group mx-auto flex items-center gap-2 rounded-xl bg-[var(--ink)] px-7 py-3 font-semibold text-white transition hover:opacity-90 active:scale-95">
+          className="animate-q-late group mx-auto flex items-center gap-2 rounded-xl bg-[var(--primario)] px-7 py-3 font-semibold text-white transition hover:opacity-90 active:scale-95">
           {label}
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2"
             className="transition-transform duration-200 group-hover:translate-x-1">

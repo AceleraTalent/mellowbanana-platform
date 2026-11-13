@@ -95,7 +95,7 @@ function NumeroDeFase({ n, estado, enCurso }: { n: number; estado: EstadoFase; e
     <span
       aria-hidden="true"
       className={`grid h-[18px] w-[18px] flex-none place-items-center rounded-full font-mono text-[10px] tabular-nums ${
-        enCurso ? 'bg-[var(--ink)] text-white' : 'border border-[var(--apagado)] text-[var(--rotulo)]'
+        enCurso ? 'bg-[var(--primario)] text-white' : 'border border-[var(--apagado)] text-[var(--rotulo)]'
       }`}
     >
       {n}
@@ -118,7 +118,7 @@ function Punto({ estado }: { estado: EntradaIndice['estado'] }) {
       </svg>
     )
   }
-  if (estado === 'actual') return <span className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--ink)]" />
+  if (estado === 'actual') return <span className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--primario)]" />
   if (estado === 'pendiente') return <span className="h-[7px] w-[7px] flex-none rounded-full border border-[var(--apagado)]" />
   return <span className="h-[7px] w-[7px] flex-none rounded-full border border-dashed border-[#E0DCD0]" />
 }
@@ -187,7 +187,7 @@ function LoQueSigue({ sigue }: { sigue: SistemaDelProyecto['sigue'] }) {
     <>
       <span className="block font-mono text-[10px] uppercase tracking-[.12em] text-[var(--rotulo)]">Lo que sigue</span>
       <span className="mt-2 flex flex-col items-start gap-1">
-        <span className={`inline-flex rounded-[3px] px-[7px] py-[2px] text-[12px] font-semibold ${CHIP[sigue.quien]}`}>
+        <span className={`inline-flex rounded-full px-2.5 py-[2px] text-[12px] font-semibold ${CHIP[sigue.quien]}`}>
           {MARCA[sigue.quien]}{sigue.texto}
         </span>
         {sigue.detalle && (

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, unique, primaryKey, index, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, timestamp, jsonb, unique, primaryKey, index, boolean, bigint } from 'drizzle-orm/pg-core'
 
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -95,6 +95,9 @@ export const projectSeguimiento = pgTable('project_seguimiento', {
   conclusionesTaller: text('conclusiones_taller'),         // lo que volvió del Miro, si alguien lo pegó
   porFuera: boolean('por_fuera').notNull().default(false), // lleva su proceso fuera de la plataforma: todo a mano
   faseAMano: boolean('fase_a_mano').notNull().default(false), // en la plataforma, pero el equipo movió la fase a mano
+  fechaInicio: text('fecha_inicio'),                       // 'AAAA-MM-DD'; sin esto, el día en que se creó el cliente
+  valor: bigint('valor', { mode: 'number' }),              // el valor del proyecto en pesos, si el equipo lo anotó
+  tareas: jsonb('tareas').notNull().default({}),           // TareasGuardadas: ver src/lib/seguimiento/tareas.ts
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

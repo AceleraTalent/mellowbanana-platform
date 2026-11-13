@@ -29,7 +29,7 @@ export function ComparadorVersiones(props: {
 
   return (
     <section>
-      <div className="rounded-t-[9px] bg-[var(--ink)] px-4 py-3 text-[13px] text-white">
+      <div className="rounded-t-[9px] bg-[var(--primario)] px-4 py-3 text-[13px] text-white">
         {nueva.autor} escribió una versión nueva después de la aprobación. Lo aprobado sigue vigente hasta que decidas.
       </div>
 

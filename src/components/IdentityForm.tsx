@@ -35,7 +35,7 @@ export function IdentityForm({ onSubmit }: {
                 className="rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none transition focus:border-[var(--banana)] focus:ring-2 focus:ring-[var(--banana)]/40" />
             </div>
           ))}
-          <button className="group mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-3.5 font-semibold text-white transition hover:opacity-90 active:scale-[0.98]">
+          <button className="group mt-3 flex items-center justify-center gap-2 rounded-xl bg-[var(--primario)] px-4 py-3.5 font-semibold text-white transition hover:opacity-90 active:scale-[0.98]">
             Comenzar la entrevista
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2"
               className="transition-transform duration-200 group-hover:translate-x-1">

@@ -39,7 +39,7 @@ export function SectionNav({ sections, currentIndex, answeredIds, onJump }: {
                     isActive
                       ? 'bg-[var(--banana)] text-ink'
                       : isDone
-                        ? 'bg-[var(--ink)] text-white'
+                        ? 'bg-[var(--primario)] text-white'
                         : 'bg-black/[0.06] text-[#cfc7b4]'
                   }`}
                 >

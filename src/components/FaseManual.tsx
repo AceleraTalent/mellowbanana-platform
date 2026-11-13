@@ -58,7 +58,7 @@ export function FaseManual({ projectId, fase, label, estado }: {
             onClick={() => void elegir(o)}
             className={`flex-auto whitespace-nowrap rounded-[7px] border px-2 py-1 text-[12px] transition-colors duration-150 disabled:cursor-wait ${
               valor === o
-                ? 'border-[var(--ink)] bg-[var(--ink)] text-white'
+                ? 'border-[var(--ink)] bg-[var(--primario)] text-white'
                 : 'border-[var(--line)] bg-white text-[var(--secundario)] hover:border-[var(--ink)] hover:text-[var(--ink)]'
             }`}
           >

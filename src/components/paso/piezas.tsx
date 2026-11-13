@@ -11,7 +11,7 @@ import { mensajeParaSeguir, type PasoConEstado } from '@/lib/landscape/pasos'
  */
 
 const BOTON = 'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[13px] font-semibold transition-colors duration-150 disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none'
-export const BOTON_PRIMARIO = `${BOTON} bg-[var(--ink)] text-white hover:bg-[#2b2720]`
+export const BOTON_PRIMARIO = `${BOTON} bg-[var(--primario)] text-white hover:brightness-110`
 export const BOTON_SECUNDARIO = `${BOTON} border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--ink)]`
 
 const CLAUDE_AI = 'https://claude.ai/projects'

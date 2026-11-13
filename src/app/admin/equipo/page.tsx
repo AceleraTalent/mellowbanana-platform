@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 export default async function Equipo() {
   const [quien, personas] = await Promise.all([quienEntro(), listarUsuarios(db)])
   return (
-    <AdminShell>
+    <AdminShell seccion="equipo">
       <EncabezadoPagina rotulo="Panel interno" titulo="Equipo" bajada="Cada persona entra con su usuario y su clave." />
       <PanelEquipo
         personas={personas.map(p => ({ id: p.id, nombre: p.nombre, usuario: p.usuario, esAdmin: p.esAdmin, activo: p.activo }))}

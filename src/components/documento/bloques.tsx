@@ -82,7 +82,7 @@ export function Puntos({ items, numerada }: { items: unknown; numerada?: boolean
         <li key={i} className="flex gap-3.5 text-[16px] leading-[1.65] text-[var(--cuerpo)]">
           {numerada
             ? <span className="w-6 flex-none pt-[3px] font-mono text-[12.5px] tabular-nums text-[var(--rotulo)]">{String(i + 1).padStart(2, '0')}</span>
-            : <span className="mt-[11px] h-[5px] w-[5px] flex-none rounded-full bg-[var(--ink)]" aria-hidden="true" />}
+            : <span className="mt-[11px] h-[5px] w-[5px] flex-none rounded-full bg-[var(--primario)]" aria-hidden="true" />}
           <span>{t}</span>
         </li>
       ))}

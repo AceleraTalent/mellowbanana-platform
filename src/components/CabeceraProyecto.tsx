@@ -66,7 +66,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
         className="inline-flex items-center gap-1.5 text-[13px] text-[var(--secundario)] transition-colors duration-200 hover:text-ink"
       >
         <span aria-hidden="true">←</span>
-        Sistema M&amp;B
+        Pipeline
       </Link>
 
       {modo === 'renombrando' ? (
@@ -87,7 +87,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
           />
           <div className="mt-1.5 flex items-center gap-2">
             <button type="submit" disabled={ocupado}
-              className="rounded-lg bg-[var(--ink)] px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50">
+              className="rounded-lg bg-[var(--primario)] px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50">
               Guardar
             </button>
             <button type="button" onClick={cerrar}

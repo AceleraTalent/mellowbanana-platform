@@ -95,7 +95,7 @@ export function DeliverablePanel({ projectId, view, deliverable, sessionsCount }
           <span className="font-mono tabular-nums text-[var(--rotulo)]">{progress.done}/{STEPS.length}</span>
         </div>
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
-          <div className="h-full rounded-full bg-[var(--ink)] transition-[width] duration-500 ease-out"
+          <div className="h-full rounded-full bg-[var(--primario)] transition-[width] duration-500 ease-out"
             style={{ width: `${(progress.done / STEPS.length) * 100}%` }} />
         </div>
       </div>

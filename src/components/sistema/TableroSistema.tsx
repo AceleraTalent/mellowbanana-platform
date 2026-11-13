@@ -10,15 +10,15 @@ import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { CHIP, MARCA } from './chips'
 import { guardar } from './TablaSistema'
 import { EditorCliente } from './EditorCliente'
-import { cuandoVence, encargadosConocidos, fechaCorta, personas } from './cliente'
+import { diasHasta, encargadosConocidos, fechaCorta, personas } from './cliente'
+import { Avatar, Avatares, FASE_CLASE, SelloFase } from './fase'
 
 /**
- * El Sistema M&B como tablero, igual que el Tráfico en Notion pero de arriba abajo: un
- * carril por fase, en el orden del proceso. Los carriles crecen hacia abajo, así una fase
- * con veinte clientes no aplasta a la que tiene cuatro ni obliga a desplazarse de lado.
- * Cualquier tarjeta se arrastra de un carril a otro, y un clic abre el cliente para
- * editarlo. En un cliente que hace su proceso en la plataforma, moverlo deja la fase a mano
- * (manda lo que dijo el equipo); desde el editor se vuelve a calcular con lo aprobado.
+ * El Pipeline como Kanban: una columna por fase, en el orden del proceso, y al final lo
+ * terminado. Cualquier tarjeta se arrastra de una columna a otra, y un clic abre el
+ * cliente para editarlo. En un cliente que hace su proceso en la plataforma, moverlo deja
+ * la fase a mano (manda lo que dijo el equipo); desde el editor se vuelve a calcular con
+ * lo aprobado.
  */
 
 type Carril = FaseSistema | 'terminado'
@@ -42,44 +42,36 @@ function ordenar(a: FilaSistema, b: FilaSistema): number {
 
 function Estado({ fila }: { fila: FilaSistema }) {
   if (!fila.seguimiento.porFuera) {
-    return (
-      <span className="mt-2 flex min-w-0 items-baseline gap-2">
-        <span className={`inline-flex flex-none rounded-[3px] px-[6px] py-[1px] text-[11.5px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
-        {fila.sigue.detalle && <span className="truncate text-[12.5px] text-[var(--secundario)]">{fila.sigue.detalle}</span>}
-      </span>
-    )
+    return <span className={`inline-flex flex-none self-start rounded-full px-2.5 py-[3px] text-[12px] font-semibold ${CHIP[fila.sigue.quien]}`}>{MARCA[fila.sigue.quien]}{fila.sigue.texto}</span>
   }
   const e = estadoDe(fila)
   if (e === 'en_curso' || fila.sigue.quien === 'listo') return null
-  const marca = {
-    sin_empezar: <span className="h-[9px] w-[9px] rounded-full border border-dashed border-[var(--rotulo)]" />,
-    cliente: <span className="h-[9px] w-[9px] rounded-full border-[1.5px] border-[var(--secundario)]" />,
-    pausa: <span className="flex gap-[2px]"><span className="h-[9px] w-[2.5px] rounded-[1px] bg-[var(--secundario)]" /><span className="h-[9px] w-[2.5px] rounded-[1px] bg-[var(--secundario)]" /></span>,
-  }[e]
-  return <span className="mt-1.5 flex items-center gap-1.5 text-[12.5px] text-[var(--secundario)]">{marca}{ESTADO_CLIENTE_LABEL[e]}</span>
-}
-
-function Personas({ encargado }: { encargado: string | null }) {
-  const gente = personas(encargado)
-  if (!gente.length) return <span className="text-[12px] text-[var(--rotulo)]">Sin asignar</span>
-  const visibles = gente.slice(0, 3)
   return (
-    <span className="flex items-center gap-1" title={gente.map(p => p.nombre).join(', ')}>
-      <span className="sr-only">{gente.map(p => p.nombre).join(', ')}</span>
-      {visibles.map(p => (
-        <span key={p.nombre} aria-hidden="true"
-          className="grid h-[24px] w-[24px] place-items-center rounded-full bg-[var(--papel-hondo)] text-[10px] font-semibold tracking-[.02em] text-[var(--ink)]">
-          {p.iniciales}
-        </span>
-      ))}
-      {gente.length > 3 && <span aria-hidden="true" className="ml-1 text-[11.5px] text-[var(--secundario)]">+{gente.length - 3}</span>}
+    <span className={`inline-flex flex-none self-start rounded-full px-2.5 py-[3px] text-[12px] font-semibold ${e === 'pausa' ? CHIP.pausa : CHIP.cliente}`}>
+      {e === 'pausa' ? MARCA.pausa : e === 'cliente' ? MARCA.cliente : ''}{ESTADO_CLIENTE_LABEL[e]}
     </span>
   )
 }
 
-function Tarjeta({ fila, onAbrir, onArrastrar }: { fila: FilaSistema; onAbrir: () => void; onArrastrar: (id: string | null) => void }) {
+/** Cuánto falta para la entrega, corto: “38 d”, “Hoy”, “4 d de retraso”. */
+function Plazo({ fecha }: { fecha: string }) {
+  const dias = diasHasta(fecha)
+  const texto = dias === 0 ? 'Hoy' : dias > 0 ? `${dias} d` : `${-dias} d de retraso`
+  return (
+    <span title={`Entrega: ${fechaCorta(fecha)}`} className={`flex items-center gap-1.5 text-[12.5px] font-medium tabular-nums ${dias < 0 ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+      {texto}
+    </span>
+  )
+}
+
+function Tarjeta({ fila, carril, onAbrir, onArrastrar }: { fila: FilaSistema; carril: Carril; onAbrir: () => void; onArrastrar: (id: string | null) => void }) {
   const fecha = fila.seguimiento.fechaEntrega
-  const vence = fecha ? cuandoVence(fecha) : null
+  const gente = personas(fila.seguimiento.encargado).map(p => p.nombre)
+  const fase = fila.fases.find(f => f.key === fila.actual)
+  // En la plataforma, la línea de abajo dice qué sigue puntualmente. Por fuera no hay nada
+  // que agregar: “En curso” repetido en cada tarjeta es ruido.
+  const bajada = fila.sigue.detalle ?? (fila.seguimiento.porFuera || fila.sigue.quien === 'listo' ? undefined : fase?.detalle)
   return (
     <li
       draggable
@@ -89,20 +81,28 @@ function Tarjeta({ fila, onAbrir, onArrastrar }: { fila: FilaSistema; onAbrir: (
       className="cursor-grab active:cursor-grabbing"
     >
       <button type="button" onClick={onAbrir}
-        className="flex h-full w-full flex-col rounded-[12px] border border-[var(--line)] bg-white p-3.5 text-left transition-[border-color,box-shadow] duration-150 hover:border-[#CFC9BB] hover:shadow-[0_3px_12px_rgba(21,18,12,.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]">
-        <span className="text-[15px] font-semibold leading-snug text-[var(--ink)]">{fila.nombre}</span>
-        <Estado fila={fila} />
-        {fila.seguimiento.notas && (
-          <span className="mt-1.5 line-clamp-2 whitespace-pre-line text-[13px] leading-[1.45] text-[var(--secundario)]">{fila.seguimiento.notas}</span>
-        )}
-        <span className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <Personas encargado={fila.seguimiento.encargado} />
-          {fecha && vence && (
-            <span title={vence.texto} className={`text-[12px] tabular-nums ${vence.vencida ? 'text-[var(--error)]' : 'text-[var(--secundario)]'}`}>
-              {fechaCorta(fecha)}
-            </span>
-          )}
+        className={`${FASE_CLASE[carril]} tarjeta flex w-full flex-col gap-3 p-4 text-left transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--f)_45%,var(--line))] hover:shadow-[0_8px_24px_rgba(16,24,40,.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primario)]`}>
+        <span className="flex items-start gap-3">
+          <Avatar nombre={fila.nombre} size={38} cuadrado />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[15px] font-bold leading-snug text-[var(--ink)]">{fila.nombre}</span>
+            {bajada && <span className="mt-0.5 line-clamp-2 text-[13px] leading-[1.4] text-[var(--secundario)]">{bajada}</span>}
+          </span>
         </span>
+        <Estado fila={fila} />
+        <span className="flex items-center gap-3">
+          <span className="h-[6px] flex-1 overflow-hidden rounded-full bg-[var(--superficie)]">
+            <span className="block h-full rounded-full bg-[var(--f)]" style={{ width: `${fila.avance}%` }} />
+          </span>
+          <span className="w-9 flex-none text-right text-[12.5px] font-medium tabular-nums text-[var(--secundario)]">{fila.avance}%</span>
+        </span>
+        <span className="flex min-h-[26px] items-center justify-between gap-2">
+          {gente.length ? <Avatares nombres={gente} /> : <span className="text-[12.5px] text-[var(--rotulo)]">Sin asignar</span>}
+          {fecha && <Plazo fecha={fecha} />}
+        </span>
+        {fila.seguimiento.notas && (
+          <span className="line-clamp-2 whitespace-pre-line border-t border-dashed border-[var(--line)] pt-3 text-[13px] leading-[1.45] text-[var(--secundario)]">{fila.seguimiento.notas}</span>
+        )}
       </button>
     </li>
   )
@@ -152,47 +152,54 @@ export function TableroSistema({ filas }: { filas: FilaSistema[] }) {
   const filaAbierta = abierto ? porId.get(abierto) : undefined
 
   return (
-    <div className="flex flex-col gap-3">
-      {error && <p role="alert" className="text-[13.5px] text-[var(--error)]">{error}</p>}
-      {CARRILES.map(c => {
-        const tarjetas = filas.filter(f => carril(f) === c).sort(ordenar)
-        const plegado = c === 'terminado' && !verTerminados && !arrastraMovible
-        const destino = arrastraMovible && sobre === c
-        return (
-          <section key={c} aria-label={TITULO[c]}
-            onDragOver={e => { if (!arrastraMovible) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setSobre(c) }}
-            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSobre(s => (s === c ? null : s)) }}
-            onDrop={e => { e.preventDefault(); setSobre(null); const id = e.dataTransfer.getData('text/plain'); if (id) mover(id, c) }}
-            className={`rounded-[18px] p-3 outline-offset-[-1px] transition-colors sm:p-4 lg:grid lg:grid-cols-[168px_minmax(0,1fr)] lg:gap-5 ${
-              destino ? 'bg-[var(--superficie)] outline-[1.5px] outline-dashed outline-[var(--ink)]' : 'bg-[#EFECE4]/70'
-            }`}
-          >
-            <header className="flex items-baseline justify-between gap-3 px-1 pb-3 lg:flex-col lg:items-start lg:justify-start lg:gap-1 lg:pb-0 lg:pt-1">
-              <h2 className="flex items-baseline gap-2">
-                <span className="font-serif text-[19px] tracking-[-.01em] text-[var(--ink)]">{TITULO[c]}</span>
-                <span className="text-[14px] tabular-nums text-[var(--rotulo)]">{tarjetas.length}</span>
-              </h2>
-              {tarjetas.length > 0 && !plegado && <p className="text-right text-[12.5px] leading-[1.45] text-[var(--secundario)] lg:text-left">{desglose(tarjetas)}</p>}
-              {c === 'terminado' && tarjetas.length > 0 && (
-                <button type="button" onClick={() => setVerTerminados(v => !v)}
-                  className="text-[13px] text-[var(--secundario)] underline decoration-[var(--line)] underline-offset-[3px] hover:text-[var(--ink)] hover:decoration-[var(--ink)]">
-                  {plegado ? 'Mostrar' : 'Ocultar'}
-                </button>
-              )}
-            </header>
+    <div>
+      {error && <p role="alert" className="mb-3 text-[13.5px] text-[var(--error)]">{error}</p>}
+      {/* `relative`: lo que va oculto para el lector de pantalla es absoluto, y sin esto se escapa del carril y ensancha la página. */}
+      <div className="relative -mx-4 flex items-start gap-4 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
+        {CARRILES.map((c, i) => {
+          const tarjetas = filas.filter(f => carril(f) === c).sort(ordenar)
+          const plegado = c === 'terminado' && !verTerminados && !arrastraMovible
+          const destino = arrastraMovible && sobre === c
+          return (
+            <section key={c} aria-label={TITULO[c]}
+              onDragOver={e => { if (!arrastraMovible) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setSobre(c) }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSobre(s => (s === c ? null : s)) }}
+              onDrop={e => { e.preventDefault(); setSobre(null); const id = e.dataTransfer.getData('text/plain'); if (id) mover(id, c) }}
+              className={`${FASE_CLASE[c]} flex w-[292px] flex-none flex-col rounded-[20px] border p-3 transition-colors ${
+                destino ? 'border-dashed border-[var(--f)] bg-[var(--f-suave)]' : 'border-[var(--line)] bg-white/60'
+              }`}
+            >
+              <header className="px-1 pb-3 pt-1">
+                <div className="flex items-center gap-3">
+                  <SelloFase fase={c} />
+                  <h2 className="min-w-0 flex-1 leading-tight">
+                    <span className="block truncate text-[15px] font-bold text-[var(--ink)]">{TITULO[c]}</span>
+                    <span aria-hidden="true" className="block text-[11px] font-semibold tabular-nums tracking-[.08em] text-[var(--rotulo)]">{String(i + 1).padStart(2, '0')}</span>
+                  </h2>
+                  <span className="grid h-[26px] min-w-[26px] flex-none place-items-center rounded-full border border-[var(--line)] bg-white px-1.5 text-[12.5px] font-semibold tabular-nums text-[var(--ink)]">{tarjetas.length}</span>
+                </div>
+                {tarjetas.length > 0 && !plegado && <p className="mt-2.5 text-[12.5px] leading-[1.4] text-[var(--secundario)]">{desglose(tarjetas)}</p>}
+                {c === 'terminado' && tarjetas.length > 0 && (
+                  <button type="button" onClick={() => setVerTerminados(v => !v)}
+                    className="mt-2 text-[13px] font-medium text-[var(--primario)] hover:underline">
+                    {plegado ? 'Mostrar' : 'Ocultar'}
+                  </button>
+                )}
+              </header>
 
-            {plegado ? null : tarjetas.length === 0 ? (
-              <p className="grid min-h-[64px] place-items-center rounded-[12px] border border-dashed border-[#D6D1C4] px-4 text-center text-[13px] text-[var(--rotulo)]">
-                {arrastraMovible ? `Suelta aquí para pasarlo a ${TITULO[c]}` : `Nadie en ${TITULO[c]}`}
-              </p>
-            ) : (
-              <ul className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(196px,1fr))]">
-                {tarjetas.map(f => <Tarjeta key={f.id} fila={f} onAbrir={() => setAbierto(f.id)} onArrastrar={setArrastrado} />)}
-              </ul>
-            )}
-          </section>
-        )
-      })}
+              {plegado ? null : tarjetas.length === 0 ? (
+                <p className="grid min-h-[84px] place-items-center rounded-[14px] border border-dashed border-[var(--apagado)] px-4 text-center text-[13px] text-[var(--rotulo)]">
+                  {arrastraMovible ? `Suelta aquí para pasarlo a ${TITULO[c]}` : `Nadie en ${TITULO[c]}`}
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {tarjetas.map(f => <Tarjeta key={f.id} fila={f} carril={c} onAbrir={() => setAbierto(f.id)} onArrastrar={setArrastrado} />)}
+                </ul>
+              )}
+            </section>
+          )
+        })}
+      </div>
       {filaAbierta && <EditorCliente fila={filaAbierta} encargados={encargados} onCerrar={() => setAbierto(null)} />}
     </div>
   )

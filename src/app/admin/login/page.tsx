@@ -78,7 +78,7 @@ function Login() {
             </p>
           )}
           <button disabled={busy}
-            className="mt-3 rounded-[8px] bg-[var(--ink)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[#2b2720] disabled:opacity-50">
+            className="mt-3 rounded-[8px] bg-[var(--primario)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[#2b2720] disabled:opacity-50">
             {busy ? 'Entrando…' : 'Entrar'}
           </button>
         </form>

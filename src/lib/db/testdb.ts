@@ -87,6 +87,9 @@ const DDL = `
     conclusiones_taller text,
     por_fuera boolean NOT NULL DEFAULT false,
     fase_a_mano boolean NOT NULL DEFAULT false,
+    fecha_inicio text,
+    valor bigint,
+    tareas jsonb NOT NULL DEFAULT '{}',
     updated_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE TABLE strategy_stages (
