@@ -1,17 +1,17 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
 import { FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { URGENCIA } from './chips'
-import { diasHasta, fechaCorta, personas, valorCorto } from './cliente'
+import { CajonCliente } from './CajonCliente'
+import { diasHasta, encargadosConocidos, fechaCorta, personas, valorCorto } from './cliente'
 import { Avatar, ChipEstado, ChipFase, type TonoEstado } from './fase'
 
 /**
  * El Pipeline como lista: una fila por cliente con su etapa, su avance, quién lo lleva, la
- * entrega, el valor y cómo va. No se edita acá: un clic en la fila abre el detalle del
- * cliente, donde está “Editar cliente”.
+ * entrega, el valor y cómo va. No se edita acá: un clic en la fila abre el resumen del
+ * cliente, y de ahí se lo edita o se va a su proyecto completo.
  */
 
 export { URGENCIA }
@@ -48,7 +48,9 @@ const TH = 'h-11 px-4 text-left align-middle text-[11px] font-semibold uppercase
 const TD = 'px-4 py-3 align-middle first:pl-6 last:pr-6'
 
 export function TablaSistema({ filas, fase }: { filas: FilaSistema[]; /** La fase que llega elegida desde el menú. */ fase?: FaseSistema }) {
-  const router = useRouter()
+  const [abierto, setAbierto] = useState<string | null>(null)
+  const filaAbierta = abierto ? filas.find(f => f.id === abierto) : undefined
+  const encargados = useMemo(() => encargadosConocidos(filas.map(f => f.seguimiento.encargado)), [filas])
   const visibles = filas
     .filter(f => !fase || f.actual === fase)
     .sort((a, b) => URGENCIA[a.sigue.quien] - URGENCIA[b.sigue.quien] || a.nombre.localeCompare(b.nombre))
@@ -87,12 +89,12 @@ export function TablaSistema({ filas, fase }: { filas: FilaSistema[]; /** La fas
                 const gente = personas(f.seguimiento.encargado).map(p => p.nombre)
                 const estado = estadoDe(f)
                 return (
-                  <tr key={f.id} onClick={() => router.push(f.href)} className="group cursor-pointer border-b border-border/60 transition-colors hover:bg-muted/50">
+                  <tr key={f.id} onClick={() => setAbierto(f.id)} className="group cursor-pointer border-b border-border/60 transition-colors hover:bg-muted/50">
                     <td className={TD}>
                       <div className="flex items-center gap-3">
                         <Avatar nombre={f.nombre} size={40} cuadrado />
                         <div className="min-w-0 max-w-[260px]">
-                          <Link href={f.href} onClick={e => e.stopPropagation()} className="block truncate font-semibold">{f.nombre}</Link>
+                          <button type="button" className="block max-w-full truncate text-left font-semibold">{f.nombre}</button>
                           <p className="truncate text-xs text-muted-foreground">{bajadaDe(f)}</p>
                         </div>
                       </div>
@@ -125,6 +127,7 @@ export function TablaSistema({ filas, fase }: { filas: FilaSistema[]; /** La fas
           </table>
         </div>
       )}
+      {filaAbierta && <CajonCliente fila={filaAbierta} encargados={encargados} onCerrar={() => setAbierto(null)} />}
     </div>
   )
 }

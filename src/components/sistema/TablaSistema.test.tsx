@@ -30,7 +30,7 @@ const filas = [
   fila('c', 'landscape', 'revisar', 'Por revisar'),
 ]
 
-const nombres = () => within(screen.getByRole('table', { name: 'Clientes' })).getAllByRole('link').map(l => l.textContent)
+const nombres = () => within(screen.getByRole('table', { name: 'Clientes' })).getAllByRole('button').map(l => l.textContent)
 
 describe('TablaSistema', () => {
   it('lo que espera al equipo va primero, y cuenta los proyectos', () => {

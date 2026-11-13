@@ -8,7 +8,7 @@ import {
 } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
 import { estadoDe, guardar } from './TablaSistema'
-import { EditorCliente } from './EditorCliente'
+import { CajonCliente } from './CajonCliente'
 import { diasHasta, encargadosConocidos, fechaCorta, personas, valorCorto } from './cliente'
 import { Avatar, Avatares, ChipEstado, FASE_ESTILO, SelloFase } from './fase'
 
@@ -176,7 +176,7 @@ export function TableroSistema({ filas }: { filas: FilaSistema[] }) {
           )
         })}
       </div>
-      {filaAbierta && <EditorCliente fila={filaAbierta} encargados={encargados} onCerrar={() => setAbierto(null)} />}
+      {filaAbierta && <CajonCliente fila={filaAbierta} encargados={encargados} onCerrar={() => setAbierto(null)} />}
     </div>
   )
 }

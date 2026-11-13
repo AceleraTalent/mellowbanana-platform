@@ -1,7 +1,10 @@
-import Link from 'next/link'
+'use client'
+
+import { useMemo, useState } from 'react'
 import { FASES, FASE_LABEL } from '@/lib/seguimiento/sistema'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
-import { fechaCorta } from './cliente'
+import { CajonCliente } from './CajonCliente'
+import { encargadosConocidos, fechaCorta } from './cliente'
 import { Avatar, FASE_ESTILO } from './fase'
 
 /**
@@ -19,6 +22,9 @@ const utc = (iso: string) => { const [a, m, d] = iso.split('-').map(Number); ret
 const isoBogota = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(d)
 
 export function LineaDeTiempo({ filas, hoy }: { filas: FilaSistema[]; hoy: Date }) {
+  const [abierto, setAbierto] = useState<string | null>(null)
+  const filaAbierta = abierto ? filas.find(f => f.id === abierto) : undefined
+  const encargados = useMemo(() => encargadosConocidos(filas.map(f => f.seguimiento.encargado)), [filas])
   const hoyMs = utc(isoBogota(hoy))
   const conFecha = filas.filter(f => f.seguimiento.fechaEntrega)
   const sinFecha = filas.length - conFecha.length
@@ -71,13 +77,13 @@ export function LineaDeTiempo({ filas, hoy }: { filas: FilaSistema[]; hoy: Date 
               const fin = entrega !== null && entrega > ini ? entrega : null
               return (
                 <li key={f.id} className="group flex items-center border-b border-border/50 last:border-0 hover:bg-muted/40">
-                  <Link href={f.href} className="flex w-[230px] shrink-0 items-center gap-2.5 px-5 py-3 text-left">
+                  <button type="button" onClick={() => setAbierto(f.id)} className="flex w-[230px] shrink-0 items-center gap-2.5 px-5 py-3 text-left">
                     <Avatar nombre={f.nombre} size={32} cuadrado />
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-semibold">{f.nombre}</span>
                       <span className="block truncate text-[11px] text-muted-foreground">{terminado ? 'Terminado' : FASE_LABEL[f.actual]}</span>
                     </span>
-                  </Link>
+                  </button>
                   <div className="relative h-12 flex-1">
                     {meses.map(m => <span key={m.ms} aria-hidden="true" className="absolute inset-y-0 w-px bg-border/50" style={{ left: `${pos(m.ms)}%` }} />)}
                     <span aria-hidden="true" className="absolute inset-y-0 z-10 w-0.5 bg-rose-500/80" style={{ left: `${pos(hoyMs)}%` }} />
@@ -117,6 +123,7 @@ export function LineaDeTiempo({ filas, hoy }: { filas: FilaSistema[]; hoy: Date 
           {sinFecha > 0 && <>{sinFecha} {sinFecha === 1 ? 'cliente no tiene' : 'clientes no tienen'} fecha de entrega.</>}
         </p>
       )}
+      {filaAbierta && <CajonCliente fila={filaAbierta} encargados={encargados} onCerrar={() => setAbierto(null)} />}
     </div>
   )
 }

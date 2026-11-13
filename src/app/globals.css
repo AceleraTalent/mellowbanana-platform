@@ -121,6 +121,11 @@ body {
 .animate-q { animation: q-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-q-late { animation: q-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
 
+/* El panel de resumen de un cliente entra desde la derecha. */
+@keyframes cajon-in { from { transform: translateX(32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.animate-cajon { animation: cajon-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) { .animate-cajon { animation: none; } }
+
 /* Reveal suave sin desplazamiento (panel "¿por qué?") — pensado para personas sensibles al movimiento. */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .animate-fade { animation: fade-in 0.25s ease both; }

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { estadoDeFases, faseActual, queSigue, type SenalesProyecto } from '@/lib/seguimiento/sistema'
 import { SEGUIMIENTO_VACIO } from '@/lib/db/seguimiento-store'
 import type { FilaSistema } from '@/lib/seguimiento/cargar'
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
+
 import { LineaDeTiempo } from './LineaDeTiempo'
 
 function fila(nombre: string, inicioIso: string, fechaEntrega: string | null, manual: SenalesProyecto['manual'] = {}): FilaSistema {
@@ -17,7 +19,7 @@ function fila(nombre: string, inicioIso: string, fechaEntrega: string | null, ma
 }
 
 const hoy = new Date('2026-11-13T15:00:00Z')
-const renglon = (nombre: string) => within(screen.getByRole('link', { name: new RegExp(nombre) }).closest('li')!)
+const renglon = (nombre: string) => within(screen.getByRole('button', { name: new RegExp(nombre) }).closest('li')!)
 
 describe('LineaDeTiempo', () => {
   it('con inicio y entrega dibuja la barra partida en las cinco fases', () => {

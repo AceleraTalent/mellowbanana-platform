@@ -90,7 +90,7 @@ describe('TableroSistema · un carril por fase', () => {
     expect(carril('Diseño').getByText('Viajero')).toBeTruthy()
   })
 
-  it('un cliente de la plataforma también se arrastra; un clic abre cualquier cliente para editarlo', async () => {
+  it('un cliente de la plataforma también se arrastra; un clic abre el resumen del cliente, y de ahí se edita', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
     vi.stubGlobal('fetch', fetchMock)
     render(<TableroSistema filas={filas} />)
@@ -100,6 +100,9 @@ describe('TableroSistema · un carril por fase', () => {
     expect(carril('Diseño').getByText('Grupo Heroica')).toBeTruthy()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/projects/c/seguimiento', expect.objectContaining({ body: JSON.stringify({ moverA: 'diseno' }) })))
     fireEvent.click(within(carril('Diseño').getByRole('listitem', { name: 'Viajero' })).getByRole('button'))
+    const resumen = within(screen.getByRole('dialog', { name: 'Viajero' }))
+    expect(resumen.getByRole('link', { name: /Ver proyecto completo/ })).toBeTruthy()
+    fireEvent.click(resumen.getByRole('button', { name: 'Editar' }))
     expect(screen.getByRole('dialog', { name: 'Editar Viajero' })).toBeTruthy()
   })
 })
