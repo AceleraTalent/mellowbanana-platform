@@ -210,7 +210,8 @@ function LoQueSigue({ sigue }: { sigue: SistemaDelProyecto['sigue'] }) {
  * Taller, Landscape y Estrategia no le abren nada, porque no los hace acá; las fases se
  * mueven desde la ficha o el tablero.
  */
-function IndicePorFuera({ projectId, nombre, subtitulo, sistema, enFicha }: {
+function IndicePorFuera({ projectId, nombre, subtitulo, sistema, enFicha, puedeBorrar }: {
+  puedeBorrar: boolean
   projectId: string
   nombre: string
   subtitulo: string
@@ -220,7 +221,7 @@ function IndicePorFuera({ projectId, nombre, subtitulo, sistema, enFicha }: {
   const terminado = sistema.sigue.quien === 'listo'
   return (
     <nav aria-label="Índice del proyecto" className="flex flex-col gap-5">
-      <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} />
+      <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} puedeBorrar={puedeBorrar} />
       <div>
         <Link
           href={`/admin/projects/${projectId}`}
@@ -269,6 +270,7 @@ export function ProjectIndex({
   fases,
   sistema,
   enResumen = false,
+  puedeBorrar = true,
 }: {
   projectId: string
   nombre: string
@@ -277,8 +279,10 @@ export function ProjectIndex({
   sistema?: SistemaDelProyecto
   /** La pantalla es el resumen del cliente: no hay etapa activa, se abre la fase en curso. */
   enResumen?: boolean
+  /** Borrar el cliente es de dirección. Lo completa AdminShell, que sabe quién entró. */
+  puedeBorrar?: boolean
 }) {
-  if (sistema?.porFuera) return <IndicePorFuera projectId={projectId} nombre={nombre} subtitulo={subtitulo} sistema={sistema} enFicha={enResumen} />
+  if (sistema?.porFuera) return <IndicePorFuera puedeBorrar={puedeBorrar} projectId={projectId} nombre={nombre} subtitulo={subtitulo} sistema={sistema} enFicha={enResumen} />
 
   const menu = fasesDelMenu(projectId, fases, sistema)
   const activas = fases.flatMap(f => f.entradas).filter(e => e.estado === 'actual')
@@ -299,7 +303,7 @@ export function ProjectIndex({
 
   return (
     <nav aria-label="Índice del proyecto" className="flex flex-col gap-5">
-      <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} />
+      <CabeceraProyecto projectId={projectId} nombre={nombre} subtitulo={subtitulo} puedeBorrar={puedeBorrar} />
 
       {mostrarSigue && <LoQueSigue sigue={sigue} />}
 

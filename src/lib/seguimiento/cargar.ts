@@ -32,6 +32,8 @@ export interface FilaSistema {
   tareas: Record<FaseSistema, Tarea[]>
   /** Los pasos del Landscape, para el buscador. */
   pasos: { id: string; titulo: string; estado: string }[]
+  /** Quien mira no es de dirección: el valor no viaja y no se muestra. Ver lib/admin/permisos.ts */
+  valorOculto?: boolean
 }
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']

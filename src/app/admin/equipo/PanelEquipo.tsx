@@ -63,7 +63,7 @@ function NuevaPersona({ onCreada }: { onCreada: (aviso: string) => void }) {
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-[13.5px] text-[var(--cuerpo)]">
           <input type="checkbox" checked={esAdmin} onChange={e => setEsAdmin(e.target.checked)} className="accent-[var(--ink)]" />
-          Puede administrar el equipo
+          Es de dirección: ve el valor de los proyectos, borra clientes y maneja las cuentas
         </label>
         <button type="submit" disabled={guardando} className={`${BOTON_PRIMARIO} px-4 py-2`}>
           {guardando ? 'Creando…' : 'Crear cuenta'}
@@ -161,7 +161,7 @@ export function PanelEquipo({ personas, yo }: {
                     <span className={`text-[15px] font-semibold ${p.activo ? 'text-[var(--ink)]' : 'text-[var(--apagado)] line-through'}`}>{p.nombre}</span>
                     <span className="ml-2 font-mono text-[12.5px] text-[var(--rotulo)]">{p.usuario}</span>
                     {propia && <span className="ml-2 text-[12.5px] text-[var(--secundario)]">(tú)</span>}
-                    {p.esAdmin && <span className="ml-2 rounded-full bg-[var(--banana)] px-2 py-[2px] text-[11.5px] font-semibold text-[var(--ink)]">Administra</span>}
+                    {p.esAdmin && <span className="ml-2 rounded-full bg-[var(--banana)] px-2 py-[2px] text-[11.5px] font-semibold text-[var(--ink)]">Dirección</span>}
                     {!p.activo && <span className="ml-2 text-[12.5px] text-[var(--secundario)]">Desactivada</span>}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -173,7 +173,7 @@ export function PanelEquipo({ personas, yo }: {
                     {admin && !propia && (
                       <>
                         <button type="button" disabled={guardando === p.id} onClick={() => cambiar(p, { esAdmin: !p.esAdmin })} className={DISCRETO}>
-                          {p.esAdmin ? 'Quitar administración' : 'Dar administración'}
+                          {p.esAdmin ? 'Pasar a equipo' : 'Pasar a dirección'}
                         </button>
                         <button type="button" disabled={guardando === p.id} onClick={() => cambiar(p, { activo: !p.activo })}
                           className={p.activo ? DISCRETO : BOTON_SECUNDARIO}>

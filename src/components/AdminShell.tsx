@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { cloneElement, isValidElement } from 'react'
 import { db } from '@/lib/db/client'
 import { quienEntro } from '@/lib/admin/auth'
+import { esDireccion, paraQuien } from '@/lib/admin/permisos'
 import { avisosRecientes, cuantosNuevos } from '@/lib/avisos'
 import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { PanelMovil } from './PanelMovil'
@@ -116,8 +117,8 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
 }) {
   // La barra y el inicio leen el mismo Sistema M&B: lo que espera al equipo acá es
   // exactamente lo que el Pipeline marca como del equipo.
-  const proyectos = sistema ?? await cargarSistema(db)
   const [quien, avisos] = await Promise.all([quienEntro(), avisosRecientes(db)])
+  const proyectos = paraQuien(sistema ?? await cargarSistema(db), quien)
   const nuevos = cuantosNuevos(avisos, quien?.avisosVistosHasta ?? null)
   const activa = seccion ?? (activeProjectId || fase ? undefined : 'pipeline')
   const enCurso = proyectos.filter(p => p.sigue.quien !== 'listo')
@@ -128,10 +129,14 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
   // completa acá; lo que trae la página queda de respaldo si el proyecto no aparece.
   const fila = activeProjectId ? proyectos.find(p => p.id === activeProjectId) : undefined
   const faseDeFila = fila?.fases.find(f => f.key === fila.actual)
-  const indiceConFase = fila && faseDeFila && isValidElement<{ subtitulo?: string; sistema?: SistemaDelProyecto }>(indice)
+  // Borrar un cliente es de dirección: el menú del proyecto se entera acá.
+  const indiceConFase = isValidElement<{ subtitulo?: string; sistema?: SistemaDelProyecto; puedeBorrar?: boolean }>(indice)
     ? cloneElement(indice, {
-        subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}`,
-        sistema: { fases: fila.fases, actual: fila.actual, sigue: fila.sigue, pasos: fila.pasos, porFuera: fila.seguimiento.porFuera },
+        puedeBorrar: esDireccion(quien),
+        ...(fila && faseDeFila ? {
+          subtitulo: `${faseDeFila.label} · ${faseDeFila.detalle}`,
+          sistema: { fases: fila.fases, actual: fila.actual, sigue: fila.sigue, pasos: fila.pasos, porFuera: fila.seguimiento.porFuera },
+        } : {}),
       })
     : indice
 

@@ -4,6 +4,8 @@ import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { avisosRecientes } from '@/lib/avisos'
 import { haceCuanto } from '@/lib/landscape/stages'
 import { FASES, FASE_LABEL } from '@/lib/seguimiento/sistema'
+import { quienEntro } from '@/lib/admin/auth'
+import { esDireccion, paraQuien } from '@/lib/admin/permisos'
 import { AdminShell } from '@/components/AdminShell'
 import { Estadistica } from '@/components/sistema/Estadistica'
 import { Avatar, FASE_BAJADA, SelloFase } from '@/components/sistema/fase'
@@ -21,7 +23,9 @@ const TONO = 'bg-[var(--aprobado)] text-[var(--ink)]'
  */
 export default async function Panorama() {
   const ahora = new Date()
-  const [filas, avisos] = await Promise.all([cargarSistema(db, ahora), avisosRecientes(db, 6)])
+  const [todas, avisos, quien] = await Promise.all([cargarSistema(db, ahora), avisosRecientes(db, 6), quienEntro()])
+  const filas = paraQuien(todas, quien)
+  const direccion = esDireccion(quien)
   const enCurso = filas.filter(f => f.sigue.quien !== 'listo')
   const terminados = filas.length - enCurso.length
   const nosToca = enCurso.filter(f => f.sigue.quien === 'revisar' || f.sigue.quien === 'equipo')
@@ -89,15 +93,15 @@ export default async function Panorama() {
         </li>
       </ol>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={`mt-4 grid gap-4 sm:grid-cols-2 ${direccion ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
         <Estadistica rotulo="Clientes en curso" valor={String(enCurso.length)} unidad={`de ${filas.length}`} pie={`En ${FASES.length} fases`} tono={TONO}
           icono={<><path d="M3 5a2 2 0 0 1 2-2h3l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>} />
         <Estadistica rotulo="Esperan al equipo" valor={String(nosToca.length)} pie={nosToca.length ? 'Por revisar o por hacer' : 'Nada pendiente del equipo'} tono={nosToca.length ? 'bg-[var(--banana)] text-[var(--ink)]' : TONO}
           icono={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />
         <Estadistica rotulo="Entregas vencidas" valor={String(vencidas.length)} pie={vencidas.length ? 'La fecha de entrega ya pasó' : 'Ninguna entrega atrasada'} tono={vencidas.length ? 'bg-[var(--ink)] text-white' : TONO}
           icono={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} />
-        <Estadistica rotulo="Valor anotado" valor={conValor.length ? valorCorto(valor) : '—'} pie={conValor.length ? `En ${conValor.length} de ${filas.length} clientes` : 'Ningún cliente tiene valor. Se pone en “Editar cliente”.'} tono={TONO}
-          icono={<><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></>} />
+        {direccion && <Estadistica rotulo="Valor anotado" valor={conValor.length ? valorCorto(valor) : '—'} pie={conValor.length ? `En ${conValor.length} de ${filas.length} clientes` : 'Ningún cliente tiene valor. Se pone en “Editar cliente”.'} tono={TONO}
+          icono={<><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></>} />}
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">

@@ -13,6 +13,7 @@ import { makeTestDb } from '@/lib/db/testdb'
 import { cookieDeSesion, CLAVE_DE_PRUEBA } from '@/lib/admin/sesion-de-prueba'
 import { COOKIE_SESION, leerSesion } from '@/lib/admin/sesion'
 import { crearUsuario, verificarCredenciales } from '@/lib/db/usuarios-store'
+import { usuarios } from '@/lib/db/schema'
 
 const json = (body: unknown, cookie?: { cookie: string }) => ({
   method: 'POST', headers: { 'content-type': 'application/json', ...(cookie ?? {}) }, body: JSON.stringify(body),
@@ -33,13 +34,35 @@ describe('entrar al panel', () => {
     expect(await leerSesion(valor)).toMatchObject({ uid: ana.id })
   })
 
-  it('la clave del equipo entra siempre, con o sin usuario', async () => {
+  it('la clave del equipo ya no entra, ni sola ni con el usuario de una cuenta con clave', async () => {
     await crearUsuario(db, { nombre: 'Ana', usuario: 'ana', clave: 'una-clave-larga' })
     for (const body of [{ clave: CLAVE_DE_PRUEBA }, { usuario: 'ana', clave: CLAVE_DE_PRUEBA }, { usuario: 'isa', clave: CLAVE_DE_PRUEBA }]) {
       const res = await entrar(body)
-      expect(res.status).toBe(200)
-      expect(await leerSesion(res.cookies.get(COOKIE_SESION)!.value)).toMatchObject({ uid: 'maestra' })
+      expect(res.status).toBe(401)
+      expect(res.cookies.get(COOKIE_SESION)).toBeUndefined()
     }
+  })
+
+  it('una cuenta sin estrenar se estrena con la clave del equipo y eligiendo la propia', async () => {
+    await db.insert(usuarios).values({ nombre: 'Vale', usuario: 'vale', claveHash: '' })
+
+    // Sin la clave del equipo no se puede reclamar la cuenta.
+    expect((await entrar({ usuario: 'vale', clave: 'cualquiera', nueva: 'mi-clave-nueva' })).status).toBe(401)
+
+    const pide = await entrar({ usuario: 'vale', clave: CLAVE_DE_PRUEBA })
+    expect(pide.status).toBe(409)
+    expect(await pide.json()).toMatchObject({ primeraVez: true, nombre: 'Vale' })
+    expect(pide.cookies.get(COOKIE_SESION)).toBeUndefined()
+
+    expect((await entrar({ usuario: 'vale', clave: CLAVE_DE_PRUEBA, nueva: 'corta' })).status).toBe(400)
+
+    const entra = await entrar({ usuario: 'vale', clave: CLAVE_DE_PRUEBA, nueva: 'mi-clave-nueva' })
+    expect(entra.status).toBe(200)
+    expect(entra.cookies.get(COOKIE_SESION)).toBeDefined()
+
+    // Ya estrenada: la del equipo no le sirve más, la suya sí.
+    expect((await entrar({ usuario: 'vale', clave: CLAVE_DE_PRUEBA, nueva: 'otra-clave-mas' })).status).toBe(401)
+    expect((await entrar({ usuario: 'vale', clave: 'mi-clave-nueva' })).status).toBe(200)
   })
 
   it('con algo que no coincide no entra y no deja cookie', async () => {

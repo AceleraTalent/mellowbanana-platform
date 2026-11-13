@@ -14,7 +14,7 @@ export function valorDeSesion(uid: string = MAESTRA): string {
   process.env.ADMIN_PASSWORD = CLAVE_DE_PRUEBA
   delete process.env.SESSION_SECRET
   const vence = Date.now() + DURACION_SESION_MS
-  const firma = createHmac('sha256', `mb-sesion:${CLAVE_DE_PRUEBA}`).update(`${uid}.${vence}`).digest('base64url')
+  const firma = createHmac('sha256', `mb-sesion-2:${CLAVE_DE_PRUEBA}`).update(`${uid}.${vence}`).digest('base64url')
   return `${uid}.${vence}.${firma}`
 }
 

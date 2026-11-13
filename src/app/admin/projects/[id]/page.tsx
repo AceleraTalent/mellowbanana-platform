@@ -15,6 +15,8 @@ import { armarNosToca, armarMovimientos } from '@/lib/pipeline/mesa'
 import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
 import { Estadistica } from '@/components/sistema/Estadistica'
+import { quienEntro } from '@/lib/admin/auth'
+import { paraQuien } from '@/lib/admin/permisos'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { CabeceraDetalle } from '@/components/detalle/CabeceraDetalle'
@@ -97,7 +99,7 @@ export default async function DetalleDeProyecto({ params, searchParams }: {
   const ahora = new Date()
   // La fase del Sistema M&B, la misma que dicen el inicio y el menú; la vieja queda de
   // respaldo si el proyecto no aparece en el Sistema.
-  const sistema = await cargarSistema(db, ahora)
+  const sistema = paraQuien(await cargarSistema(db, ahora), await quienEntro())
   const fila = sistema.find(p => p.id === id)
   if (!fila) notFound()
   const faseDeFila = fila.fases.find(f => f.key === fila.actual)!

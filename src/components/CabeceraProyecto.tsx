@@ -13,10 +13,12 @@ import { useCerrarConEscape } from './PanelMovil'
  * Borrar exige tipear el nombre exacto: es irreversible y se lleva las entrevistas y
  * todo el historial, así que la fricción es a propósito.
  */
-export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
+export function CabeceraProyecto({ projectId, nombre, subtitulo, puedeBorrar = true }: {
   projectId: string
   nombre: string
   subtitulo: string
+  /** Borrar el cliente es de dirección; el equipo sólo lo renombra. */
+  puedeBorrar?: boolean
 }) {
   const router = useRouter()
   const [modo, setModo] = useState<'normal' | 'renombrando' | 'borrando'>('normal')
@@ -116,6 +118,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
               <path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
             </svg>
           </button>
+          {puedeBorrar && (
           <button
             type="button"
             title="Borrar el proyecto"
@@ -127,6 +130,7 @@ export function CabeceraProyecto({ projectId, nombre, subtitulo }: {
               <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
             </svg>
           </button>
+          )}
         </div>
       )}
 

@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import { sesionDe } from '@/lib/admin/auth'
+import { esDireccion } from '@/lib/admin/permisos'
 import { ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
 import { actualizarSeguimiento, validarCambios } from '@/lib/db/seguimiento-store'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 /** El equipo edita el seguimiento de un proyecto desde la tabla del inicio. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await sesionDe(req))) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const quien = await sesionDe(req)
+  if (!quien) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { id } = await params
   if (!esUuidValido(id)) return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
 
@@ -20,8 +22,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (typeof body !== 'object' || body === null || Array.isArray(body))
     return NextResponse.json({ error: 'El body tiene que ser un objeto JSON' }, { status: 400 })
 
+  // El valor del proyecto es de dirección: el equipo no lo cambia ni lo recibe de vuelta.
+  const direccion = esDireccion(quien)
+  if (!direccion && 'valor' in body)
+    return NextResponse.json({ error: 'Sólo dirección puede cambiar el valor del proyecto' }, { status: 403 })
+
   try {
-    return NextResponse.json(await actualizarSeguimiento(db, id, validarCambios(body as Record<string, unknown>)))
+    const guardado = await actualizarSeguimiento(db, id, validarCambios(body as Record<string, unknown>))
+    return NextResponse.json(direccion ? guardado : { ...guardado, valor: null })
   } catch (e) {
     if (e instanceof ErrorNoEncontrado) return NextResponse.json({ error: e.message }, { status: 404 })
     if (e instanceof ErrorDeValidacion) return NextResponse.json({ error: e.message }, { status: 400 })

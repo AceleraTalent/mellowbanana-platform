@@ -69,6 +69,15 @@ export async function verificarCredenciales(db: AnyDb, usuario: string, clave: s
   return (await claveCoincide(clave, f.claveHash)) ? sinClave(f) : null
 }
 
+/**
+ * Una cuenta que el estudio dejó creada y todavía no eligió su clave (`clave_hash` vacío).
+ * Se estrena una sola vez, con la clave del equipo de antes. Ver api/admin/login.
+ */
+export async function cuentaSinEstrenar(db: AnyDb, usuario: string): Promise<Usuario | null> {
+  const [f] = (await db.select().from(usuarios).where(eq(usuarios.usuario, normalizarUsuario(usuario)))) as Fila[]
+  return f && f.activo && f.claveHash === '' ? sinClave(f) : null
+}
+
 /** Si la clave es la de esa persona: para cambiar la propia hay que saber la de ahora. */
 export async function claveEsLaDe(db: AnyDb, id: string, clave: string): Promise<boolean> {
   if (!esUuidValido(id)) return false

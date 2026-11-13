@@ -163,7 +163,7 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
     if (d.fecha !== inicial.fecha) cambios.fechaEntrega = d.fecha || null
     if (d.notas !== inicial.notas) cambios.notas = d.notas.trim() || null
     if (d.inicio !== inicial.inicio) cambios.fechaInicio = d.inicio || null
-    if (d.valor !== inicial.valor) cambios.valor = pesos
+    if (!fila.valorOculto && d.valor !== inicial.valor) cambios.valor = pesos
     try {
       if (Object.keys(cambios).length) await patch(fila.id, cambios)
       setGuardado(true)
@@ -242,13 +242,15 @@ export function FormularioCliente({ fila, encargados = [], onListo, onCancelar, 
           </label>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-[1fr_200px]">
+        <div className={`grid gap-5 ${fila.valorOculto ? '' : 'sm:grid-cols-[1fr_200px]'}`}>
+          {!fila.valorOculto && (
           <label className="flex flex-col gap-2">
             <span className={ETIQUETA}>Valor del proyecto</span>
             <input value={d.valor} onChange={e => cambiar({ valor: e.target.value })} inputMode="numeric"
               placeholder="En pesos, opcional" maxLength={20} className={CAMPO} />
             {pesos !== null && <span className="text-[12.5px] text-[var(--secundario)]">{valorCorto(pesos)}</span>}
           </label>
+          )}
           <label className="flex flex-col gap-2">
             <span className={ETIQUETA}>Inicio</span>
             <input type="date" value={d.inicio} onChange={e => cambiar({ inicio: e.target.value })} className={CAMPO} />

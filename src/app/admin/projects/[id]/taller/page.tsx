@@ -5,6 +5,8 @@ import { strategyState, summarizeStrategy } from '@/lib/db/strategy-store'
 import { deriveFases, derivePantallas, pantallaActual } from '@/lib/pipeline/phases'
 import { construirIndice, esperanDecision } from '@/lib/pipeline/indice'
 import { projectSignals } from '@/lib/pipeline/signals'
+import { quienEntro } from '@/lib/admin/auth'
+import { paraQuien } from '@/lib/admin/permisos'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { PhaseNote } from '@/components/PhaseNote'
@@ -59,7 +61,7 @@ export default async function TallerView({ params }: { params: Promise<{ id: str
   const actual = pantallaActual(fases, pantallas)
   // Cerrar el taller es lo único que la plataforma no ve: lo marca el equipo, y vale lo
   // mismo que marcarlo desde el inicio.
-  const sistema = await cargarSistema(db)
+  const sistema = paraQuien(await cargarSistema(db), await quienEntro())
   const faseTaller = sistema.find(p => p.id === id)?.fases.find(f => f.key === 'taller')
   const hecho = faseTaller?.estado === 'completa'
 

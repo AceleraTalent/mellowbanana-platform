@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { db } from '@/lib/db/client'
 import { cargarSistema } from '@/lib/seguimiento/cargar'
 import { FASES, type FaseSistema } from '@/lib/seguimiento/sistema'
+import { quienEntro } from '@/lib/admin/auth'
+import { paraQuien } from '@/lib/admin/permisos'
 import { AdminShell } from '@/components/AdminShell'
 import { TablaSistema } from '@/components/sistema/TablaSistema'
 import { TableroSistema } from '@/components/sistema/TableroSistema'
@@ -28,7 +30,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   // `tablero` es el nombre viejo del Kanban: los links guardados siguen llegando.
   const vista: Vista = pedida === 'lista' || pedida === 'tabla' ? 'lista' : pedida === 'tiempo' ? 'tiempo' : 'kanban'
   const ahora = new Date()
-  const filas = await cargarSistema(db, ahora)
+  const filas = paraQuien(await cargarSistema(db, ahora), await quienEntro())
 
   return (
     <AdminShell sistema={filas} fase={vista === 'lista' ? fase : undefined}>

@@ -1,25 +1,40 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
-import { verificarCredenciales } from '@/lib/db/usuarios-store'
-import { COOKIE_SESION, DURACION_SESION_MS, MAESTRA, firmarSesion } from '@/lib/admin/sesion'
+import { ErrorDeValidacion } from '@/lib/db/store'
+import { cambiarClave, cuentaSinEstrenar, verificarCredenciales } from '@/lib/db/usuarios-store'
+import { COOKIE_SESION, DURACION_SESION_MS, firmarSesion } from '@/lib/admin/sesion'
 
 /**
- * Entrar al panel. La clave del equipo (ADMIN_PASSWORD, la de siempre) entra siempre,
- * venga con usuario o sin él: nadie del estudio se queda afuera por no tener cuenta o por
- * escribir su nombre en el campo equivocado. Con usuario y su propia clave, entra esa
- * persona y lo que apruebe queda con su nombre. Un fallo tarda un poco a propósito:
- * probar claves a ciegas cuesta más.
+ * Entrar al panel: cada persona con su usuario y su clave. La clave del equipo (la que
+ * antes abría todo) ya no entra sola: sólo sirve para estrenar una cuenta que el estudio
+ * dejó creada sin clave. Ahí la persona elige la suya y la del equipo deja de servirle.
+ * Un fallo tarda un poco a propósito: probar claves a ciegas cuesta más.
  */
 export async function POST(req: Request) {
   let body: Record<string, unknown> = {}
   try { body = (await req.json()) ?? {} } catch { /* body vacío: cae a credenciales inválidas */ }
   const usuario = typeof body.usuario === 'string' ? body.usuario.trim() : ''
-  // `pw` es el nombre que usaba el formulario anterior: una pestaña vieja abierta sigue entrando.
-  const clave = typeof body.clave === 'string' ? body.clave : typeof body.pw === 'string' ? body.pw : ''
+  const clave = typeof body.clave === 'string' ? body.clave : ''
+  const nueva = typeof body.nueva === 'string' ? body.nueva : ''
 
   let uid: string | null = null
-  if (usuario) uid = (await verificarCredenciales(db, usuario, clave))?.id ?? null
-  if (!uid && clave && process.env.ADMIN_PASSWORD && clave === process.env.ADMIN_PASSWORD) uid = MAESTRA
+  if (usuario && clave) {
+    uid = (await verificarCredenciales(db, usuario, clave))?.id ?? null
+    if (!uid && process.env.ADMIN_PASSWORD && clave === process.env.ADMIN_PASSWORD) {
+      const sinEstrenar = await cuentaSinEstrenar(db, usuario)
+      if (sinEstrenar) {
+        // Primera vez: falta que elija su clave. Sin ella no hay sesión todavía.
+        if (!nueva) return NextResponse.json({ primeraVez: true, nombre: sinEstrenar.nombre }, { status: 409 })
+        try {
+          await cambiarClave(db, sinEstrenar.id, nueva)
+        } catch (e) {
+          if (e instanceof ErrorDeValidacion) return NextResponse.json({ primeraVez: true, error: e.message }, { status: 400 })
+          throw e
+        }
+        uid = sinEstrenar.id
+      }
+    }
+  }
 
   if (!uid) {
     await new Promise(r => setTimeout(r, 400))

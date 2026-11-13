@@ -20,7 +20,9 @@ export interface SesionFirmada {
 
 function secreto(): string {
   const base = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || ''
-  return base ? `mb-sesion:${base}` : ''
+  // El “2” cerró todas las sesiones abiertas con la clave compartida del equipo, cuando
+  // el panel pasó a entrar sólo con cuenta propia.
+  return base ? `mb-sesion-2:${base}` : ''
 }
 
 function base64url(bytes: ArrayBuffer): string {

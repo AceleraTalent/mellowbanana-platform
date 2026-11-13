@@ -2,6 +2,22 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-11-13 — Cada quien entra con su cuenta; dirección y equipo
+
+- **Accesos** (`src/lib/admin/permisos.ts`): dirección (`esAdmin`) ve y hace todo. El equipo no ve
+  el valor de los proyectos (se borra en el servidor con `paraQuien`, no sólo en pantalla), no lo
+  cambia (403 en `/seguimiento`), no borra clientes (403) y no maneja cuentas.
+- **Cuentas** (migración `0011_cuentas_del_equipo`): luciano (dirección) y victor, valentina, isabel,
+  lina, antonia, carlos, mathew (equipo). Nacen sin clave. La primera vez entran con su usuario y la
+  clave del equipo de antes, y ahí eligen la suya; así ninguna clave queda en el repo, que es público.
+- **La clave del equipo ya no entra sola.** Sólo estrena cuentas sin clave. El prefijo de la firma
+  pasó a `mb-sesion-2`: se cerraron todas las sesiones abiertas con la clave compartida.
+- **Ojo:** si dirección olvida su clave no hay cómo recuperarla desde el panel; hay que vaciar su
+  `clave_hash` con una migración. `store.test.ts` (“aprobar el borrador nuevo…”) falla de a ratos
+  al correr toda la suite; sola pasa y no depende de estos cambios.
+- **Demo local:** la base se dañó (`Aborted()`) al hacer `git stash` con el servidor corriendo: el
+  stash cambia `client.ts` y abre un segundo PGlite. Se restauró desde `db-respaldo-2026-11-13`.
+
 ## 2026-11-13 — Corrección del rediseño: la forma de Pramana con la marca de Mellow, menú por secciones y Dashboard
 
 - **Corrección:** la entrada de abajo dice que el aspecto era "el de Pramana tal cual". Estaba mal

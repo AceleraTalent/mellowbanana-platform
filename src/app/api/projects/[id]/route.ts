@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import { renameProject, deleteProject, ErrorDeValidacion, ErrorNoEncontrado } from '@/lib/db/store'
 import { sesionDe } from '@/lib/admin/auth'
+import { esDireccion } from '@/lib/admin/permisos'
 import { esUuidValido } from '@/lib/landscape/ids'
 
 function conErrores(e: unknown): NextResponse {
@@ -26,7 +27,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (!(await sesionDe(req))) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
+  const quien = await sesionDe(req)
+  if (!quien) return NextResponse.json({ error: 'no autorizado' }, { status: 401 })
+  // Borrar se lleva las entrevistas y todo el historial: es de dirección.
+  if (!esDireccion(quien)) return NextResponse.json({ error: 'Sólo dirección puede borrar un cliente' }, { status: 403 })
   if (!esUuidValido(id)) return NextResponse.json({ error: `Id de proyecto inválido: ${id}` }, { status: 400 })
   try {
     const { sesionesBorradas } = await deleteProject(db, id)
