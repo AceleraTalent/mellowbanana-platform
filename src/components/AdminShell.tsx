@@ -9,7 +9,7 @@ import { Buscador, type Buscable } from './Buscador'
 import type { SistemaDelProyecto } from './ProjectIndex'
 import { NuevoCliente } from './sistema/NuevoCliente'
 import { encargadosConocidos } from './sistema/cliente'
-import { Avatar, ChipFase, IconoFase } from './sistema/fase'
+import { Avatar, IconoFase } from './sistema/fase'
 import { FASES, FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 
 /** Los avisos, arriba y a la vista: la campana lleva cuántos llegaron sin mirar. */
@@ -97,7 +97,7 @@ function Enlace({ href, icono, fase, activo, cuenta, children }: { href: string;
 /**
  * El marco de todas las pantallas autenticadas: barra lateral blanca con la navegación,
  * barra de arriba con el buscador y las acciones, y el contenido sobre fondo gris. En el
- * inicio la barra lleva la lista de clientes y el flujo del proceso; adentro de un
+ * inicio la barra lleva las etapas del proceso; adentro de un
  * proyecto, el menú de ese proyecto (que trae su propio “volver”).
  *
  * El índice llega armado por la prop `indice`: las páginas de proyecto ya consultaron sus
@@ -175,22 +175,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
         </div>
       </nav>
 
-      {indiceConFase ? (
-        <div className="border-t border-[var(--line)] pt-5">{indiceConFase}</div>
-      ) : (
-        /* El proceso del estudio, de punta a punta. */
-        <div className="rounded-[16px] border border-[var(--line)] bg-gradient-to-b from-[var(--primario-suave)] to-white p-4">
-          <p className="text-[14px] font-bold text-[var(--ink)]">Flujo del proyecto</p>
-          <ol className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2">
-            {FASES.map((f, i) => (
-              <li key={f} className="flex items-center gap-1.5">
-                <ChipFase fase={f}>{FASE_LABEL[f]}</ChipFase>
-                {i < FASES.length - 1 && <span aria-hidden="true" className="text-[12px] text-[var(--apagado)]">→</span>}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+      {indiceConFase && <div className="border-t border-[var(--line)] pt-5">{indiceConFase}</div>}
 
       {/* Quién está adentro y salir. Salir es un formulario: un POST, para que un link
           ajeno no te cierre la sesión. */}

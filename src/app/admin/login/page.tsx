@@ -27,9 +27,10 @@ const CAMPO = 'rounded-[8px] border border-[var(--line)] bg-white px-4 py-3 text
 function Login() {
   const [usuario, setUsuario] = useState('')
   const [clave, setClave] = useState('')
-  // Lo normal es la clave del equipo, la de siempre: un solo campo. Quien tenga cuenta
-  // propia puede entrar con ella para que lo que apruebe quede con su nombre.
-  const [conUsuario, setConUsuario] = useState(false)
+  // Lo normal es que cada quien entre con su usuario, así lo que apruebe queda con su
+  // nombre. La clave del equipo queda a un clic: es la de recuperar el acceso y crear
+  // las primeras cuentas.
+  const [conUsuario, setConUsuario] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
   const params = useSearchParams()
@@ -84,7 +85,7 @@ function Login() {
         </form>
         <button type="button" onClick={() => { setConUsuario(!conUsuario); setError(false); setClave('') }}
           className="mt-6 text-[13px] text-[var(--secundario)] underline underline-offset-2 hover:text-[var(--ink)]">
-          {conUsuario ? 'Entrar con la clave del equipo' : 'Tengo usuario propio'}
+          {conUsuario ? 'Entrar con la clave del equipo' : 'Entrar con mi usuario'}
         </button>
       </div>
     </div>
