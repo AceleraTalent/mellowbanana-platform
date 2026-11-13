@@ -9,8 +9,8 @@ import { Buscador, type Buscable } from './Buscador'
 import type { SistemaDelProyecto } from './ProjectIndex'
 import { NuevoCliente } from './sistema/NuevoCliente'
 import { encargadosConocidos } from './sistema/cliente'
-import { Avatar, ChipFase } from './sistema/fase'
-import { FASES, FASE_LABEL } from '@/lib/seguimiento/sistema'
+import { Avatar, ChipFase, IconoFase } from './sistema/fase'
+import { FASES, FASE_LABEL, type FaseSistema } from '@/lib/seguimiento/sistema'
 
 /** Los avisos, arriba y a la vista: la campana lleva cuántos llegaron sin mirar. */
 function Campana({ nuevos }: { nuevos: number }) {
@@ -68,22 +68,26 @@ function buscables(proyectos: FilaSistema[], activeProjectId?: string): Buscable
 }
 
 const ICONO: Record<string, React.ReactNode> = {
+  panorama: <><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></>,
+  toca: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
   pipeline: <><path d="M3 5a2 2 0 0 1 2-2h3l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M8 13h8" /></>,
   avisos: <><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9" /><path d="M10 20a2 2 0 0 0 4 0" /></>,
   equipo: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
 }
 
 /** Un renglón de la navegación: ícono, nombre y, si hay, un número a la derecha. */
-function Enlace({ href, icono, activo, cuenta, children }: { href: string; icono: string; activo: boolean; cuenta?: number; children: React.ReactNode }) {
+function Enlace({ href, icono, fase, activo, cuenta, children }: { href: string; icono?: string; fase?: FaseSistema; activo: boolean; cuenta?: number; children: React.ReactNode }) {
   return (
     <Link href={href} aria-current={activo ? 'page' : undefined}
       className={`relative flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14.5px] transition-colors ${
         activo ? 'bg-[var(--banana)] font-semibold text-[var(--ink)]' : 'text-[var(--cuerpo)] hover:bg-[var(--superficie)] hover:text-[var(--ink)]'
       }`}>
       {activo && <span aria-hidden="true" className="absolute -left-4 top-2 h-[calc(100%-16px)] w-[4px] rounded-r-full bg-[var(--primario)]" />}
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={activo ? '' : 'text-[var(--rotulo)]'}>{ICONO[icono]}</svg>
+      {fase ? <span className={`flex-none ${activo ? '' : 'text-[var(--rotulo)]'}`}><IconoFase fase={fase} size={18} /></span> : (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`flex-none ${activo ? '' : 'text-[var(--rotulo)]'}`}>{ICONO[icono!]}</svg>
+      )}
       <span className="min-w-0 flex-1">{children}</span>
-      {cuenta !== undefined && cuenta > 0 && (
+      {cuenta !== undefined && (
         <span className={`grid h-[22px] min-w-[26px] place-items-center rounded-full px-1.5 text-[11.5px] font-semibold tabular-nums ${activo ? 'bg-[var(--primario)] text-white' : 'bg-[var(--superficie)] text-[var(--secundario)]'}`}>{cuenta}</span>
       )}
     </Link>
@@ -99,13 +103,15 @@ function Enlace({ href, icono, activo, cuenta, children }: { href: string; icono
  * El índice llega armado por la prop `indice`: las páginas de proyecto ya consultaron sus
  * etapas, así que el shell no vuelve a la base por eso.
  */
-export async function AdminShell({ activeProjectId, indice, sistema, seccion, children }: {
+export async function AdminShell({ activeProjectId, indice, sistema, seccion, fase, children }: {
   activeProjectId?: string
   indice?: React.ReactNode
   /** Las filas del Sistema M&B, si la página ya las cargó (el inicio): así no se leen dos veces. */
   sistema?: FilaSistema[]
   /** Qué renglón de la navegación va marcado. Sin esto: el Pipeline, salvo dentro de un proyecto. */
-  seccion?: 'pipeline' | 'avisos' | 'equipo'
+  seccion?: 'panorama' | 'pipeline' | 'avisos' | 'equipo'
+  /** La fase elegida en la Lista, para marcarla en el menú en vez del Pipeline. */
+  fase?: FaseSistema
   children: React.ReactNode
 }) {
   // La barra y el inicio leen el mismo Sistema M&B: lo que espera al equipo acá es
@@ -113,10 +119,8 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, ch
   const proyectos = sistema ?? await cargarSistema(db)
   const [quien, avisos] = await Promise.all([quienEntro(), avisosRecientes(db)])
   const nuevos = cuantosNuevos(avisos, quien?.avisosVistosHasta ?? null)
-  const esperan = new Set(proyectos
-    .filter(p => p.sigue.quien === 'revisar' || p.sigue.quien === 'equipo')
-    .map(p => p.id))
-  const activa = seccion ?? (activeProjectId ? undefined : 'pipeline')
+  const activa = seccion ?? (activeProjectId || fase ? undefined : 'pipeline')
+  const enCurso = proyectos.filter(p => p.sigue.quien !== 'listo')
 
   // El menú del cliente se completa con el Sistema M&B, no con lo que trae la página: así
   // dice la misma fase, el mismo avance y lo mismo que sigue que el inicio (“Landscape · 7
@@ -145,52 +149,47 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, ch
     <div className="flex min-h-full flex-col gap-6">
       {marca}
 
-      <nav aria-label="Secciones del panel" className="flex flex-col gap-1">
-        <Rotulo>Proyectos</Rotulo>
-        <Enlace href="/admin" icono="pipeline" activo={activa === 'pipeline'} cuenta={proyectos.length}>Pipeline de proyectos</Enlace>
-        <Enlace href="/admin/avisos" icono="avisos" activo={activa === 'avisos'} cuenta={nuevos}>Avisos</Enlace>
-        <Enlace href="/admin/equipo" icono="equipo" activo={activa === 'equipo'}>Equipo</Enlace>
+      <nav aria-label="Secciones del panel" className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <Rotulo>Panorama</Rotulo>
+          <Enlace href="/admin/panorama" icono="panorama" activo={activa === 'panorama'}>Dashboard</Enlace>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Rotulo>Proyectos</Rotulo>
+          <Enlace href="/admin" icono="pipeline" activo={activa === 'pipeline'} cuenta={proyectos.length}>Pipeline de proyectos</Enlace>
+          {fila && <Enlace href={fila.href} icono="toca" activo>Detalle de proyecto</Enlace>}
+        </div>
+        {/* Adentro de un proyecto manda el menú de ese proyecto: las etapas de todos se guardan. */}
+        {!indiceConFase && (
+          <div className="flex flex-col gap-1">
+            <Rotulo>Etapas</Rotulo>
+            {FASES.map(f => (
+              <Enlace key={f} href={`/admin?vista=lista&fase=${f}`} fase={f} activo={fase === f} cuenta={enCurso.filter(p => p.actual === f).length}>{FASE_LABEL[f]}</Enlace>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-col gap-1">
+          <Rotulo>Gestión</Rotulo>
+          <Enlace href="/admin/avisos" icono="avisos" activo={activa === 'avisos'} cuenta={nuevos || undefined}>Avisos</Enlace>
+          <Enlace href="/admin/equipo" icono="equipo" activo={activa === 'equipo'}>Equipo</Enlace>
+        </div>
       </nav>
 
       {indiceConFase ? (
         <div className="border-t border-[var(--line)] pt-5">{indiceConFase}</div>
       ) : (
-        <>
-          <div>
-            <Rotulo>Clientes</Rotulo>
-            <ul className="flex flex-col">
-              {proyectos.map(p => (
-                <li key={p.id}>
-                  <Link
-                    href={p.href}
-                    className="flex items-center justify-between gap-2 rounded-[10px] px-3 py-1.5 text-[14px] text-[var(--cuerpo)] hover:bg-[var(--superficie)] hover:text-[var(--ink)]"
-                  >
-                    <span className="truncate">{p.nombre}</span>
-                    {esperan.has(p.id) && (
-                      <>
-                        <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rounded-full bg-[var(--primario)]" />
-                        <span className="sr-only">Espera al equipo</span>
-                      </>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* El proceso del estudio, de punta a punta, con el color de cada fase. */}
-          <div className="rounded-[16px] border border-[var(--line)] bg-gradient-to-b from-[var(--primario-suave)] to-white p-4">
-            <p className="text-[14px] font-bold text-[var(--ink)]">Flujo del proyecto</p>
-            <ol className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2">
-              {FASES.map((f, i) => (
-                <li key={f} className="flex items-center gap-1.5">
-                  <ChipFase fase={f}>{FASE_LABEL[f]}</ChipFase>
-                  {i < FASES.length - 1 && <span aria-hidden="true" className="text-[12px] text-[var(--apagado)]">→</span>}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </>
+        /* El proceso del estudio, de punta a punta. */
+        <div className="rounded-[16px] border border-[var(--line)] bg-gradient-to-b from-[var(--primario-suave)] to-white p-4">
+          <p className="text-[14px] font-bold text-[var(--ink)]">Flujo del proyecto</p>
+          <ol className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+            {FASES.map((f, i) => (
+              <li key={f} className="flex items-center gap-1.5">
+                <ChipFase fase={f}>{FASE_LABEL[f]}</ChipFase>
+                {i < FASES.length - 1 && <span aria-hidden="true" className="text-[12px] text-[var(--apagado)]">→</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {/* Quién está adentro y salir. Salir es un formulario: un POST, para que un link

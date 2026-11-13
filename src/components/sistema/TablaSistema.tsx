@@ -192,9 +192,9 @@ function Fila({ fila, encargados, onCambio }: { fila: FilaSistema; encargados: s
   )
 }
 
-export function TablaSistema({ filas }: { filas: FilaSistema[] }) {
+export function TablaSistema({ filas, fase }: { filas: FilaSistema[]; /** La fase que llega elegida desde el menú. */ fase?: FaseSistema }) {
   const router = useRouter()
-  const [filtro, setFiltro] = useState<FaseSistema | 'todas'>('todas')
+  const [filtro, setFiltro] = useState<FaseSistema | 'todas'>(fase ?? 'todas')
   const porFase = useMemo(() => new Map(FASES.map(f => [f, filas.filter(x => x.actual === f).length])), [filas])
   const visibles = filas
     .filter(f => filtro === 'todas' || f.actual === filtro)

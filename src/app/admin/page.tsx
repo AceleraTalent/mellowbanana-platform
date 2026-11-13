@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { db } from '@/lib/db/client'
 import { cargarSistema } from '@/lib/seguimiento/cargar'
-import { FASES } from '@/lib/seguimiento/sistema'
+import { FASES, type FaseSistema } from '@/lib/seguimiento/sistema'
 import { AdminShell } from '@/components/AdminShell'
 import { TablaSistema } from '@/components/sistema/TablaSistema'
 import { TableroSistema } from '@/components/sistema/TableroSistema'
@@ -22,15 +22,16 @@ const VISTAS: { key: Vista; label: string; href: string; icono: React.ReactNode 
  * vistas de lo mismo. Kanban para mover, Lista para editar de corrido y Línea de tiempo
  * para ver las entregas. Ver src/lib/seguimiento/sistema.ts
  */
-export default async function Admin({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
-  const pedida = (await searchParams).vista
+export default async function Admin({ searchParams }: { searchParams: Promise<{ vista?: string; fase?: string }> }) {
+  const { vista: pedida, fase: fasePedida } = await searchParams
+  const fase = FASES.find(f => f === fasePedida) as FaseSistema | undefined
   // `tablero` es el nombre viejo del Kanban: los links guardados siguen llegando.
   const vista: Vista = pedida === 'lista' || pedida === 'tabla' ? 'lista' : pedida === 'tiempo' ? 'tiempo' : 'kanban'
   const ahora = new Date()
   const filas = await cargarSistema(db, ahora)
 
   return (
-    <AdminShell sistema={filas}>
+    <AdminShell sistema={filas} fase={vista === 'lista' ? fase : undefined}>
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div>
           <h1 className="font-serif text-[30px] leading-[1.1] text-[var(--ink)]">Pipeline de proyectos</h1>
@@ -56,7 +57,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         </p>
       ) : (
         <div className="mt-7">
-          {vista === 'kanban' ? <TableroSistema filas={filas} /> : vista === 'lista' ? <TablaSistema filas={filas} /> : <LineaDeTiempo filas={filas} hoy={ahora} />}
+          {vista === 'kanban' ? <TableroSistema filas={filas} /> : vista === 'lista' ? <TablaSistema key={fase ?? 'todas'} filas={filas} fase={fase} /> : <LineaDeTiempo filas={filas} hoy={ahora} />}
         </div>
       )}
     </AdminShell>

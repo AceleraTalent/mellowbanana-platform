@@ -14,6 +14,7 @@ import { attentionItems, haceCuanto } from '@/lib/pipeline/attention'
 import { armarNosToca, armarMovimientos } from '@/lib/pipeline/mesa'
 import { buildStages } from '@/lib/landscape/stages'
 import { buildEtapasEstrategia } from '@/lib/estrategia/stages'
+import { Estadistica } from '@/components/sistema/Estadistica'
 import { AdminShell } from '@/components/AdminShell'
 import { ProjectIndex } from '@/components/ProjectIndex'
 import { CabeceraDetalle } from '@/components/detalle/CabeceraDetalle'
@@ -29,23 +30,6 @@ export const dynamic = 'force-dynamic'
 
 
 const ESTADO_FASE: Record<EstadoFase, string> = { completa: 'Completada', en_curso: 'En curso', pendiente: 'Pendiente' }
-
-function Estadistica({ rotulo, valor, unidad, pie, icono, tono }: { rotulo: string; valor: string; unidad?: string; pie: string; icono: React.ReactNode; tono: string }) {
-  return (
-    <div className="tarjeta p-5">
-      <div className="flex items-start justify-between gap-3">
-        <p className="rotulo">{rotulo}</p>
-        <span className={`grid h-9 w-9 flex-none place-items-center rounded-full ${tono}`}>
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icono}</svg>
-        </span>
-      </div>
-      <p className="mt-2 text-[40px] font-extrabold leading-none tracking-[-.03em] text-[var(--ink)]">
-        {valor}{unidad && <span className="ml-2 text-[15px] font-medium tracking-normal text-[var(--secundario)]">{unidad}</span>}
-      </p>
-      <p className="mt-2.5 text-[13.5px] text-[var(--secundario)]">{pie}</p>
-    </div>
-  )
-}
 
 /**
  * El detalle de un proyecto: la cabecera con sus datos, el recorrido por las cinco fases
