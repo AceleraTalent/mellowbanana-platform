@@ -2,6 +2,22 @@
 
 Entradas nuevas arriba. Formato: ver CONVENCION.md.
 
+## 2026-11-13 — Corrección del rediseño: la forma de Pramana con la marca de Mellow, menú por secciones y Dashboard
+
+- **Corrección:** la entrada de abajo dice que el aspecto era "el de Pramana tal cual". Estaba mal
+  entendido: Luciano pedía la forma, no el color. Volvieron la tinta, el amarillo banana, el papel y
+  Geist; las fases ya no tienen color propio (se distinguen por ícono y número) y `.panel` no
+  redefine la paleta. Ya no se carga Plus Jakarta Sans.
+- **Menú:** secciones Panorama, Proyectos, Etapas y Gestión. Cada etapa abre la Lista filtrada
+  (`/admin?vista=lista&fase=…`). Salieron la lista de clientes y la tarjeta "Flujo del proyecto".
+- **Dashboard (`/admin/panorama`):** clientes por fase, lo que espera al equipo, entregas vencidas,
+  valor anotado y actividad reciente. Sólo lee del Sistema M&B.
+- **Login:** pide usuario y clave por defecto; la clave del equipo queda en un enlace.
+- **Pendiente:** una persona desactivada sigue pudiendo leer el panel hasta que venza su cookie
+  (30 días): `proxy.ts` sólo valida la firma. Las listas iniciales de Naming y Diseño las propuse yo
+  y el estudio no las confirmó. La guía y la página de novedades describen el panel anterior.
+- **Ojo en local:** Turbopack siguió sirviendo el CSS viejo tras reiniciar; hubo que apartar `.next`.
+
 ## 2026-11-13 — El panel con el diseño de Pramana: Pipeline en tres vistas y detalle del proyecto
 
 - **Pedido:** Luciano mostró en video el demo de Pramana (`pramana-demo.vercel.app`) y pidió que el
