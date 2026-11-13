@@ -6,6 +6,7 @@ import { esDireccion, paraQuien } from '@/lib/admin/permisos'
 import { avisosRecientes, cuantosNuevos } from '@/lib/avisos'
 import { cargarSistema, type FilaSistema } from '@/lib/seguimiento/cargar'
 import { PanelMovil } from './PanelMovil'
+import { ColumnaDerecha } from './ColumnaDerecha'
 import { Buscador, type Buscable } from './Buscador'
 import type { SistemaDelProyecto } from './ProjectIndex'
 import { NuevoCliente } from './sistema/NuevoCliente'
@@ -202,8 +203,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
   const ahora = new Date()
   const TONO_QUIEN: Record<string, 'ojo' | 'azul' | 'quieto' | 'bien'> = { revisar: 'ojo', equipo: 'ojo', claude: 'azul', cliente: 'quieto', pausa: 'quieto', fuera: 'quieto', listo: 'bien' }
   const columna = (
-    <aside aria-label="Actividad" className="fixed bottom-0 right-0 top-[68px] z-10 hidden w-[340px] flex-col border-l border-border/70 bg-white xl:flex">
-      <div className="flex-1 space-y-7 overflow-y-auto px-5 py-6 scroll-thin">
+    <>
         <section>
           <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5"><rect width="16" height="16" x="4" y="4" rx="2" /><rect width="6" height="6" x="9" y="9" rx="1" /><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2" /></svg>
@@ -246,8 +246,7 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
             </ol>
           )}
         </section>
-      </div>
-    </aside>
+    </>
   )
 
   const campana = <Campana nuevos={nuevos} />
@@ -287,9 +286,9 @@ export async function AdminShell({ activeProjectId, indice, sistema, seccion, fa
             </div>
           </div>
         </header>
-        {riel && columna}
-
-        <main className={`mx-auto w-full max-w-[1500px] overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 ${riel ? 'xl:pr-[372px]' : ''}`}>{children}</main>
+        {riel ? <ColumnaDerecha columna={columna}>{children}</ColumnaDerecha> : (
+          <main className="mx-auto w-full max-w-[1500px] overflow-x-clip px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        )}
       </div>
     </div>
   )
